@@ -362,8 +362,8 @@ class HouseholdModelClass(EconModelClass):
         sol = self.sol
         par = self.par 
 
-        # setup grids
-        self.setup_grids()
+        # re-allocate to ensure new solution
+        self.allocate()
 
         self.cpp.solve(sol,par)
 
