@@ -22,7 +22,7 @@ namespace bargaining {
 
     // divorce
     void divorce(int iP, int *power_idx, double *power, index::index_couple_struct *idx_couple, double **list_start_as_couple, double *list_trans_to_single, int num, par_struct *par){
-        long long int idx = idx_couple->idx(iP);
+        auto idx = idx_couple->idx(iP);
         power_idx[idx] = -1;
         power[idx] = -1.0;
 
@@ -33,7 +33,7 @@ namespace bargaining {
     
     // remain
     void remain(int iP, int *power_idx, double *power, index::index_couple_struct *idx_couple, double **list_start_as_couple, double **list_remain_couple, int num, par_struct *par){
-        long long int idx = idx_couple->idx(iP);
+        auto idx = idx_couple->idx(iP);
         power_idx[idx] = iP;
         power[idx] = par->grid_power[iP];
 
@@ -45,11 +45,11 @@ namespace bargaining {
 
     // update to indifference point
     void update_to_indifference(int iP, int left_point, int low_point, double power_at_zero, int *power_idx, double *power, index::index_couple_struct *idx_couple, double **list_start_as_couple, double **list_remain_couple, int num, par_struct *par, int sol_idx = -1){
-        long long int idx = idx_couple->idx(iP);
+        auto idx = idx_couple->idx(iP);
         power_idx[idx] = low_point;
         power[idx] = power_at_zero;
 
-        long long int delta = idx_couple->idx(left_point+1) - idx_couple->idx(left_point); //difference between the indices of two consecutive values of iP
+        auto delta = idx_couple->idx(left_point+1) - idx_couple->idx(left_point); //difference between the indices of two consecutive values of iP
 
         // update solution arrays
         if (sol_idx == -1){ // pre-computation not done
