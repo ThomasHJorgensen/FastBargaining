@@ -125,14 +125,14 @@ namespace couple {
     
     void solve_couple_to_couple_Agrid_vfi(int t, int iP, int iL, double* EVw_next, double* EVm_next,sol_struct* sol, par_struct* par){
         for (int iA=0; iA<par->num_A;iA++){
-            int idx = index::couple(t,iP,iL,iA,par);
+            auto idx = index::couple(t,iP,iL,iA,par);
 
             double M_resources = resources(par->grid_A[iA],par); 
 
             // starting values
             double starting_val = M_resources * 0.8;
             if (iA>0){ 
-                int idx_last = index::couple(t,iP,iL,iA-1,par);
+                auto idx_last = index::couple(t,iP,iL,iA-1,par);
                 starting_val = sol->Cw_priv_couple_to_couple[idx_last] + sol->Cm_priv_couple_to_couple[idx_last] + sol->C_pub_couple_to_couple[idx_last];
             }
 
@@ -240,8 +240,8 @@ namespace couple {
 
                 // i. Unpack
                 double A_next = par->grid_A_pd[iA_pd]; // assets next period
-                int idx_pd = index::couple_pd(t,iP,iL,iA_pd,par);
-                int idx_interp = index::index2(iP,0,par->num_power,par->num_marg_u);
+                auto idx_pd = index::couple_pd(t,iP,iL,iA_pd,par);
+                auto idx_interp = index::index2(iP,0,par->num_power,par->num_marg_u);
 
                 // ii. interpolate marginal utility
                 sol->EmargU_pd[idx_pd] = par->beta * tools::interp_1d(par->grid_A, par->num_A, EmargV_next, A_next);
@@ -283,8 +283,8 @@ namespace couple {
             }
 
             // 3. Apply upper envelope and interpolate onto common grid
-            int idx_interp_pd = index::couple_pd(t,iP,iL,0,par);
-            int idx_interp = index::couple(t,iP,iL,0,par);
+            auto idx_interp_pd = index::couple_pd(t,iP,iL,0,par);
+            auto idx_interp = index::couple(t,iP,iL,0,par);
 
             handle_liquidity_constraint_couple_to_couple(t, iP, iL, &sol->M_pd[idx_interp_pd], &sol->EmargU_pd[idx_interp_pd], 
                                                          &sol->C_tot_couple_to_couple[idx_interp], &sol->Cw_priv_couple_to_couple[idx_interp], 
@@ -306,20 +306,20 @@ namespace couple {
         double love = par->grid_love[iL];
         double power = par->grid_power[iP];
         for (int iA=0; iA<par->num_A;iA++){
-            int idx_interp = index::couple(t,iP,0,iA,par);
-            int delta_love = index::couple(t,iP,1,iA,par) - index::couple(t,iP,0,iA,par);
+            auto idx_interp = index::couple(t,iP,0,iA,par);
+            auto delta_love = index::couple(t,iP,1,iA,par) - index::couple(t,iP,0,iA,par);
             double Eval_w = 0;
             double Eval_m = 0;        
             for (int i_love_shock=0; i_love_shock<par->num_shock_love; i_love_shock++){
                 double love_next = love + par->grid_shock_love[i_love_shock];
                 double weight = par->grid_weight_love[i_love_shock];
-                int idx_love = tools::binary_search(0,par->num_love,par->grid_love,love_next);
+                auto idx_love = tools::binary_search(0,par->num_love,par->grid_love,love_next);
 
                 Eval_w += weight*tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vw[idx_interp], love_next, idx_love, delta_love);
                 Eval_m += weight*tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vm[idx_interp], love_next, idx_love, delta_love);
             }
 
-            int idx = index::couple(t,iP,iL,iA,par);
+            auto idx = index::couple(t,iP,iL,iA,par);
             EVw[idx] = Eval_w;
             EVm[idx] = Eval_m;
         }
@@ -411,7 +411,7 @@ namespace couple {
                 // solve
                 for (int iL=0; iL<par->num_love; iL++){
                     if (t<(par->T-1)){
-                        int idx_next = index::couple(t+1,iP,iL,0,par);
+                        auto idx_next = index::couple(t+1,iP,iL,0,par);
                         EVw_next = &sol->EVw_start_as_couple[idx_next];  
                         EVm_next = &sol->EVm_start_as_couple[idx_next];
                         EmargV_next = &sol->EmargV_start_as_couple[idx_next];
@@ -432,7 +432,7 @@ namespace couple {
             for (int iL=0; iL<par->num_love; iL++){    
                 for (int iA=0; iA<par->num_A;iA++){
                     // i. Get indices
-                    int idx_single = index::single(t,iA,par);
+                    auto idx_single = index::single(t,iA,par);
                     idx_couple->t = t;
                     idx_couple->iL = iL;
                     idx_couple->iA = iA;
@@ -440,7 +440,7 @@ namespace couple {
 
                     // ii Calculate marital surplus
                     for (int iP=0; iP<par->num_power; iP++){
-                        int idx_tmp = index::couple(t,iP,iL,iA,par);
+                        auto idx_tmp = index::couple(t,iP,iL,iA,par);
                         Sw[iP] = calc_marital_surplus(sol->Vw_couple_to_couple[idx_tmp],sol->Vw_couple_to_single[idx_single],par);
                         Sm[iP] = calc_marital_surplus(sol->Vm_couple_to_couple[idx_tmp],sol->Vm_couple_to_single[idx_single],par);
                     }
@@ -471,7 +471,7 @@ namespace couple {
                     
                     // update C_tot_couple (Note: C__start_as_couple is nan when they divorce)
                     for (int iP=0; iP<par->num_power; iP++){
-                        int idx = index::couple(t,iP,iL,iA,par);
+                        auto idx = index::couple(t,iP,iL,iA,par);
                         if (sol->power[idx] >= 0.0){
                             sol->C_tot_start_as_couple[idx] = sol->Cw_priv_start_as_couple[idx] + sol->Cm_priv_start_as_couple[idx] + sol->C_pub_start_as_couple[idx];
                         }
@@ -488,7 +488,7 @@ namespace couple {
 
                      // vi. Update marginal value
                     if (par->do_egm){
-                        int idx_interp = index::couple(t,iP,iL,0,par);
+                        auto idx_interp = index::couple(t,iP,iL,0,par);
                         // calc_marginal_value_couple(t, iP, iL, &sol->Vw_start_as_couple[idx_interp], &sol->Vm_start_as_couple[idx_interp], &sol->margV_start_as_couple[idx_interp], sol, par);
                         calc_marginal_value_couple(t, iP, iL, &sol->EVw_start_as_couple[idx_interp], &sol->EVm_start_as_couple[idx_interp], &sol->EmargV_start_as_couple[idx_interp], sol, par);
                     }
@@ -525,7 +525,7 @@ namespace couple {
             for (int iP=0; iP<par->num_power; iP++){
                 for (int iL=0; iL< par->num_love; iL++){
                     for (int iA=0; iA<par->num_A;iA++){
-                        int idx = index::couple(t,iP,iL,iA,par);
+                        auto idx = index::couple(t,iP,iL,iA,par);
 
                         sol->Vw_single_to_couple[idx] = sol->Vw_couple_to_couple[idx];
                         sol->Vm_single_to_couple[idx] = sol->Vm_couple_to_couple[idx];

@@ -11,11 +11,11 @@ namespace sim {
         
         // setup
         int power_idx = -1; // initialize as divorce
-        int idx_sol = index::index4(t,power_idx_lag,0,0,par->T,par->num_power,par->num_love,par->num_A); 
+        auto idx_sol = index::index4(t,power_idx_lag,0,0,par->T,par->num_power,par->num_love,par->num_A); 
         double Vw_couple, Vm_couple;
 
         // value of transitioning into singlehood
-        int idx_single = index::index2(t,0,par->T,par->num_A);
+        auto idx_single = index::index2(t,0,par->T,par->num_A);
         double Vw_single = tools::interp_1d(par->grid_Aw,par->num_A,&sol->Vw_trans_single[idx_single],Aw_lag);
         double Vm_single = tools::interp_1d(par->grid_Am,par->num_A,&sol->Vm_trans_single[idx_single],Am_lag);
 
@@ -30,7 +30,7 @@ namespace sim {
             if ((Vm_couple>=Vm_single)){ // woman want to leave
 
                 for (int iP=power_idx_lag+1; iP<par->num_power; iP++){ // increase power of women
-                    int idx = index::index4(t,iP,0,0,par->T,par->num_power,par->num_love,par->num_A); 
+                    auto idx = index::index4(t,iP,0,0,par->T,par->num_power,par->num_love,par->num_A); 
                     tools::interp_2d_2out(par->grid_love,par->grid_A,par->num_love,par->num_A,&sol->Vw_remain_couple[idx],&sol->Vm_remain_couple[idx],love,A_lag, &Vw_couple, &Vm_couple);
                     
                     // check participation constraint
@@ -48,7 +48,7 @@ namespace sim {
             } else { // man want to leave
 
                 for (int iP=power_idx_lag-1; iP>=0; iP--){ // increase power of men
-                    int idx = index::index4(t,iP,0,0,par->T,par->num_power,par->num_love,par->num_A); 
+                    auto idx = index::index4(t,iP,0,0,par->T,par->num_power,par->num_love,par->num_A); 
                     tools::interp_2d_2out(par->grid_love,par->grid_A,par->num_love,par->num_A,&sol->Vw_remain_couple[idx],&sol->Vm_remain_couple[idx],love,A_lag, &Vw_couple, &Vm_couple);
 
                     // check participation constraint
@@ -120,7 +120,7 @@ namespace sim {
                     }
 
                     // update behavior
-                    int idx_sol = index::index4(t,power_idx,0,0,par->T,par->num_power,par->num_love,par->num_A); 
+                    auto idx_sol = index::index4(t,power_idx,0,0,par->T,par->num_power,par->num_love,par->num_A); 
                     if (sim->couple[it]){
                         
                         // optimal consumption allocation if couple
@@ -148,7 +148,7 @@ namespace sim {
                     } else { // single
 
                         // pick relevant solution for single, depending on whether just became single
-                        int idx_sol_single = index::index2(t,0,par->T,par->num_A);
+                        auto idx_sol_single = index::index2(t,0,par->T,par->num_A);
                         double *sol_single_w = &sol->Cw_tot_trans_single[idx_sol_single];
                         double *sol_single_m = &sol->Cm_tot_trans_single[idx_sol_single];
                         if (power_idx_lag<0){

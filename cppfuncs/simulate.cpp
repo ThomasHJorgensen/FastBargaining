@@ -11,13 +11,13 @@ namespace sim {
         
         // a. value of remaining a couple at current power
         double power = 1000.0; // nonsense value
-        int idx_sol = index::couple(t,0,0,0,par); 
+        auto idx_sol = index::couple(t,0,0,0,par); 
         double Vw_couple_to_couple=0.0;
         double Vm_couple_to_couple=0.0;
         tools::interp_3d_2out(par->grid_power,par->grid_love,par->grid_A, par->num_power,par->num_love,par->num_A, &sol->Vw_couple_to_couple[idx_sol],&sol->Vm_couple_to_couple[idx_sol], power_lag,love,A_lag, &Vw_couple_to_couple, &Vm_couple_to_couple);
 
         // b. value of transitioning into singlehood
-        int idx_single = index::single(t,0,par);
+        auto idx_single = index::single(t,0,par);
         double Vw_couple_to_single = tools::interp_1d(par->grid_Aw,par->num_A,&sol->Vw_couple_to_single[idx_single],Aw_lag);
         double Vm_couple_to_single = tools::interp_1d(par->grid_Am,par->num_A,&sol->Vm_couple_to_single[idx_single],Am_lag);
         
@@ -63,7 +63,7 @@ namespace sim {
             int j_love = tools::binary_search(0,par->num_love,par->grid_love,love); 
             int j_A = tools::binary_search(0,par->num_A,par->grid_A,A_lag); 
             for (int iP=0; iP<par->num_power; iP++){ 
-                int idx = 0;
+                long long int idx = 0;
                 if(flip){
                     idx = index::index4(t,par->num_power-1 - iP,0,0,par->T,par->num_power,par->num_love,par->num_A); // flipped for men
                 } else {
@@ -236,7 +236,7 @@ namespace sim {
                     if (sim->couple[it]){
                         
                         // total consumption
-                        int idx_sol = index::index4(t,0,0,0,par->T,par->num_power,par->num_love,par->num_A);
+                        auto idx_sol = index::index4(t,0,0,0,par->T,par->num_power,par->num_love,par->num_A);
                         double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->C_tot_couple_to_couple[idx_sol],power,love,A_lag);
                         double M_resources = couple::resources(A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
@@ -264,7 +264,7 @@ namespace sim {
                     } else { // single
 
                         // pick relevant solution for single, depending on whether just became single
-                        int idx_sol_single = index::index2(t,0,par->T,par->num_A);
+                        auto idx_sol_single = index::index2(t,0,par->T,par->num_A);
                         double *sol_single_w = &sol->Cw_tot_couple_to_single[idx_sol_single];
                         double *sol_single_m = &sol->Cm_tot_couple_to_single[idx_sol_single];
                         if (power_lag<0.0){

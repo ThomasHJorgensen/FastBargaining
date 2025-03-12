@@ -40,7 +40,7 @@ EXPORT void compute_margEV(sol_struct* sol, par_struct* par){
 
         for (int iP=0; iP<par->num_power; iP++){
             for (int iL=0; iL<par->num_love; iL++){
-                int idx = index::couple(t,iP,iL,0,par);
+                auto idx = index::couple(t,iP,iL,0,par);
                 double* EVw = &sol->EVw_start_as_couple[idx];
                 double* EVm = &sol->EVm_start_as_couple[idx];
                 double* EmargV = &sol->EmargV_start_as_couple[idx];

@@ -134,7 +134,7 @@ double interp_1d(double* grid1,int num1 ,double* value1,double xi1){
 } // interp_1d
 
 
-double interp_1d_index_delta(double* grid1,int num1 ,double* value1,double xi1,int j1, int delta_y=1, int idx_y=0, int delta_x=1, int idx_x=0){
+double interp_1d_index_delta(double* grid1,int num1 ,double* value1,double xi1,int j1, long long int delta_y=1, int idx_y=0, long long int delta_x=1, int idx_x=0){
     /* 1d interpolation for one point
         
     Args:

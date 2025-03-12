@@ -183,8 +183,8 @@ namespace single {
 
         // 2. EGM step
         /// setup
-        int idx = index::single(t,0, par);
-        int idx_next = index::single(t+1,0, par);
+        auto idx = index::single(t,0, par);
+        auto idx_next = index::single(t+1,0, par);
         int min_point_A = 0;
 
         for (int iA_pd=0; iA_pd<par->num_A_pd; iA_pd++){
@@ -229,7 +229,7 @@ namespace single {
         int const &num_A = par->num_A;
 
         // set index
-        int idx = index::index2(t,0,par->T,par->num_A);
+        auto idx = index::index2(t,0,par->T,par->num_A);
 
         // gender specific variables
         double* grid_A = par->grid_Aw;
@@ -287,7 +287,7 @@ namespace single {
         // terminal period
         if (t == (par->T-1)){
             for (int iA=0; iA<par->num_A;iA++){
-                int idx = index::single(t,iA,par);
+                auto idx = index::single(t,iA,par);
 
                 double Aw = par->grid_Aw[iA];
                 double Am = par->grid_Am[iA];
@@ -323,7 +323,7 @@ namespace single {
                     // 2. loop over assets
                     #pragma omp for
                     for (int iA=0; iA<par->num_A;iA++){
-                        int idx = index::single(t,iA,par);
+                        auto idx = index::single(t,iA,par);
                         
                         // resources
                         double Aw = par->grid_Aw[iA];
@@ -397,7 +397,7 @@ namespace single {
         {
             #pragma omp for
             for (int iA=0; iA<par->num_A;iA++){
-                int idx = index::single(t,iA,par);
+                auto idx = index::single(t,iA,par);
 
                 sol->Vw_couple_to_single[idx] = sol->Vw_single_to_single[idx] - par->div_cost;
                 sol->Vm_couple_to_single[idx] = sol->Vm_single_to_single[idx] - par->div_cost;
@@ -446,11 +446,11 @@ namespace single {
         }
 
         //interpolate V_single_to_single
-        int idx_single = index::single(t,0,par);
+        auto idx_single = index::single(t,0,par);
         double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_single], A, iA_single); 
 
         // interpolate couple V_single_to_couple  
-        int idx_couple = index::couple(t,0,0,0,par);
+        auto idx_couple = index::couple(t,0,0,0,par);
         double Vstc = tools::_interp_3d(par->grid_power, par->grid_love, par->grid_A, 
                                        par->num_power, par->num_love, par->num_A, 
                                        &V_single_to_couple[idx_couple], power, love, A_tot,
@@ -555,7 +555,7 @@ namespace single {
                     // b.1.3 Value conditional on meeting partner
                     if (power>=0.0){
                         double A_tot = Aw + Am;
-                        int idx_interp = index::couple(t, 0, 0, 0, par);
+                        auto idx_interp = index::couple(t, 0, 0, 0, par);
                         val = tools::interp_3d(par->grid_power, par->grid_love, par->grid_A, 
                                        par->num_power, par->num_love, par->num_A, 
                                        &V_single_to_couple[idx_interp], power, love, A_tot); //TODO: reuse index
@@ -584,7 +584,7 @@ namespace single {
 
                 // a.2. expected value of starting single
                 double p_meet = par->prob_repartner[t];
-                int idx_single = index::single(t,iA,par);
+                auto idx_single = index::single(t,iA,par);
                 sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vw_single_to_single[idx_single];
                 sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vm_single_to_single[idx_single];
 
