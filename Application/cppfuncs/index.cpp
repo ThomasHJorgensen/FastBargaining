@@ -15,6 +15,14 @@ namespace index {
         return i4 + (i3 + (i2 + i1*N2)*N3)*N4;
     }
 
+    long long int index5(long long int i1,long long int i2,long long int i3,long long int i4,long long int i5,long long int N1,long long int N2, long long int N3, long long int N4, long long int N5){
+        return i5 + (i4 + (i3 + (i2 + i1*N2)*N3)*N4)*N5;
+    }
+
+    long long int index6(long long int i1,long long int i2,long long int i3,long long int i4,long long int i5,long long int i6,long long int N1,long long int N2, long long int N3, long long int N4, long long int N5, long long int N6){
+        return i6 + (i5 + (i4 + (i3 + (i2 + i1*N2)*N3)*N4)*N5)*N6;
+    }
+
     // long long int couple(long long int t,long long int iP,long long int iL,long long int iA,par_struct* par){
     //     return index4(t,iP,iL,iA , par->T,par->num_power,par->num_love,par->num_A); 
     // }
