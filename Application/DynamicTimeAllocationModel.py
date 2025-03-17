@@ -65,7 +65,12 @@ class HouseholdModelClass(EconModelClass):
         par.eta_m = 0.5         # curvature on labor supply
 
         par.lambda_w = 0.5      # weight on public good
-        par.lambda_m = 0.5      # weight on public good      
+        par.lambda_m = 0.5      # weight on public good
+
+        # c. Home production
+        par.alpha = 1.0         # output elasticity of hw relative to hm in housework aggregator
+        par.zeta = 0.5             # Substitution paremeter between hw and hm in housework aggregator
+        par.omega = 0.5         # weight on market purchased good in home production function      
         
 
         # c. state variables
