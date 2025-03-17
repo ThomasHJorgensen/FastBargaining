@@ -42,15 +42,15 @@
 #ifndef INDEX
 #include "index.cpp"
 #endif
-// #ifndef UTILS
-// #include "utils.cpp"
-// #endif
+#ifndef UTILS
+#include "utils.cpp"
+#endif
 #ifndef TOOLS
 #include "tools.cpp"
 #endif
-// #ifndef PRECOMPUTE
-// #include "precompute.cpp"
-// #endif
+#ifndef PRECOMPUTE
+#include "precompute.cpp"
+#endif
 // #ifndef BARGAINING
 // #include "bargaining.cpp"
 // #endif

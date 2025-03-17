@@ -40,6 +40,8 @@ class HouseholdModelClass(EconModelClass):
         
         par.div_A_share = 0.5 # divorce share of wealth to wife
         par.div_cost = 0.0
+
+        par.Day = 1.0 # time in day
         
         # a. income
         par.mu_w = 0.5              # level
@@ -77,18 +79,18 @@ class HouseholdModelClass(EconModelClass):
         par.T = 10
         
         # c.1 wealth
-        par.num_A = 10
+        par.num_A = 50
         par.max_A = 15.0
 
         # c.2. human capital
-        par.num_K = 10
+        par.num_K = 50
         par.max_K = par.T*1.5
         
         # c.3 bargaining power
-        par.num_power = 11
+        par.num_power = 21
 
         # c.4 love/match quality
-        par.num_love = 11
+        par.num_love = 41
         par.max_love = 1.0
 
         par.sigma_love = 0.1
@@ -100,8 +102,8 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_A_m = np.array([[np.nan]])
 
         # e. discrete choices
-        par.l_set = np.array([0.0, 0.5, 1.0])
-        par.num_l = len(par.l_set)
+        par.grid_l = np.array([0.0, 0.5, 0.75])
+        par.num_l = len(par.grid_l)
 
 
         # f. pre-computation
@@ -146,8 +148,8 @@ class HouseholdModelClass(EconModelClass):
 
         sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan           # private consumption, single
         sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cw_pub_single_to_single = np.ones(shape_single) + np.nan            # public good, single
-        sol.Cm_pub_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan            # intermediate good, single
+        sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
         sol.Qw_single_to_single = np.ones(shape_single) + np.nan                # home produced good, single
         sol.Qm_single_to_single = np.ones(shape_single) + np.nan
         sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan   # labor supply, single
@@ -173,8 +175,8 @@ class HouseholdModelClass(EconModelClass):
 
         sol.Cw_priv_couple_to_single = np.nan + np.ones(shape_single)   # Private consumption marriage -> single
         sol.Cm_priv_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Cw_pub_couple_to_single = np.nan + np.ones(shape_single)    # Public consumption marriage -> single 
-        sol.Cm_pub_couple_to_single = np.nan + np.ones(shape_single)    # Not used
+        sol.Cw_inter_couple_to_single = np.nan + np.ones(shape_single)    # intermediate consumption marriage -> single 
+        sol.Cm_inter_couple_to_single = np.nan + np.ones(shape_single)    # Not used
         sol.Cw_tot_couple_to_single = np.nan + np.ones(shape_single)
         sol.Cm_tot_couple_to_single = np.nan + np.ones(shape_single)
 
@@ -200,7 +202,7 @@ class HouseholdModelClass(EconModelClass):
 
         sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan           # private consumption, couple
         sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.C_pub_couple_to_couple = np.ones(shape_couple) + np.nan             # public good, couple
+        sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan             # intermediate good, couple
         sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan                 # home produced good, couple
         sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan   # labor supply, couple
         sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
@@ -229,7 +231,7 @@ class HouseholdModelClass(EconModelClass):
                                                                         
         # sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)      
         # sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)      
-        # sol.C_pub_single_to_couple = np.nan + np.ones(shape_couple)        
+        # sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple)        
         # sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple)   
         # sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple) 
   
@@ -248,7 +250,7 @@ class HouseholdModelClass(EconModelClass):
 
         sol.Cw_priv_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
         sol.Cm_priv_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.C_pub_start_as_couple = np.ones(shape_couple) + np.nan              # public good
+        sol.C_inter_start_as_couple = np.ones(shape_couple) + np.nan              # intermediate good
         sol.Q_start_as_couple = np.ones(shape_couple) + np.nan                  # home produced good
         sol.lw_start_as_couple = np.ones(shape_couple, dtype = int) + np.nan    # labor supply
         sol.lm_start_as_couple = np.ones(shape_couple, dtype = int) + np.nan
@@ -261,7 +263,7 @@ class HouseholdModelClass(EconModelClass):
         shape_pre = (par.num_power, par.num_l, par.num_l, par.num_Ctot)
         sol.pre_Cw_priv_couple = np.ones(shape_pre) + np.nan
         sol.pre_Cm_priv_couple = np.ones(shape_pre) + np.nan
-        sol.pre_C_pub_couple = np.ones(shape_pre) + np.nan
+        sol.pre_C_inter_couple = np.ones(shape_pre) + np.nan
         sol.pre_Q_couple = np.ones(shape_pre) + np.nan
         sol.pre_hw_couple = np.ones(shape_pre) + np.nan
         sol.pre_hm_couple = np.ones(shape_pre) + np.nan
@@ -270,8 +272,8 @@ class HouseholdModelClass(EconModelClass):
         shape_pre_single = (par.num_l, par.num_Ctot)
         sol.pre_Cw_priv_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Cm_priv_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cw_pub_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cm_pub_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Cw_inter_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Cm_inter_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Qw_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Qm_single = np.ones(shape_pre_single) + np.nan
         sol.pre_hw_single = np.ones(shape_pre_single) + np.nan

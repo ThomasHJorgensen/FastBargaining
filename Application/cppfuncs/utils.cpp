@@ -5,7 +5,7 @@
 #endif
 
 namespace utils {
-    double util(double c_priv, double lh, double Q, int gender, par_Struct *par, double love){
+    double util(double C_priv, double lh, double Q, int gender, par_struct *par, double love){
         double rho = par->rho_w;
         double phi = par->phi_w;
         double eta = par->eta_w;
@@ -17,7 +17,7 @@ namespace utils {
             lambda = par->lambda_m;
         }
 
-        return pow(c_priv, 1-rho)/(1-rho) - phi*pow(lh, 1+1/eta)/(1 + 1/eta) + lambda*log(Q) + love;
+        return pow(C_priv, 1-rho)/(1-rho) - phi*pow(lh, 1+1/eta)/(1 + 1/eta) + lambda*log(Q) + love;
     }
 
     double util_couple(double Cw_priv, double Cm_priv, double lhw, double lhm, double Q, double power, int iL,par_struct* par){
@@ -29,10 +29,10 @@ namespace utils {
         return power*Uw + (1.0-power)*Um;
     }
 
-    double Q(double c, double hw, double hm, par_struct *par){
+    double Q(double C_pub, double hw, double hm, par_struct *par){
 
         double h_agg = pow(par->alpha*pow(hw, par->zeta) + pow(hm, par->zeta), 1/par->zeta);
-        return pow(c, par->omega) * pow(h_agg, 1.0 - par->omega);
+        return pow(C_pub, par->omega) * pow(h_agg, 1.0 - par->omega);
     }
 
     // double cons_priv_single(double C_tot,int gender,par_struct *par){
