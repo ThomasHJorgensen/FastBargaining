@@ -169,7 +169,7 @@ namespace precompute{
     }
 
 
-    EXPORT double util_C_couple(double C_tot, int iP, int iL, par_struct* par, sol_struct* sol, double* Cw_priv, double* Cm_priv, double start_Cw_priv, double start_Cm_priv){
+    double util_C_couple(double C_tot, int iP, int iL, par_struct* par, sol_struct* sol, double* Cw_priv, double* Cm_priv, double start_Cw_priv, double start_Cm_priv){
         double love = par->grid_love[iL];
         double power = par->grid_power[iP];
         double C_pub = 0.0;
@@ -179,7 +179,7 @@ namespace precompute{
     }
 
 
-    EXPORT double marg_util_C_couple(double C_tot, int iP, par_struct* par, sol_struct* sol, double start_Cw_priv, double start_Cm_priv){
+    double marg_util_C_couple(double C_tot, int iP, par_struct* par, sol_struct* sol, double start_Cw_priv, double start_Cm_priv){
         // baseline utility (could be passed as argument to avoid recomputation of utility at C_tot)
         int iL = 0; // does not matter for the marginal utility   
 
@@ -213,7 +213,7 @@ namespace precompute{
     } // precompute func
 
 
-    EXPORT void precompute(sol_struct* sol, par_struct* par){
+    void precompute(sol_struct* sol, par_struct* par){
         #pragma omp parallel num_threads(par->threads)      
         {   
             // pre-compute optimal allocation for couple
@@ -297,7 +297,7 @@ namespace precompute{
 
     }
 
-    EXPORT double inv_marg_util_couple(double margU, int iP,par_struct* par, sol_struct* sol, double guess_Ctot, double guess_Cw_priv, double guess_Cm_priv,bool do_print=false ){
+    double inv_marg_util_couple(double margU, int iP,par_struct* par, sol_struct* sol, double guess_Ctot, double guess_Cw_priv, double guess_Cm_priv,bool do_print=false ){
         // setup numerical solver
         solver_inv_struct* solver_data = new solver_inv_struct;  
                 
@@ -373,8 +373,8 @@ namespace precompute{
         return diff*diff + penalty;
 
     }
-
-    EXPORT double inv_marg_util_single(double margU, int gender, par_struct* par, double guess = 3.0, bool do_print=false){
+    
+    double inv_marg_util_single(double margU, int gender, par_struct* par, double guess = 3.0, bool do_print=false){
         // setup numerical solver
         solver_inv_struct* solver_data = new solver_inv_struct;  
                 
