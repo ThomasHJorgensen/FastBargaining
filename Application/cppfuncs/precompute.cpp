@@ -134,7 +134,7 @@ namespace precompute{
         // This function is almost identical to one used in pre-computation... to get "util_C_couple"
         if(par->precompute_intratemporal){
             // interpolate pre-computed solution 
-            int idx = index::index2(iP,0,par->num_power,par->num_Ctot); 
+            auto idx = index::index2(iP,0,par->num_power,par->num_Ctot); 
             int j1 = tools::binary_search(0,par->num_Ctot,par->grid_Ctot,C_tot);
 
             Cw_priv[0] = tools::interp_1d_index(par->grid_Ctot,par->num_Ctot,&sol->pre_Ctot_Cw_priv[idx],C_tot,j1);
@@ -153,7 +153,7 @@ namespace precompute{
     void intraperiod_allocation_sim(double* Cw_priv, double* Cm_priv, double* C_pub , double C_tot,double power,sol_struct *sol,par_struct *par){
         if(par->precompute_intratemporal){
             // interpolate pre-computed solution in both power and C_tot, different from solution
-            int idx = index::index2(0,0,par->num_power,par->num_Ctot); 
+            auto idx = index::index2(0,0,par->num_power,par->num_Ctot); 
             tools::interp_2d_2out(par->grid_power,par->grid_Ctot,par->num_power,par->num_Ctot,&sol->pre_Ctot_Cw_priv[idx],&sol->pre_Ctot_Cm_priv[idx],power,C_tot,Cw_priv,Cm_priv);
 
             C_pub[0] = C_tot - Cw_priv[0] - Cm_priv[0];
@@ -199,7 +199,7 @@ namespace precompute{
     void precompute_cons_interp_couple(int i, int iP, par_struct *par, sol_struct *sol){
         
         double C_tot = par->grid_C_for_marg_u[i];
-        int idx = index::index2(iP,i,par->num_power,par->num_marg_u);   
+        auto idx = index::index2(iP,i,par->num_power,par->num_marg_u);   
 
         // calculate marginal utility and inverse marginal utility for EGM
         double start_Cw_priv = C_tot/3.0;
@@ -207,7 +207,7 @@ namespace precompute{
 
         par->grid_marg_u[idx] = marg_util_C_couple(C_tot,iP,par, sol, start_Cw_priv, start_Cm_priv);
 
-        int idx_flip = index::index2(iP,par->num_marg_u-1 - i,par->num_power,par->num_marg_u);
+        auto idx_flip = index::index2(iP,par->num_marg_u-1 - i,par->num_power,par->num_marg_u);
         par->grid_marg_u_for_inv[idx_flip] = par->grid_marg_u[idx];
 
     } // precompute func
@@ -222,14 +222,14 @@ namespace precompute{
                 for (int i=0; i<par->num_Ctot; i++){  
                     double C_tot = par->grid_Ctot[i];
                     for (int iP=0; iP < par->num_power; iP++){
-                        int idx = index::index2(iP,i,par->num_power,par->num_Ctot);         
+                        auto idx = index::index2(iP,i,par->num_power,par->num_Ctot);         
 
                         double start_Cm_priv = C_tot/3.0;
                         double start_Cw_priv = C_tot/3.0;
                         double ftol = 1.0e-10;
                         double xtol = 1.0e-9;
                         if (iP>1){ //Note: using previous starting values does not work super well for iP=1
-                            int idx_minus = index::index2(iP-1,i,par->num_power,par->num_Ctot);
+                            auto idx_minus = index::index2(iP-1,i,par->num_power,par->num_Ctot);
                             start_Cm_priv = sol->pre_Ctot_Cm_priv[idx_minus];
                             start_Cw_priv = sol->pre_Ctot_Cw_priv[idx_minus];
                             ftol = 1.0e-6;

@@ -54,7 +54,7 @@ int binary_search(int imin, int Nx, double *x, double xi)
 }
 
 
-int binary_search_over_descending_function(int idx, int Nx, double *x, double target)
+int binary_search_over_descending_function(long long int idx, int Nx, double *x, double target)
 {
 /**
  * The function performs a binary search over a descending array to find the index of the element
@@ -134,7 +134,7 @@ double interp_1d(double* grid1,int num1 ,double* value1,double xi1){
 } // interp_1d
 
 
-double interp_1d_index_delta(double* grid1,int num1 ,double* value1,double xi1,int j1, long long int delta_y=1, int idx_y=0, long long int delta_x=1, int idx_x=0){
+double interp_1d_index_delta(double* grid1,int num1 ,double* value1,double xi1,long long int j1, long long int delta_y=1, long long int idx_y=0, long long int delta_x=1, long long int idx_x=0){
     /* 1d interpolation for one point
         
     Args:
@@ -272,7 +272,7 @@ double _interp_2d(double* grid1,double* grid2,int num1, int num2,double* value,d
             double nom_2 = nom_2_left;
             if (k2==1){ nom_2 = nom_2_right;}
 
-            int idx = index::index2(j1+k1,j2+k2,num1,num2);
+            auto idx = index::index2(j1+k1,j2+k2,num1,num2);
             nom += nom_1*nom_2*value[idx]; //value[(j1+k1)*num2 + j2+k2];
         }
     }
@@ -313,7 +313,7 @@ double interp_2d_int(double* grid1,double* grid2,int num1, int num2,int* value,d
             double nom_2 = nom_2_left;
             if (k2==1){ nom_2 = nom_2_right;}
 
-            int idx = index::index2(j1+k1,j2+k2,num1,num2);
+            auto idx = index::index2(j1+k1,j2+k2,num1,num2);
             nom += nom_1*nom_2*(double)value[idx]; //value[(j1+k1)*num2 + j2+k2];
         }
     }
@@ -348,7 +348,7 @@ double _interp_3d(double* grid1,double* grid2,double* grid3,int num1, int num2, 
                 double nom_3 = nom_3_left;
                 if (k3==1){ nom_3 = nom_3_right;}            
 
-                int idx = index::index3(j1+k1,j2+k2,j3+k3, num1,num2, num3);   
+                auto idx = index::index3(j1+k1,j2+k2,j3+k3, num1,num2, num3);   
                 nom += nom_1*nom_2*nom_3*value[idx];
             }
         }
@@ -398,7 +398,7 @@ void _interp_3d_2out(double* grid1,double* grid2,double* grid3,int num1, int num
                 if (k3==1){ nom_3 = nom_3_right;}      
                 double scale = nom_1*nom_2*nom_3;      
 
-                int idx = index::index3(j1+k1,j2+k2,j3+k3, num1,num2, num3);   
+                auto idx = index::index3(j1+k1,j2+k2,j3+k3, num1,num2, num3);   
                 nom1 += scale*value1[idx];
                 nom2 += scale*value2[idx];
             }
@@ -463,7 +463,7 @@ double _interp_4d(double* grid1,double* grid2,double* grid3,double* grid4,int nu
                     double nom_4 = nom_4_left;
                     if (k4==1){ nom_4 = nom_4_right;}         
 
-                    int idx = index::index4(j1+k1,j2+k2,j3+k3,j4+k4, num1,num2, num3,num4);   
+                    auto idx = index::index4(j1+k1,j2+k2,j3+k3,j4+k4, num1,num2, num3,num4);   
                     nom += nom_1*nom_2*nom_3*nom_4*value[idx];
                 }
             }
