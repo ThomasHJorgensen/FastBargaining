@@ -29,10 +29,10 @@ namespace utils {
         return power*Uw + (1.0-power)*Um;
     }
 
-    double Q(double C_pub, double hw, double hm, par_struct *par){
+    double Q(double C_inter, double hw, double hm, par_struct *par){
 
         double h_agg = pow(par->alpha*pow(hw, par->zeta) + pow(hm, par->zeta), 1/par->zeta);
-        return pow(C_pub, par->omega) * pow(h_agg, 1.0 - par->omega);
+        return pow(C_inter, par->omega) * pow(h_agg, 1.0 - par->omega);
     }
 
     // double cons_priv_single(double C_tot,int gender,par_struct *par){
