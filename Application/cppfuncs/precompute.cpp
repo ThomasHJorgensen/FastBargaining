@@ -6,11 +6,13 @@
 namespace precompute{
 
     typedef struct { 
+    double lw;
+    double lm; 
     double power;
     double C_tot;
 
     par_struct *par;
-    } solver_precompute_struct;
+    } solver_precompute_couple_struct;
 
     typedef struct {
         double C_tot;
@@ -20,7 +22,7 @@ namespace precompute{
         par_struct *par;
     } solver_precompute_single_struct;
 
-
+    ////////////////////////////// Single precompute functions //////////////////////////////
     double objfunc_precompute_single(unsigned n, const double *x, double *grad, void *solver_data_in){
         // unpack
         solver_precompute_single_struct *solver_data = (solver_precompute_single_struct *) solver_data_in;
@@ -177,6 +179,143 @@ namespace precompute{
 
         auto idx_inv = index::index2(il, par->num_marg_u-1 - i_marg_u, par->num_l, par->num_marg_u);
         grid_marg_u_single_for_inv[idx_inv] = grid_marg_u_single[i_marg_u];
+    }
+
+    ////////////////////////////// Couple precompute functions //////////////////////////////
+    // obj_precompute_couple
+    // solve_intraperiod_couple
+    // intraperiod_allocation_couple
+    // util_C_couple
+    // precompute_cons_interp_couple
+
+    double objfunc_precompute_couple(unsigned n, const double *x, double *grad, void *solver_data_in){
+        // unpack
+        solver_precompute_couple_struct *solver_data = (solver_precompute_couple_struct *) solver_data_in;
+        double C_tot = solver_data->C_tot;
+        double power = solver_data->power;
+        double lw = solver_data->lw;
+        double lm = solver_data->lm;
+        par_struct *par = solver_data->par;
+
+        // four dimensions! let's go
+        double Cw_priv = x[0];
+        double Cm_priv = x[1];
+        double hw = x[2];
+        double hm = x[3];
+
+        // total hours
+        double hlw = hw + lw;
+        double hlm = hm + lm;
+
+        // home production
+        double C_inter = C_tot - Cw_priv - Cm_priv;
+        double Q = utils::Q(C_inter, hw, hm, par);
+
+        // clip and penalty
+        double penalty = 0.0;
+        if(Cw_priv < 1.0e-8){
+            penalty += 1000.0*(Cw_priv*Cw_priv);
+            Cw_priv = 1.0e-6;
+        }
+        if(Cm_priv < 1.0e-8){
+            penalty += 1000.0*(Cm_priv*Cm_priv);
+            Cm_priv = 1.0e-6;
+        }
+        if(hw < 1.0e-8){
+            penalty += 1000.0*(hw*hw);
+            hw = 1.0e-6;
+        }
+        if(hm < 1.0e-8){
+            penalty += 1000.0*(hm*hm);
+            hm = 1.0e-6;
+        }
+
+        // time constraint
+        if(hlw >= par->Day){
+            penalty += 1000.0*(hlw - par->Day)*(hlw - par->Day);
+            hw = par->Day - lw - 1.0e-6;
+        }
+        if(hlm >= par->Day){
+            penalty += 1000.0*(hlm - par->Day)*(hlm - par->Day);
+            hm = par->Day - lm - 1.0e-6;
+        }
+
+        // consumption constraint
+        if(C_inter < 1.0e-8){
+            penalty += 1000.0*(C_inter*C_inter);
+            C_inter = 1.0e-6;
+        }
+
+        // utility of choice
+        double uw = utils::util(Cw_priv, hlw, Q, woman, par, 0.0); // love not important for intratemporal allocation
+        double um = utils::util(Cm_priv, hlm, Q, man, par, 0.0); 
+        double val = power*uw + (1.0-power)*um;
+
+        // return negative of value
+        return - val + penalty;
+
+    }
+
+    EXPORT void solve_intraperiod_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, 
+                double C_tot, double lw, double lm, double power, par_struct* par, 
+                double ftol = 1.0e-6, double xtol = 1.0e-5){
+        // setup numerical solver
+        solver_precompute_couple_struct* solver_data = new solver_precompute_couple_struct;
+
+        int const dim = 4;
+        double lb[dim], ub[dim], x[dim];
+
+        auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
+        double minf = 0.0;
+
+        // settings
+        solver_data->C_tot = C_tot;
+        solver_data->lw = lw;
+        solver_data->lm = lm;
+        solver_data->power = power;
+        solver_data->par = par;
+
+        nlopt_set_min_objective(opt, objfunc_precompute_couple, solver_data);
+        nlopt_set_maxeval(opt, 2000);
+        nlopt_set_ftol_rel(opt, ftol);
+        nlopt_set_xtol_rel(opt, xtol);
+
+        // bounds
+        lb[0] = 1.0e-6; // Cw_priv
+        ub[0] = C_tot;
+
+        lb[1] = 1.0e-6; // Cm_priv
+        ub[1] = C_tot;
+
+        lb[2] = 1.0e-6; // hw
+        ub[2] = par->Day - lw;
+
+        lb[3] = 1.0e-6; // hm
+        ub[3] = par->Day - lm;
+
+        // may need to adjust in the cases where l = 1
+
+        nlopt_set_lower_bounds(opt, lb);
+        nlopt_set_upper_bounds(opt, ub);
+
+        // initial guess
+        x[0] = C_tot/3.0;
+        x[1] = C_tot/3.0;
+        x[2] = (par->Day - lw)/2.0;
+        x[3] = (par->Day - lm)/2.0;
+
+        // run optimizer!
+        nlopt_optimize(opt, x, &minf);
+
+        // unpack
+        *Cw_priv = x[0];
+        *Cm_priv = x[1];
+        *hw = x[2];
+        *hm = x[3];
+
+        // free memory
+        nlopt_destroy(opt);
+        delete solver_data;
     }
 
     // double objfunc_precompute(unsigned n, const double *x, double *grad, void *solver_data_in){
@@ -366,6 +505,29 @@ namespace precompute{
                     solve_intraperiod_single(&sol->pre_Cw_priv_single[idx], &sol->pre_hw_single[idx], &sol->pre_Cw_inter_single[idx], &sol->pre_Qw_single[idx], C_tot, l, &start_C_priv, &start_h, woman, par);
                     } //C_tot
                 } // labor supply
+
+            for(int ilw=0; ilw<par->num_l; ilw++){
+                double lw = par->grid_l[ilw];
+
+                for(int ilm=0; ilm<par->num_l; ilm++){
+                    double lm = par->grid_l[ilm];
+
+                    #pragma omp for
+                    for(int iC=0; iC<par->num_Ctot; iC++){
+                        double C_tot = par->grid_Ctot[iC];
+
+                        for(int iP=0; iP<par->num_power; iP++){
+                            double power = par->grid_power[iP];
+
+                            auto idx = index::index4(ilw, ilm, iC, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power);
+                            solve_intraperiod_couple(&sol->pre_Cw_priv_couple[idx], &sol->pre_Cm_priv_couple[idx], &sol->pre_hw_couple[idx], &sol->pre_hm_couple[idx], 
+                                C_tot, lw, lm, power, par,
+                                1.0e-8, 1.0e-7);
+
+                        } //power
+                    } // Ctot
+                } //lm
+            } //lw
 
             // // pre-compute optimal allocation for couple
             // if(par->precompute_intratemporal){    
