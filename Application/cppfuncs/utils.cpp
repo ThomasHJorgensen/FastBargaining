@@ -33,6 +33,11 @@ namespace utils {
 
         double h_agg = pow(par->alpha*pow(hw, par->zeta) + pow(hm, par->zeta), 1/par->zeta);
         return pow(C_inter, par->omega) * pow(h_agg, 1.0 - par->omega);
+
+        // // alternative formulation - useful for testing, but should remain commented out
+        // double sub = 0.5;
+        // double inner = (pow(h_agg, sub) + pow(C_inter, sub));
+        // return pow(inner, 1.0/sub);
     }
 
     // double cons_priv_single(double C_tot,int gender,par_struct *par){

@@ -113,6 +113,72 @@ namespace precompute{
         delete solver_data;
     }
 
+    void intraperiod_allocation_single(double* C_priv, double* h, double* C_inter, double* Q, double C_tot, int il, int gender, par_struct *par, sol_struct *sol, bool interpolate = true){
+
+        double l = par->grid_l[il];
+        
+        if(interpolate){ // interpolate pre-computed solution
+            auto idx = index::index2(il,0,par->num_l,par->num_Ctot);
+
+            double* C_priv_grid = sol->pre_Cm_priv_single;
+            double* h_grid = sol->pre_hm_single;
+            double* C_inter_grid = sol->pre_Cm_inter_single;
+            if(gender == woman) {
+                C_priv_grid = sol->pre_Cw_priv_single;
+                h_grid = sol->pre_hw_single;
+                C_inter_grid = sol->pre_Cw_inter_single;
+            }
+
+            *C_priv = tools::interp_1d(par->grid_Ctot, par->num_Ctot, &C_priv_grid[idx], C_tot);
+            *h = tools::interp_1d(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot);
+            *C_inter = C_tot - *C_priv;
+            if(gender==man){
+                *Q = utils::Q(*C_inter, *h, 0, par);
+            } 
+            else {
+                *Q = utils::Q(*C_inter, 0, *h, par);
+            }
+        } 
+        else { // solve intraperiod problem for single numerically
+            double start_c_priv = C_tot/2.0;
+            double start_h = (par->Day - l)/2.0;
+            solve_intraperiod_single(C_priv, h, C_inter, Q, C_tot, l, &start_c_priv, &start_h, gender, par);
+        }
+    }
+
+    double util_C_single(double C_tot, int il, int gender, par_struct *par, sol_struct *sol, bool interpolate = true){ //
+        // closed form solution for intra-period problem of single
+        double l = par->grid_l[il];
+        double C_priv = 0.0;
+        double h = 0.0;
+        double C_inter = 0.0;
+        double Q = 0.0;
+        intraperiod_allocation_single(&C_priv, &h, &C_inter, &Q, C_tot, il, gender, par, sol, interpolate);
+
+        return utils::util(C_priv, l+h, Q, gender, par, 0.0); // love = 0.0
+    }
+
+
+    void precompute_cons_interp_single(int i_marg_u, int il, int gender, par_struct *par, sol_struct *sol, bool interpolate = true){ 
+        // get baseline utility
+        double* grid_marg_u_single = par->grid_marg_u_single_w;
+        double* grid_marg_u_single_for_inv = par->grid_marg_u_single_w_for_inv;
+        if(gender==man){
+            grid_marg_u_single = par->grid_marg_u_single_m;
+            grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
+        }
+
+        double delta = 0.0001;
+        double util = util_C_single(par->grid_C_for_marg_u[i_marg_u], il, gender, par, sol, interpolate);
+        double util_delta = util_C_single(par->grid_C_for_marg_u[i_marg_u] + delta, il, gender, par, sol, interpolate);
+
+        auto idx = index::index2(il, i_marg_u, par->num_l, par->num_marg_u);
+        grid_marg_u_single[idx] = (util_delta - util)/delta;
+
+        auto idx_inv = index::index2(il, par->num_marg_u-1 - i_marg_u, par->num_l, par->num_marg_u);
+        grid_marg_u_single_for_inv[idx_inv] = grid_marg_u_single[i_marg_u];
+    }
+
     // double objfunc_precompute(unsigned n, const double *x, double *grad, void *solver_data_in){
     //     // unpack
     //     solver_precompute_struct *solver_data = (solver_precompute_struct *) solver_data_in; 
@@ -320,6 +386,7 @@ namespace precompute{
             // pre-compute optimal allocation for single
             for (int il=0; il<par->num_l; il++){
                 double l = par->grid_l[il];
+                # pragma omp for
                 for (int iC=0; iC<par->num_Ctot; iC++){  
                     double C_tot = par->grid_Ctot[iC];
                     auto idx = index::index2(il,iC,par->num_l,par->num_Ctot);
@@ -357,18 +424,21 @@ namespace precompute{
             // }
         
             // pre-compute marginal utilities and consumption interpolator for EGM
-            // if( (par->do_egm) & (strcmp(par->interp_method,"numerical")!=0)){
-            //     #pragma omp for
-            //     for (int i=0; i<par->num_marg_u; i++){ 
-            //         precompute_cons_interp_single(i, woman, par);
-            //         precompute_cons_interp_single(i, man, par);
-            //         for (int iP=0; iP < par->num_power; iP++){
-            //             precompute_cons_interp_couple(i, iP, par, sol);
-            //         } // power
-            //     } //Ctot
-            // } // do_egm
+            if(strcmp(par->interp_method,"numerical")!=0){
+                for (int il=0; il<par->num_l; il++){
+                    #pragma omp for
+                    for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
+                        bool interpolate = false;
+                        precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
+                        precompute_cons_interp_single(i_marg_u, il, man, par, sol, interpolate);
+                        // for (int iP=0; iP < par->num_power; iP++){
+                        //     precompute_cons_interp_couple(i, iP, par, sol);
+                        // } // power
+                    } //Ctot
+                } // labor supply
+            } // interp method
         } // parallel
-    } // precompute func
+    } // precompute
 
     // numerical inverse marginal utility
     // typedef struct { 

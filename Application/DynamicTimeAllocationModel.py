@@ -278,6 +278,21 @@ class HouseholdModelClass(EconModelClass):
         sol.pre_Qm_single = np.ones(shape_pre_single) + np.nan
         sol.pre_hw_single = np.ones(shape_pre_single) + np.nan
         sol.pre_hm_single = np.ones(shape_pre_single) + np.nan
+
+
+        # d. Precomputed intertemporal solution
+        # d.1. couple
+        # TBD
+
+        # d.2. single
+        shape_pre_single = (par.num_l, par.num_marg_u)
+        par.grid_marg_u_single_w = np.ones(shape_pre_single) + np.nan
+        par.grid_marg_u_single_m = np.ones(shape_pre_single) + np.nan
+        par.grid_marg_u_single_w_for_inv = np.ones(shape_pre_single) + np.nan
+        par.grid_marg_u_single_m_for_inv = np.ones(shape_pre_single) + np.nan
+
+        # d.3 Common
+        par.grid_C_for_marg_u = nonlinspace(1.0e-5,par.max_Ctot,par.num_marg_u,1.1)    # Consumption interpolator grid
     
 
         # d. simulation
