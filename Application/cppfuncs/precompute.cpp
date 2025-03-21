@@ -131,8 +131,10 @@ namespace precompute{
                 C_inter_grid = sol->pre_Cw_inter_single;
             }
 
-            *C_priv = tools::interp_1d(par->grid_Ctot, par->num_Ctot, &C_priv_grid[idx], C_tot);
-            *h = tools::interp_1d(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot);
+            int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
+
+            *C_priv = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &C_priv_grid[idx], C_tot, iC);
+            *h = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot, iC);
             *C_inter = C_tot - *C_priv;
             if(gender==man){
                 *Q = utils::Q(*C_inter, *h, 0, par);
@@ -182,11 +184,6 @@ namespace precompute{
     }
 
     ////////////////////////////// Couple precompute functions //////////////////////////////
-    // obj_precompute_couple
-    // solve_intraperiod_couple
-    // intraperiod_allocation_couple
-    // util_C_couple
-    // precompute_cons_interp_couple
 
     double objfunc_precompute_couple(unsigned n, const double *x, double *grad, void *solver_data_in){
         // unpack
@@ -318,6 +315,61 @@ namespace precompute{
         delete solver_data;
     }
 
+    void intraperiod_allocation_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, 
+        int ilw, int ilm, double C_tot, double power, 
+        par_struct* par, sol_struct* sol, bool interpolate = true){
+        if(interpolate){
+            // interpolate pre-computed solution
+            int idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_Ctot, par->num_power);
+            int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
+            int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
+
+            *Cw_priv = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_Cw_priv_couple[idx], C_tot, power, iC, iP);
+            *Cm_priv = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_Cm_priv_couple[idx], C_tot, power, iC, iP);
+            *hw = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_hw_couple[idx], C_tot, power, iC, iP);
+            *hm = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_hm_couple[idx], C_tot, power, iC, iP);
+
+        } else {
+
+            double lw = par->grid_l[ilw];
+            double lm = par->grid_l[ilm];
+            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_tot, lw, lm, power, par);
+        }
+
+    }
+
+    EXPORT double util_C_couple(double C_tot, int ilw, int ilm, double power, double love, 
+        par_struct *par, sol_struct *sol, bool interpolate = true){
+
+        double lw = par->grid_l[ilw];
+        double lm = par->grid_l[ilm];
+        double Cw_priv = 0.0;
+        double Cm_priv = 0.0;
+        double hw = 0.0;
+        double hm = 0.0;
+        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, ilw, ilm, C_tot, power, par, sol, interpolate);
+
+        double C_inter = C_tot - Cw_priv - Cm_priv;
+        double Q = utils::Q(C_inter, hw, hm, par);
+
+        double uw = utils::util(Cw_priv, lw+hw, Q, woman, par, love);
+        double um = utils::util(Cm_priv, lm+hm, Q, man, par, love);
+
+        return power*uw + (1.0-power)*um;
+    }
+
+    void precompute_cons_interp_couple(int i_marg_u, int iP, int ilw, int ilm, par_struct *par, sol_struct *sol, bool interpolate = true){
+
+        double delta = 0.0001;
+        double util = util_C_couple(par->grid_C_for_marg_u[i_marg_u], ilw, ilm, par->grid_power[iP], 0.0, par, sol, interpolate);
+        double util_delta = util_C_couple(par->grid_C_for_marg_u[i_marg_u] + delta, ilw, ilm, par->grid_power[iP], 0.0, par, sol, interpolate);
+
+        auto idx = index::index4(ilw, ilm, i_marg_u, iP, par->num_l, par->num_l, par->num_marg_u, par->num_power);
+        par->grid_marg_u_couple[idx] = (util_delta - util)/delta;
+
+        int idx_inv = index::index4(ilw, ilm, par->num_marg_u-1 - i_marg_u, par->num_power, par->num_l, par->num_l, par->num_marg_u, par->num_power);
+        par->grid_marg_u_couple_for_inv[idx_inv] = par->grid_marg_u_couple[idx];
+    }
     // double objfunc_precompute(unsigned n, const double *x, double *grad, void *solver_data_in){
     //     // unpack
     //     solver_precompute_struct *solver_data = (solver_precompute_struct *) solver_data_in; 
@@ -555,6 +607,7 @@ namespace precompute{
         
             // pre-compute marginal utilities and consumption interpolator for EGM
             if(strcmp(par->interp_method,"numerical")!=0){
+                // singles
                 for (int il=0; il<par->num_l; il++){
                     #pragma omp for
                     for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
@@ -566,6 +619,19 @@ namespace precompute{
                         // } // power
                     } //Ctot
                 } // labor supply
+
+                // couples
+                for(int ilw=0; ilw<par->num_l; ilw++){
+                    for(int ilm=0; ilm<par->num_l; ilm++){
+                        #pragma omp for
+                        for(int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){
+                            for(int iP=0; iP<par->num_power; iP++){
+                                bool interpolate = true; // this tends to be unstable when resolve numerically
+                                precompute_cons_interp_couple(i_marg_u, iP, ilw, ilm, par, sol, interpolate);
+                            } //power
+                        } //Ctot
+                    } //lm
+                } //lw
             } // interp method
         } // parallel
     } // precompute

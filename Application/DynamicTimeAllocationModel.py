@@ -282,7 +282,9 @@ class HouseholdModelClass(EconModelClass):
 
         # d. Precomputed intertemporal solution
         # d.1. couple
-        # TBD
+        shape_pre_couple = (par.num_l, par.num_l, par.num_marg_u, par.num_power)
+        par.grid_marg_u_couple = np.ones(shape_pre_couple) + np.nan
+        par.grid_marg_u_couple_for_inv = np.ones(shape_pre_couple) + np.nan
 
         # d.2. single
         shape_pre_single = (par.num_l, par.num_marg_u)
@@ -368,8 +370,8 @@ class HouseholdModelClass(EconModelClass):
 
         # a.3 power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)
-        first_part = nonlinspace(0.0,0.5,(par.num_power+odd_num)//2,1.3)
-        last_part = np.flip(1.0 - nonlinspace(0.0,0.5,(par.num_power-odd_num)//2 + 1,1.3))[1:]
+        first_part = nonlinspace(1e-6,0.5,(par.num_power+odd_num)//2,1.3)
+        last_part = np.flip(1.0 - nonlinspace(1e-6,0.5,(par.num_power-odd_num)//2 + 1,1.3))[1:]
         par.grid_power = np.append(first_part,last_part)
         par.grid_power_flip = np.flip(par.grid_power) # flip for men
 
