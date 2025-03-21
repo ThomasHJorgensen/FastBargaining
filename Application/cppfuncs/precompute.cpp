@@ -253,7 +253,7 @@ namespace precompute{
 
     }
 
-    EXPORT void solve_intraperiod_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, 
+    EXPORT void solve_intraperiod_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
                 double C_tot, double lw, double lm, double power, par_struct* par, 
                 double ftol = 1.0e-6, double xtol = 1.0e-5){
         // setup numerical solver
@@ -282,7 +282,7 @@ namespace precompute{
         ub[0] = C_tot;
 
         lb[1] = 1.0e-6; // Cm_priv
-        ub[1] = C_tot;
+        ub[1] = C_tot; 
 
         lb[2] = 1.0e-6; // hw
         ub[2] = par->Day - lw;
@@ -310,12 +310,15 @@ namespace precompute{
         *hw = x[2];
         *hm = x[3];
 
+        *C_inter = C_tot - *Cw_priv - *Cm_priv;
+        *Q = utils::Q(*C_inter, *hw, *hm, par);
+
         // free memory
         nlopt_destroy(opt);
         delete solver_data;
     }
 
-    void intraperiod_allocation_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, 
+    void intraperiod_allocation_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
         int ilw, int ilm, double C_tot, double power, 
         par_struct* par, sol_struct* sol, bool interpolate = true){
         if(interpolate){
@@ -328,13 +331,16 @@ namespace precompute{
             *Cm_priv = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_Cm_priv_couple[idx], C_tot, power, iC, iP);
             *hw = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_hw_couple[idx], C_tot, power, iC, iP);
             *hm = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_hm_couple[idx], C_tot, power, iC, iP);
+            *C_inter = C_tot - *Cw_priv - *Cm_priv;
+            *Q = utils::Q(*C_inter, *hw, *hm, par);
 
         } else {
 
             double lw = par->grid_l[ilw];
             double lm = par->grid_l[ilm];
-            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_tot, lw, lm, power, par);
+            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power, par);
         }
+
 
     }
 
@@ -347,10 +353,12 @@ namespace precompute{
         double Cm_priv = 0.0;
         double hw = 0.0;
         double hm = 0.0;
-        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, ilw, ilm, C_tot, power, par, sol, interpolate);
 
-        double C_inter = C_tot - Cw_priv - Cm_priv;
-        double Q = utils::Q(C_inter, hw, hm, par);
+        double C_inter = 0.0; // C_tot - Cw_priv - Cm_priv;
+        double Q = 0.0; // utils::Q(C_inter, hw, hm, par);
+
+        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q, ilw, ilm, C_tot, power, par, sol, interpolate);
+
 
         double uw = utils::util(Cw_priv, lw+hw, Q, woman, par, love);
         double um = utils::util(Cm_priv, lm+hm, Q, man, par, love);
@@ -573,6 +581,7 @@ namespace precompute{
 
                             auto idx = index::index4(ilw, ilm, iC, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power);
                             solve_intraperiod_couple(&sol->pre_Cw_priv_couple[idx], &sol->pre_Cm_priv_couple[idx], &sol->pre_hw_couple[idx], &sol->pre_hm_couple[idx], 
+                                &sol->pre_C_inter_couple[idx], &sol->pre_Q_couple[idx],
                                 C_tot, lw, lm, power, par,
                                 1.0e-8, 1.0e-7);
 
