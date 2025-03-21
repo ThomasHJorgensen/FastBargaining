@@ -61,7 +61,7 @@ namespace single {
     }
 
 
-    EXPORT void handle_liquidity_constraint_single_to_single(int t, int gender, double* m_vec, double* C_tot, double* C_priv, double* C_pub, double* V, double* EV_next, sol_struct* sol, par_struct* par){
+    void handle_liquidity_constraint_single_to_single(int t, int gender, double* m_vec, double* C_tot, double* C_priv, double* C_pub, double* V, double* EV_next, sol_struct* sol, par_struct* par){
         // 1. Check if liquidity constraint binds
         // constraint: binding if common m is smaller than smallest m in endogenous grid
         double* grid_A = par->grid_Aw;
