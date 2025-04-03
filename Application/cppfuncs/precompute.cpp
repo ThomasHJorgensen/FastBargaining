@@ -255,6 +255,7 @@ namespace precompute{
 
     EXPORT void solve_intraperiod_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
                 double C_tot, double lw, double lm, double power, par_struct* par, 
+                double start_Cw_priv, double start_Cm_priv, double start_hw, double start_hm,
                 double ftol = 1.0e-6, double xtol = 1.0e-5){
         // setup numerical solver
         solver_precompute_couple_struct* solver_data = new solver_precompute_couple_struct;
@@ -296,10 +297,10 @@ namespace precompute{
         nlopt_set_upper_bounds(opt, ub);
 
         // initial guess
-        x[0] = C_tot/3.0;
-        x[1] = C_tot/3.0;
-        x[2] = (par->Day - lw)/2.0;
-        x[3] = (par->Day - lm)/2.0;
+        x[0] = start_Cw_priv;
+        x[1] = start_Cm_priv;
+        x[2] = start_hw;
+        x[3] = start_hm;
 
         // run optimizer!
         nlopt_optimize(opt, x, &minf);
@@ -338,7 +339,15 @@ namespace precompute{
 
             double lw = par->grid_l[ilw];
             double lm = par->grid_l[ilm];
-            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power, par);
+
+            //starting values - can maybe be smarter here if we need to
+            double start_Cw_priv = C_tot/3.0;
+            double start_Cm_priv = C_tot/3.0;
+            double start_hw = (par->Day - (lw-1e-6))/2.0;
+            double start_hm = (par->Day - (lm-1e-6))/2.0;
+
+            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power, par, 
+                start_Cw_priv, start_Cm_priv, start_hw, start_hm);
         }
 
 
@@ -386,16 +395,23 @@ namespace precompute{
             // pre-compute optimal allocation for single
             for (int il=0; il<par->num_l; il++){
                 double l = par->grid_l[il];
+
+                double start_hw = (par->Day - (l-1e-6))/2.0;
+                double start_hm = (par->Day - (l-1e-6))/2.0;
+
                 # pragma omp for
-                for (int iC=0; iC<par->num_Ctot; iC++){  
+                for (int iC=par->num_Ctot - 1; iC>=0; iC--){  //solve in descending order to have correct starting values for h in first grid point
                     double C_tot = par->grid_Ctot[iC];
                     auto idx = index::index2(il,iC,par->num_l,par->num_Ctot);
 
                     double start_C_priv = C_tot/2.0;
-                    double start_h = (par->Day - (l-1e-6))/2.0;
 
-                    solve_intraperiod_single(&sol->pre_Cm_priv_single[idx], &sol->pre_hm_single[idx], &sol->pre_Cm_inter_single[idx], &sol->pre_Qm_single[idx], C_tot, l, &start_C_priv, &start_h, man, par);
-                    solve_intraperiod_single(&sol->pre_Cw_priv_single[idx], &sol->pre_hw_single[idx], &sol->pre_Cw_inter_single[idx], &sol->pre_Qw_single[idx], C_tot, l, &start_C_priv, &start_h, woman, par);
+                    solve_intraperiod_single(&sol->pre_Cm_priv_single[idx], &sol->pre_hm_single[idx], &sol->pre_Cm_inter_single[idx], &sol->pre_Qm_single[idx], C_tot, l, &start_C_priv, &start_hm, man, par);
+                    solve_intraperiod_single(&sol->pre_Cw_priv_single[idx], &sol->pre_hw_single[idx], &sol->pre_Cw_inter_single[idx], &sol->pre_Qw_single[idx], C_tot, l, &start_C_priv, &start_hw, woman, par);
+
+                    start_hw = sol->pre_hm_single[idx]; //update starting values for h
+                    start_hm = sol->pre_hm_single[idx];
+
                     } //C_tot
                 } // labor supply
 
@@ -406,19 +422,30 @@ namespace precompute{
                 for(int ilm=0; ilm<par->num_l; ilm++){
                     double lm = par->grid_l[ilm];
 
+                    double start_hw = (par->Day - (lw-1e-6))/2.0;
+                    double start_hm = (par->Day - (lm-1e-6))/2.0;
+
                     #pragma omp for
-                    for(int iC=0; iC<par->num_Ctot; iC++){
+                    for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
+                        
                         double C_tot = par->grid_Ctot[iC];
+                        double start_Cw_priv = C_tot/3.0;
+                        double start_Cm_priv = C_tot/3.0;
 
                         for(int iP=0; iP<par->num_power; iP++){
                             double power = par->grid_power[iP];
+
+                            if(C_tot<1.0){ // reuse staring values when Ctot is low
+                                start_hw = sol->pre_hw_couple[index::index4(ilw, ilm, iC+1, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power)];
+                                start_hm = sol->pre_hm_couple[index::index4(ilw, ilm, iC+1, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power)];
+                            }
 
                             auto idx = index::index4(ilw, ilm, iC, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power);
                             solve_intraperiod_couple(&sol->pre_Cw_priv_couple[idx], &sol->pre_Cm_priv_couple[idx], &sol->pre_hw_couple[idx], &sol->pre_hm_couple[idx], 
                                 &sol->pre_C_inter_couple[idx], &sol->pre_Q_couple[idx],
                                 C_tot, lw, lm, power, par,
+                                start_Cw_priv, start_Cm_priv, start_hw, start_hm,
                                 1.0e-8, 1.0e-7);
-
                         } //power
                     } // Ctot
                 } //lm
