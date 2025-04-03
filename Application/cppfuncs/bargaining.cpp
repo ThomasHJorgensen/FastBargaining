@@ -382,7 +382,7 @@ namespace bargaining {
     int initial_weight(double* Sw,double* Sm,par_struct* par){
     // determine the initial bargaining weight. On grid for simplicity.
     double min = HUGE_VAL;
-    int idx_power = -1;
+    auto idx_power = -1;
     double obj = 0.0;
     for(int iP=0;iP<par->num_power;iP++){
 

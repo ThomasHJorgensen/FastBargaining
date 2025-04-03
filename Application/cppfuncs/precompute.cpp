@@ -324,7 +324,7 @@ namespace precompute{
         par_struct* par, sol_struct* sol, bool interpolate = true){
         if(interpolate){
             // interpolate pre-computed solution
-            int idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_Ctot, par->num_power);
+            auto idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_Ctot, par->num_power);
             int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
             int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
 
@@ -384,7 +384,7 @@ namespace precompute{
         auto idx = index::index4(ilw, ilm, i_marg_u, iP, par->num_l, par->num_l, par->num_marg_u, par->num_power);
         par->grid_marg_u_couple[idx] = (util_delta - util)/delta;
 
-        int idx_inv = index::index4(ilw, ilm, par->num_marg_u-1 - i_marg_u, par->num_power, par->num_l, par->num_l, par->num_marg_u, par->num_power);
+        auto idx_inv = index::index4(ilw, ilm, par->num_marg_u-1 - i_marg_u, par->num_power, par->num_l, par->num_l, par->num_marg_u, par->num_power);
         par->grid_marg_u_couple_for_inv[idx_inv] = par->grid_marg_u_couple[idx];
     }
     

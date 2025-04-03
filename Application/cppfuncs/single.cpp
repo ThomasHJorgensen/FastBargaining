@@ -522,7 +522,7 @@ namespace single {
             grid_A = par->grid_Am;
         }
         // // value of remaining single
-        int idx_single = index::single(t,iA,par);
+        auto idx_single = index::single(t,iA,par);
 
         // // b.1. loop over potential partners conditional on meeting a partner
         double Ev_cond = 0.0;
@@ -531,7 +531,7 @@ namespace single {
             for(int iAp=0;iAp<par->num_A;iAp++){ // partner's wealth 
 
                 // b.1.1. probability of meeting a specific type of partner
-                int idx_A = index::index2(iA,iAp,par->num_A,par->num_A);
+                auto idx_A = index::index2(iA,iAp,par->num_A,par->num_A);
                 double prob_A = prob_partner_A[idx_A]; 
                 double prob_love = par->prob_partner_love[iL]; 
                 double prob = prob_A*prob_love;

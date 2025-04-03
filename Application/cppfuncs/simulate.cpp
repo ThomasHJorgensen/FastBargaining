@@ -63,7 +63,7 @@ namespace sim {
             int j_love = tools::binary_search(0,par->num_love,par->grid_love,love); 
             int j_A = tools::binary_search(0,par->num_A,par->grid_A,A_lag); 
             for (int iP=0; iP<par->num_power; iP++){ 
-                long long int idx = 0;
+                auto idx = 0;
                 if(flip){
                     idx = index::index4(t,par->num_power-1 - iP,0,0,par->T,par->num_power,par->num_love,par->num_A); // flipped for men
                 } else {
