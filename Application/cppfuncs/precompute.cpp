@@ -458,12 +458,8 @@ namespace precompute{
                 for (int il=0; il<par->num_l; il++){
                     #pragma omp for
                     for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
-                        bool interpolate = false;
+                        bool interpolate = true;
                         precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
-                        precompute_cons_interp_single(i_marg_u, il, man, par, sol, interpolate);
-                        // for (int iP=0; iP < par->num_power; iP++){
-                        //     precompute_cons_interp_couple(i, iP, par, sol);
-                        // } // power
                     } //Ctot
                 } // labor supply
 
@@ -473,7 +469,7 @@ namespace precompute{
                         #pragma omp for
                         for(int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){
                             for(int iP=0; iP<par->num_power; iP++){
-                                bool interpolate = true; // this tends to be unstable when resolve numerically
+                                bool interpolate = true; // this is sometimes a bit unstable when resolve numerically
                                 precompute_cons_interp_couple(i_marg_u, iP, ilw, ilm, par, sol, interpolate);
                             } //power
                         } //Ctot

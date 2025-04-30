@@ -179,6 +179,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Cm_inter_couple_to_single = np.nan + np.ones(shape_single)    # Not used
         sol.Cw_tot_couple_to_single = np.nan + np.ones(shape_single)
         sol.Cm_tot_couple_to_single = np.nan + np.ones(shape_single)
+        sol.Qw_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
+        sol.Qm_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
 
         ## a.3. start as single
         # TBD: nedenstående udkommenterede kode er den gamle version
@@ -278,23 +280,6 @@ class HouseholdModelClass(EconModelClass):
         sol.pre_Qm_single = np.ones(shape_pre_single) + np.nan
         sol.pre_hw_single = np.ones(shape_pre_single) + np.nan
         sol.pre_hm_single = np.ones(shape_pre_single) + np.nan
-
-
-        # d. Precomputed intertemporal solution
-        # d.1. couple
-        shape_pre_couple = (par.num_l, par.num_l, par.num_marg_u, par.num_power)
-        par.grid_marg_u_couple = np.ones(shape_pre_couple) + np.nan
-        par.grid_marg_u_couple_for_inv = np.ones(shape_pre_couple) + np.nan
-
-        # d.2. single
-        shape_pre_single = (par.num_l, par.num_marg_u)
-        par.grid_marg_u_single_w = np.ones(shape_pre_single) + np.nan
-        par.grid_marg_u_single_m = np.ones(shape_pre_single) + np.nan
-        par.grid_marg_u_single_w_for_inv = np.ones(shape_pre_single) + np.nan
-        par.grid_marg_u_single_m_for_inv = np.ones(shape_pre_single) + np.nan
-
-        # d.3 Common
-        par.grid_C_for_marg_u = nonlinspace(1.0e-5,par.max_Ctot,par.num_marg_u,1.1)    # Consumption interpolator grid
     
 
         # d. simulation
@@ -388,26 +373,30 @@ class HouseholdModelClass(EconModelClass):
         else:
             par.grid_shock_love,par.grid_weight_love = quadrature.normal_gauss_hermite(par.sigma_love,par.num_shock_love)
 
-        # b. Precomputation
-        # b.1. Intratemporal
-        par.grid_Ctot = nonlinspace(1.0e-6,par.max_Ctot,par.num_Ctot,1.1)   
+        # b. Precomputation of intertemporal allocation
+        par.grid_Ctot = nonlinspace(1.0e-6,par.max_Ctot,par.num_Ctot,1.1)  
+
+        # b.1. couple
+        shape_pre_couple = (par.num_l, par.num_l, par.num_marg_u, par.num_power)
+        par.grid_marg_u_couple = np.ones(shape_pre_couple) + np.nan
+        par.grid_marg_u_couple_for_inv = np.ones(shape_pre_couple) + np.nan
+
+        # b.2. single
+        shape_pre_single = (par.num_l, par.num_marg_u)
+        par.grid_marg_u_single_w = np.ones(shape_pre_single) + np.nan
+        par.grid_marg_u_single_m = np.ones(shape_pre_single) + np.nan
+        par.grid_marg_u_single_w_for_inv = np.ones(shape_pre_single) + np.nan
+        par.grid_marg_u_single_m_for_inv = np.ones(shape_pre_single) + np.nan
+
+        # b.3 Common
+        par.grid_C_for_marg_u = nonlinspace(1.0e-5,par.max_Ctot,par.num_marg_u,1.1)    # Consumption interpolator grid 
 
         # EGM
         # TBD: nedenstående udkommenterede kode er den gamle version
-        # par.grid_marg_u = np.nan + np.ones((par.num_power,par.num_marg_u))
-        # par.grid_marg_u_for_inv = np.nan + np.ones((par.num_power,par.num_marg_u))
-
-        # par.grid_C_for_marg_u = nonlinspace(1.0e-6,par.max_Ctot,par.num_marg_u,1.1)
-
         # par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u) # Flipped to make interpolation possible ## AMO: invert
         # if par.interp_inverse:
         #     par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
 
-        # par.grid_marg_u_single_w = np.nan + np.ones((par.num_marg_u))
-        # par.grid_marg_u_single_w_for_inv = np.nan + np.ones((par.num_marg_u))
-
-        # par.grid_marg_u_single_m = np.nan + np.ones((par.num_marg_u))
-        # par.grid_marg_u_single_m_for_inv = np.nan + np.ones((par.num_marg_u))
 
 
         # re-partering probabilities
