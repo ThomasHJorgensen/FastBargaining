@@ -460,6 +460,7 @@ namespace precompute{
                     for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
                         bool interpolate = true;
                         precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
+                        precompute_cons_interp_single(i_marg_u, il, man, par, sol, interpolate);
                     } //Ctot
                 } // labor supply
 
