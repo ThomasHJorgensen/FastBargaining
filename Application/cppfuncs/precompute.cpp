@@ -37,7 +37,7 @@ namespace precompute{
         double c = C_tot - c_priv;
 
         double Q = 0.0;
-        if(gender==man){
+        if(gender==woman){
             Q = utils::Q(c, h, 0, solver_data->par);
         } else {
             Q = utils::Q(c, 0, h, solver_data->par);
@@ -104,7 +104,7 @@ namespace precompute{
         *h = x[1];
         *C_inter = C_tot - *C_priv;
         *Q = 0.0;
-        if(gender==man){
+        if(gender==woman){
             *Q = utils::Q(*C_inter, *h, 0, par);
         } else {
             *Q = utils::Q(*C_inter, 0, *h, par);
