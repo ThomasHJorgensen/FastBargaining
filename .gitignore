@@ -149,3 +149,6 @@ venv.bak/
 
 # Ignore dll
 *.dll
+
+# Other
+*libnlopt-0.exp
