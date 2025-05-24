@@ -44,9 +44,11 @@ class HouseholdModelClass(EconModelClass):
         par.Day = 1.0 # time in day
         
         # a. income
+        par.inc_w = 1.0
         par.mu_w = 0.5              # level
         par.gamma_w = 0.1           # return to human capital
 
+        par.inc_m = 1.0
         par.mu_m = 0.5              # level
         par.gamma_m = 0.1           # return to human capital   
 
@@ -83,21 +85,21 @@ class HouseholdModelClass(EconModelClass):
         par.max_A = 15.0
 
         # c.2. human capital
-        par.num_K = 50
+        par.num_K = 16
         par.max_K = par.T*1.5
         
         # c.3 bargaining power
         par.num_power = 21
 
         # c.4 love/match quality
-        par.num_love = 41
+        par.num_love = 11
         par.max_love = 1.0
 
         par.sigma_love = 0.1
         par.num_shock_love = 5
 
         # d. re-partnering
-        par.p_meet = 0.1
+        par.p_meet = 0.0
         par.prob_partner_A_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
         par.prob_partner_A_m = np.array([[np.nan]])
 
@@ -140,12 +142,15 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T,par.num_A)                        # single states: T, human capital, assets
+        shape_single = (par.T, par.num_A)                        # single states: T, human capital, assets
+        # shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
         sol.Vw_single_to_single = np.ones(shape_single) + np.nan                # value
         sol.Vm_single_to_single = np.ones(shape_single) + np.nan
 
+        sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan           # private consumption, single
+        sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
         sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan           # private consumption, single
         sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
         sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan            # intermediate good, single
@@ -184,8 +189,8 @@ class HouseholdModelClass(EconModelClass):
 
         ## a.3. start as single
         # TBD: nedenstående udkommenterede kode er den gamle version
-        # sol.EVw_start_as_single = np.nan + np.ones(shape_single)
-        # sol.EVm_start_as_single = np.nan + np.ones(shape_single)  
+        sol.EVw_start_as_single = np.nan + np.ones(shape_single)
+        sol.EVm_start_as_single = np.nan + np.ones(shape_single)  
         # sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
         # sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
 
@@ -194,7 +199,8 @@ class HouseholdModelClass(EconModelClass):
 
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
+        # shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
         # b.1. couple to couple
