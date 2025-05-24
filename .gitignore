@@ -152,3 +152,7 @@ venv.bak/
 
 # Other
 *libnlopt-0.exp
+
+# Don't track output files
+output/*
+Application/output/*
