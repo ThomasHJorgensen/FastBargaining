@@ -32,19 +32,10 @@ namespace single {
         double love = 0.0; // no love for singles
         double l = par->grid_l[il];
 
+        // intraperiod allocation
+        precompute::intraperiod_allocation_single(C_priv, h, C_inter, Q, C_tot, il, gender, par, sol);
+        
         // current utility from consumption allocation
-        precompute::intraperiod_allocation_single(
-            C_priv,
-            h,
-            C_inter,
-            Q,
-            C_tot,
-            il,
-            gender,
-            par,
-            sol
-        );
-
         double lh = *h + l;
         double Util = utils::util(*C_priv, lh, *Q, gender, par, love);
 
@@ -92,223 +83,241 @@ namespace single {
     }
 
 
-    // void handle_liquidity_constraint_single_to_single(int t, int gender, double* m_vec, double* C_tot, double* C_priv, double* C_pub, double* V, double* EV_next, sol_struct* sol, par_struct* par){
-    //     // 1. Check if liquidity constraint binds
-    //     // constraint: binding if common m is smaller than smallest m in endogenous grid
-    //     double* grid_A = par->grid_Aw;
-    //     if (gender == man) {
-    //         grid_A = par->grid_Am;
-    //     }
-    //     for (int iA = 0; iA < par->num_A; iA++){
-    //         double M_now = resources(grid_A[iA],gender,par);
+    void handle_liquidity_constraint_single_to_single(int t, int il, int gender, double* m_vec, double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V, double* EV_next, sol_struct* sol, par_struct* par){
+        // 1. Check if liquidity constraint binds
+        // constraint: binding if common m is smaller than smallest m in endogenous grid
+        double* grid_A = par->grid_Aw;
+        if (gender == man) {
+            grid_A = par->grid_Am;
+        }
+        for (int iA = 0; iA < par->num_A; iA++){
+            double M_now = resources(grid_A[iA],gender,par);
 
-    //         if (M_now < m_vec[0]){
+            if (M_now < m_vec[0]){
 
-    //             // a. Set total consumption equal to resources (consume all)
-    //             C_tot[iA] = M_now;
+                // a. Set total consumption equal to resources (consume all)
+                C_tot[iA] = M_now;
 
-    //             // b. Calculate intra-period allocation
-    //             intraperiod_allocation(&C_priv[iA], &C_pub[iA], C_tot[iA], gender, par);
+                // c. Calculate value
+                V[iA] = value_of_choice_single_to_single(C_priv, h, C_inter, Q, C_tot[iA], il, M_now, gender, EV_next, par, sol);
 
-    //             // c. Calculate value
-    //             V[iA] = value_of_choice_single_to_single(C_tot[iA], M_now, gender, EV_next, par);
+            }
+        }
+    }
 
-    //         }
-    //     }
-    // }
+    void do_upper_envelope_single_to_single(int t, int il, int gender, double* m_vec, double* c_vec, double* v_vec, double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V, double* EV_next, sol_struct* sol, par_struct* par){
+        // Unpack
+        double* grid_A = par->grid_Aw;
+        double* grid_A_pd = {par->grid_Aw_pd};
+        if (gender == man){
+            grid_A = par->grid_Am;
+            grid_A_pd = par->grid_Am_pd;
+        }
 
-    // void do_upper_envelope_single_to_single(int t, int gender, double* m_vec, double* c_vec, double* v_vec, double* C_tot, double* C_priv, double* C_pub, double* V, double* EV_next, sol_struct* sol, par_struct* par){
-    //     // Unpack
-    //     double* grid_A = par->grid_Aw;
-    //     if (gender == man){
-    //         grid_A = par->grid_Am;
-    //     }
+        // Loop through unsorted endogenous grid
+        for (int iA_pd = 0; iA_pd<par->num_A_pd; iA_pd++){
 
-    //     // Loop through unsorted endogenous grid
-    //     for (int iA_pd = 0; iA_pd<par->num_A_pd; iA_pd++){
-
-    //         // 1. Unpack intervals
-    //         double A_low = par->grid_A_pd[iA_pd];
-    //         double A_high = par->grid_A_pd[iA_pd+1];
+            // 1. Unpack intervals
+            double A_low = grid_A_pd[iA_pd];
+            double A_high = grid_A_pd[iA_pd+1];
             
-    //         double V_low = v_vec[iA_pd];
-    //         double V_high = v_vec[iA_pd+1];
+            double V_low = v_vec[iA_pd];
+            double V_high = v_vec[iA_pd+1];
 
-    //         double m_low = m_vec[iA_pd];
-    //         double m_high = m_vec[iA_pd+1];
+            double m_low = m_vec[iA_pd];
+            double m_high = m_vec[iA_pd+1];
 
-    //         double c_low = c_vec[iA_pd];
-    //         double c_high = c_vec[iA_pd+1];
+            double c_low = c_vec[iA_pd];
+            double c_high = c_vec[iA_pd+1];
 
-    //         // 2. Calculate slopes
-    //         double v_slope = (V_high - V_low)/(A_high - A_low);
-    //         double c_slope = (c_high - c_low)/(A_high - A_low);
+            // 2. Calculate slopes
+            double v_slope = (V_high - V_low)/(A_high - A_low);
+            double c_slope = (c_high - c_low)/(A_high - A_low);
 
-    //         // 3. Loop through common grid
-    //         for (int iA = 0; iA<par->num_A; iA++){
+            // 3. Loop through common grid
+            for (int iA = 0; iA<par->num_A; iA++){
 
-    //             // i. Check if resources from common grid are in current interval of endogenous grid
-    //             double M_now = resources(grid_A[iA], gender, par);
-    //             bool interp = ((M_now >= m_low) & (M_now <= m_high));
-    //             bool extrap_above = ((iA_pd == par->num_A_pd-2) & (M_now > m_vec[par->num_A_pd-1])); // extrapolate above last point in endogenous grid
+                // i. Check if resources from common grid are in current interval of endogenous grid
+                double M_now = resources(grid_A[iA], gender, par);
+                bool interp = ((M_now >= m_low) & (M_now <= m_high));
+                bool extrap_above = ((iA_pd == par->num_A_pd-2) & (M_now > m_vec[par->num_A_pd-1])); // extrapolate above last point in endogenous grid
 
-    //             if (interp | extrap_above){
+                if (interp | extrap_above){
 
-    //                 // ii. Interpolate consumption and value
-    //                 double c_guess = c_low + c_slope*(M_now - m_low);
-    //                 double a_guess = M_now - c_guess;
-    //                 double V_guess = V_low + v_slope*(a_guess - A_low);
+                    // ii. Interpolate consumption and value
+                    double c_guess = c_low + c_slope*(M_now - m_low);
+                    double a_guess = M_now - c_guess;
+                    double V_guess = V_low + v_slope*(a_guess - A_low);
 
-    //                 // iii. Update sol if v is higher than previous guess (upper envelope)
-    //                 if (V_guess > V[iA]){
-    //                     // o. Update total consumption
-    //                     C_tot[iA] = c_guess;
+                    // iii. Update sol if v is higher than previous guess (upper envelope)
+                    if (V_guess > V[iA]){
+                        // o. Update total consumption
+                        C_tot[iA] = c_guess;
 
-    //                     // oo. Update intra-period allocation
-    //                     intraperiod_allocation(&C_priv[iA], &C_pub[iA], C_tot[iA], gender, par);
-
-    //                     // ooo. Update value
-    //                     V[iA] = value_of_choice_single_to_single(C_tot[iA], M_now, gender, EV_next, par);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                        // ooo. Update  intra-period allocation and value
+                        V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], il, M_now, gender, EV_next, par, sol);
+                    }
+                }
+            }
+        }
+    }
 
 
-    // void EGM_single_to_single(int t, int gender, sol_struct* sol, par_struct* par){
-    //     // 1. Setup
-    //     /// a. unpack
-    //     double* const &grid_inv_marg_u {par->grid_inv_marg_u};
+    void EGM_single_to_single(int t, int gender, sol_struct* sol, par_struct* par){
+        int il = 1; // OBS: Return to this when implementing labor choice (I think it should be part of x or something we max over afterwards)
+        // 1. Setup
+        /// a. unpack
+        double* const &grid_inv_marg_u {par->grid_inv_marg_u};
 
-    //     /// b. gender specific variables
-    //     //// o. woman
-    //     double* grid_A {par->grid_Aw};
-    //     double* grid_A_pd {par->grid_Aw_pd};
-    //     double* grid_marg_u_single_for_inv {par->grid_marg_u_single_w_for_inv};
-    //     double* V {sol->Vw_single_to_single};
-    //     double* EV {sol->EVw_start_as_single};
-    //     double* margV {sol->EmargVw_start_as_single};
-    //     double* C_tot {sol->Cw_tot_single_to_single};
-    //     double* C_priv {sol->Cw_priv_single_to_single};
-    //     double* C_pub {sol->Cw_pub_single_to_single};
-    //     double* V_pd {sol->Vw_single_to_single_pd};
-    //     //// oo. man
-    //     if (gender == man){
-    //         grid_A = par->grid_Am;
-    //         grid_A_pd = par->grid_Am_pd;
-    //         grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
-    //         V = sol->Vm_single_to_single;
-    //         EV = sol->EVm_start_as_single;
-    //         margV = sol->EmargVm_start_as_single;
-    //         C_tot = sol->Cm_tot_single_to_single;
-    //         C_priv = sol->Cm_priv_single_to_single;
-    //         C_pub = sol->Cm_pub_single_to_single;
-    //         V_pd = sol->Vm_single_to_single_pd;
-    //     }
+        /// b. gender specific variables
+        //// o. woman
+        double* grid_A {par->grid_Aw};
+        double* grid_A_pd {par->grid_Aw_pd};
+        double* grid_marg_u_single_for_inv {par->grid_marg_u_single_w_for_inv};
+        double* V {sol->Vw_single_to_single};
+        double* EV {sol->EVw_start_as_single};
+        double* margV {sol->EmargVw_start_as_single};
+        double* C_tot {sol->Cw_tot_single_to_single};
+        double* C_priv {sol->Cw_priv_single_to_single};
+        double* h {sol->hw_single_to_single};
+        double* C_inter {sol->Cw_inter_single_to_single};
+        double* Q {sol->Qw_single_to_single};
+        double* EmargU_pd {sol->EmargUw_single_to_single_pd};
+        double* C_tot_pd {sol->C_totw_single_to_single_pd};
+        double* M_pd {sol->Mw_single_to_single_pd};
+        double* V_pd {sol->Vw_single_to_single_pd};
+        //// oo. man
+        if (gender == man){
+            grid_A = par->grid_Am;
+            grid_A_pd = par->grid_Am_pd;
+            grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
+            V = sol->Vm_single_to_single;
+            EV = sol->EVm_start_as_single;
+            margV = sol->EmargVm_start_as_single;
+            C_tot = sol->Cm_tot_single_to_single;
+            C_priv = sol->Cm_priv_single_to_single;
+            h = {sol->hm_single_to_single};
+            C_inter = {sol->Cm_inter_single_to_single};
+            Q = {sol->Qm_single_to_single};
+            EmargU_pd = sol->EmargUm_single_to_single_pd;
+            C_tot_pd = sol->C_totm_single_to_single_pd;
+            M_pd = sol->Mm_single_to_single_pd;
+            V_pd = sol->Vm_single_to_single_pd;
+        }
 
-    //     /// c. Allocate memory
-    //     double* EmargU_pd {new double[par->num_A_pd]};
-    //     double* C_tot_pd {new double[par->num_A_pd]};
-    //     double* M_pd {new double[par->num_A_pd]};
+        /// c. Allocate memory
+        // double* EmargU_pd {new double[par->num_A_pd]};
+        // double* C_tot_pd {new double[par->num_A_pd]};
+        // double* M_pd {new double[par->num_A_pd]};
 
-    //     // 2. EGM step
-    //     /// setup
-    //     auto idx = index::single(t,0, par);
-    //     auto idx_next = index::single(t+1,0, par);
-    //     int min_point_A = 0;
+        // 2. EGM step
+        /// setup
+        auto idx = index::single(t,0, par);
+        auto idx_next = index::single(t+1,0, par);
+        auto idx_interp = index::index2(il,0,par->num_l,par->num_marg_u);
+        int min_point_A = 0;
 
-    //     for (int iA_pd=0; iA_pd<par->num_A_pd; iA_pd++){
+        for (int iA_pd=0; iA_pd<par->num_A_pd; iA_pd++){
 
-    //         /// a. get next period assets
-    //         double A_next = grid_A_pd[iA_pd];
+            /// a. get next period assets
+            double A_next = grid_A_pd[iA_pd];
 
-    //         /// b. calculate expected marginal utility
-    //         min_point_A = tools::binary_search(min_point_A, par->num_A, grid_A, A_next);
-    //         EmargU_pd[iA_pd] = par->beta*tools::interp_1d_index(grid_A, par->num_A, &margV[idx_next],A_next, min_point_A);
+            /// b. calculate expected marginal utility
+            min_point_A = tools::binary_search(min_point_A, par->num_A, grid_A, A_next);
+            EmargU_pd[iA_pd] = par->beta*tools::interp_1d_index(grid_A, par->num_A, &margV[idx_next],A_next, min_point_A);
 
-    //         /// c. invert marginal utility by interpolation from pre-computed grid
-    //         C_tot_pd[iA_pd] = utils::inv_marg_util_C(EmargU_pd[iA_pd], gender, par);
+            /// c. invert marginal utility by interpolation from pre-computed grid
+            if(strcmp(par->interp_method,"linear")==0){
+                C_tot_pd[iA_pd] = tools::interp_1d(&grid_marg_u_single_for_inv[idx_interp],par->num_marg_u,par->grid_inv_marg_u, EmargU_pd[iA_pd]);
+                if (par->interp_inverse){
+                    C_tot_pd[iA_pd] = 1.0/C_tot_pd[iA_pd];
+                }
+            } else { // OBS: I just copied the above. Here we can have numerical implementation. Method not implemented
+                C_tot_pd[iA_pd] = tools::interp_1d(&grid_marg_u_single_for_inv[idx_interp],par->num_marg_u,par->grid_inv_marg_u, EmargU_pd[iA_pd]);
+                if (par->interp_inverse){
+                    C_tot_pd[iA_pd] = 1.0/C_tot_pd[iA_pd];
+                }
+            }
 
-    //         /// d. endogenous grid over resources
-    //         M_pd[iA_pd] = C_tot_pd[iA_pd] + A_next;
+            /// d. endogenous grid over resources
+            M_pd[iA_pd] = C_tot_pd[iA_pd] + A_next;
 
-    //         /// e. value
-    //         V_pd[iA_pd] = value_of_choice_single_to_single(C_tot_pd[iA_pd], M_pd[iA_pd], gender, &EV[idx_next], par);
-    //     }
+            /// e. value
+            V_pd[iA_pd] = value_of_choice_single_to_single(C_priv, h, C_inter, Q, C_tot_pd[iA_pd], il, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
+        }
 
-    //     // 3. liquidity constraint
-    //     handle_liquidity_constraint_single_to_single(t, gender, M_pd, &C_tot[idx], &C_priv[idx], &C_pub[idx], &V[idx], &EV[idx_next], sol, par);
+        // 3. liquidity constraint
+        handle_liquidity_constraint_single_to_single(t, il, gender, M_pd, &C_tot[idx], &C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], &V[idx], &EV[idx_next], sol, par);
 
-    //     // 4. upper envelope
-    //     do_upper_envelope_single_to_single(t, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx], &C_priv[idx], &C_pub[idx], &V[idx], &EV[idx_next], sol, par);
-
-
-    //     // 4. clean up
-    //     delete[] EmargU_pd;
-    //     delete[] C_tot_pd;
-    //     delete[] M_pd;
-    //     EmargU_pd = nullptr;
-    //     C_tot_pd = nullptr;
-    //     M_pd = nullptr;
-    // }
+        // 4. upper envelope
+        do_upper_envelope_single_to_single(t, il, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx], &C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], &V[idx], &EV[idx_next], sol, par);
 
 
-    // void calc_marginal_value_single(int t, int gender, sol_struct* sol, par_struct* par){
+        // 4. clean up
+        // delete[] EmargU_pd;
+        // delete[] C_tot_pd;
+        // delete[] M_pd;
+        EmargU_pd = nullptr;
+        C_tot_pd = nullptr;
+        M_pd = nullptr;
+    }
 
-    //     // unpack
-    //     int const &num_A = par->num_A;
 
-    //     // set index
-    //     auto idx = index::index2(t,0,par->T,par->num_A);
+    void calc_marginal_value_single(int t, int gender, sol_struct* sol, par_struct* par){
 
-    //     // gender specific variables
-    //     double* grid_A = par->grid_Aw;
-    //     double* margV = &sol->EmargVw_start_as_single[idx];
-    //     double* V      = &sol->EVw_start_as_single[idx];
+        // unpack
+        int const &num_A = par->num_A;
 
-    //     if (gender == man){
-    //         grid_A = par->grid_Am;
-    //         margV = &sol->EmargVm_start_as_single[idx];
-    //         V      = &sol->EVm_start_as_single[idx];
-    //     }
+        // set index
+        auto idx = index::index2(t,0,par->T,par->num_A);
 
-    //     // approximate marginal value by finite diff
-    //     if (par->centered_gradient){
-    //         for (int iA=1; iA<num_A-1; iA++){
-    //             // Setup indices
-    //             int iA_plus = iA + 1;
-    //             int iA_minus = iA - 1;
+        // gender specific variables
+        double* grid_A = par->grid_Aw;
+        double* margV = &sol->EmargVw_start_as_single[idx];
+        double* V      = &sol->EVw_start_as_single[idx];
 
-    //             double denom = 1/(grid_A[iA_plus] - grid_A[iA_minus]);
+        if (gender == man){
+            grid_A = par->grid_Am;
+            margV = &sol->EmargVm_start_as_single[idx];
+            V      = &sol->EVm_start_as_single[idx];
+        }
 
-    //             // Calculate finite difference
-    //             margV[iA] = V[iA_plus]*denom - V[iA_minus]* denom; 
-    //         }
-    //          // Extrapolate gradient in end points
-    //         int i=0;
-    //         margV[i] = (margV[i+2] - margV[i+1]) / (grid_A[i+2] - grid_A[i+1]) * (grid_A[i] - grid_A[i+1]) + margV[i+1];
-    //         i = par->num_A-1;
-    //         margV[i] = (margV[i-2] - margV[i-1]) / (grid_A[i-2] - grid_A[i-1]) * (grid_A[i] - grid_A[i-1]) + margV[i-1];
+        // approximate marginal value by finite diff
+        if (par->centered_gradient){
+            for (int iA=1; iA<num_A-1; iA++){
+                // Setup indices
+                int iA_plus = iA + 1;
+                int iA_minus = iA - 1;
+
+                double denom = 1/(grid_A[iA_plus] - grid_A[iA_minus]);
+
+                // Calculate finite difference
+                margV[iA] = V[iA_plus]*denom - V[iA_minus]* denom; 
+            }
+             // Extrapolate gradient in end points
+            int i=0;
+            margV[i] = (margV[i+2] - margV[i+1]) / (grid_A[i+2] - grid_A[i+1]) * (grid_A[i] - grid_A[i+1]) + margV[i+1];
+            i = par->num_A-1;
+            margV[i] = (margV[i-2] - margV[i-1]) / (grid_A[i-2] - grid_A[i-1]) * (grid_A[i] - grid_A[i-1]) + margV[i-1];
             
-    //     } 
-    //     else {
-    //         for (int iA=0; iA<num_A-1; iA++){
-    //             // Setup indices
-    //             int iA_plus = iA + 1;
+        } 
+        else {
+            for (int iA=0; iA<num_A-1; iA++){
+                // Setup indices
+                int iA_plus = iA + 1;
 
-    //             double denom = 1/(grid_A[iA_plus] - grid_A[iA]);
+                double denom = 1/(grid_A[iA_plus] - grid_A[iA]);
 
-    //             // Calculate finite difference
-    //             margV[iA] = V[iA_plus]*denom - V[iA]* denom; 
+                // Calculate finite difference
+                margV[iA] = V[iA_plus]*denom - V[iA]* denom; 
 
-    //             // Extrapolate gradient in last point
-    //             if (iA == num_A-2){
-    //                 margV[iA_plus] = margV[iA];
-    //             }
-    //         }
-    //     }
-    // }
+                // Extrapolate gradient in last point
+                if (iA == num_A-2){
+                    margV[iA_plus] = margV[iA];
+                }
+            }
+        }
+    }
 
 
 
@@ -374,11 +383,11 @@ namespace single {
                     love);
             } // iA
         } else {
-            // if (par->do_egm) {
-            //     EGM_single_to_single(t, woman, sol, par);
-            //     EGM_single_to_single(t, man, sol, par);
-            // }
-            // else {
+            if (par->do_egm) {
+                EGM_single_to_single(t, woman, sol, par);
+                EGM_single_to_single(t, man, sol, par);
+            }
+            else {
                 #pragma omp parallel num_threads(par->threads)
                 {
 
@@ -483,7 +492,7 @@ namespace single {
                     delete solver_data;
 
                 } // pragma
-            // } // VFI /EGM
+            } // VFI /EGM
         }   // t
         
     }
@@ -698,10 +707,10 @@ namespace single {
             } // iA
         } // pragma
 
-        // if (par->do_egm){
-        //     calc_marginal_value_single(t, woman, sol, par);
-        //     calc_marginal_value_single(t, man, sol, par);
-        // }
+        if (par->do_egm){
+            calc_marginal_value_single(t, woman, sol, par);
+            calc_marginal_value_single(t, man, sol, par);
+        }
     }
 
 }
