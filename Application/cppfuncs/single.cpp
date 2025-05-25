@@ -359,7 +359,7 @@ namespace single {
                 // Calculate value
                 sol->Vw_single_to_single[idx] = utils::util(
                     sol->Cw_priv_single_to_single[idx], 
-                    sol->Cw_priv_single_to_single[idx], 
+                    sol->hm_single_to_single[idx] + par->grid_l[il], 
                     sol->Qw_single_to_single[idx],
                     woman, 
                     par, 
@@ -367,7 +367,7 @@ namespace single {
 
                 sol->Vm_single_to_single[idx] = utils::util(
                     sol->Cm_priv_single_to_single[idx], 
-                    sol->Cm_priv_single_to_single[idx], 
+                    sol->hm_single_to_single[idx] + par->grid_l[il], 
                     sol->Qm_single_to_single[idx],
                     man, 
                     par, 
