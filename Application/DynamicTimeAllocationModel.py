@@ -146,8 +146,8 @@ class HouseholdModelClass(EconModelClass):
         # shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
-        sol.Vw_single_to_single = np.ones(shape_single) + np.nan                # value
-        sol.Vm_single_to_single = np.ones(shape_single) + np.nan
+        sol.Vw_single_to_single = np.ones(shape_single) - np.inf                
+        sol.Vm_single_to_single = np.ones(shape_single) - np.inf
 
         sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan           # private consumption, single
         sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
@@ -164,15 +164,15 @@ class HouseholdModelClass(EconModelClass):
 
         ### a.1.1. post-decision grids (EGM)
         # TBD: nedenstående udkommenterede kode er den gamle version
-        # sol.EmargUw_single_to_single_pd = np.zeros(shape_single)           # Expected marginal utility post-decision, woman single
-        # sol.C_totw_single_to_single_pd = np.zeros(par.num_A_pd)            # C for EGM, woman single 
-        # sol.Mw_single_to_single_pd = np.zeros(par.num_A_pd)                # Endogenous grid, woman single
-        # sol.Vw_single_to_single_pd = np.zeros(par.num_A_pd)                # Value of being single, post-decision
+        sol.EmargUw_single_to_single_pd = np.zeros(par.num_A_pd)           # Expected marginal utility post-decision, woman single
+        sol.C_totw_single_to_single_pd = np.zeros(par.num_A_pd)            # C for EGM, woman single 
+        sol.Mw_single_to_single_pd = np.zeros(par.num_A_pd)                # Endogenous grid, woman single
+        sol.Vw_single_to_single_pd = np.zeros(par.num_A_pd)                # Value of being single, post-decision
 
-        # sol.EmargUm_single_to_single_pd = np.zeros(shape_single)          # Expected marginal utility post-decision, man single
-        # sol.C_totm_single_to_single_pd = np.zeros(par.num_A_pd)           # C for EGM, man single
-        # sol.Mm_single_to_single_pd = np.zeros(par.num_A_pd)               # Endogenous grid, man single
-        # sol.Vm_single_to_single_pd = np.zeros(par.num_A_pd)               # Value of being single, post-decision
+        sol.EmargUm_single_to_single_pd = np.zeros(par.num_A_pd)          # Expected marginal utility post-decision, man single
+        sol.C_totm_single_to_single_pd = np.zeros(par.num_A_pd)           # C for EGM, man single
+        sol.Mm_single_to_single_pd = np.zeros(par.num_A_pd)               # Endogenous grid, man single
+        sol.Vm_single_to_single_pd = np.zeros(par.num_A_pd)               # Value of being single, post-decision
 
         ## a.2. couple to single
         sol.Vw_couple_to_single = np.nan + np.ones(shape_single)        # Value marriage -> single
@@ -188,11 +188,10 @@ class HouseholdModelClass(EconModelClass):
         sol.Qm_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
 
         ## a.3. start as single
-        # TBD: nedenstående udkommenterede kode er den gamle version
         sol.EVw_start_as_single = np.nan + np.ones(shape_single)
         sol.EVm_start_as_single = np.nan + np.ones(shape_single)  
-        # sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
-        # sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
+        sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
+        sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
 
         # sol.EVw_cond_meet_partner = np.nan + np.ones(shape_single)
         # sol.EVm_cond_meet_partner = np.nan + np.ones(shape_single)
@@ -398,11 +397,13 @@ class HouseholdModelClass(EconModelClass):
         par.grid_C_for_marg_u = nonlinspace(1.0e-5,par.max_Ctot,par.num_marg_u,1.1)    # Consumption interpolator grid 
 
         # EGM
-        # TBD: nedenstående udkommenterede kode er den gamle version
-        # par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u) # Flipped to make interpolation possible ## AMO: invert
-        # if par.interp_inverse:
-        #     par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
+        par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u) # Flipped to make interpolation possible ## AMO: invert
+        if par.interp_inverse:
+            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
 
+        par.grid_A_pd = nonlinspace(0.0,par.max_A_pd,par.num_A_pd,1.1)
+        par.grid_Aw_pd = par.div_A_share * par.grid_A_pd
+        par.grid_Am_pd = (1.0 - par.div_A_share) * par.grid_A_pd
 
 
         # re-partering probabilities

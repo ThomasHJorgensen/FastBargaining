@@ -116,3 +116,75 @@ def plot_choices_over_assets_male_single_to_single(ax, model, t, **kwargs):
     plot_variables_over_grid(ax, variables, grid, x_label=x_label, **kwargs)
 
     return ax
+
+def plot_values_over_assets_female_single_to_single(ax, model, t, **kwargs):
+    
+    # settings
+    if 'label' not in kwargs:
+        kwargs['label'] = f'female s->s, t={t}'    
+    grid = model.par.grid_Am
+    x_label = 'Assets'
+    variables = {
+        'V':        model.sol.Vw_single_to_single[t, :],
+        'EV':       model.sol.EVw_start_as_single[t, :],
+        'EmargV':   model.sol.EmargVw_start_as_single[t, :],
+    }
+    
+    # plot
+    plot_variables_over_grid(ax, variables, grid, x_label=x_label, **kwargs)
+
+    return ax
+
+def plot_values_over_assets_male_single_to_single(ax, model, t, **kwargs):
+    
+    # settings
+    if 'label' not in kwargs:
+        kwargs['label'] = f'male s->s, t={t}'    
+    grid = model.par.grid_Am
+    x_label = 'Assets'
+    variables = {
+        'V':        model.sol.Vm_single_to_single[t, :],
+        'EV':       model.sol.EVm_start_as_single[t, :],
+        'EmargV':   model.sol.EmargVm_start_as_single[t, :],
+    }
+    
+    # plot
+    plot_variables_over_grid(ax, variables, grid, x_label=x_label, **kwargs)
+
+    return ax
+
+def plot_values_over_time_female_single_to_single(ax, model, iA, **kwargs):
+    
+    # settings
+    if 'label' not in kwargs:
+        kwargs['label'] = f'female s->s, A={model.par.grid_Aw[iA]:.2f}'    
+    grid = model.par.grid_Am
+    x_label = 't'
+    variables = {
+        'V':        model.sol.Vw_single_to_single[:, iA],
+        'EV':       model.sol.EVw_start_as_single[:, iA],
+        'EmargV':   model.sol.EmargVw_start_as_single[:, iA],
+    }
+    
+    # plot
+    plot_variables_over_grid(ax, variables, grid, x_label=x_label, **kwargs)
+
+    return ax
+
+def plot_values_over_time_male_single_to_single(ax, model, iA, **kwargs):
+    
+    # settings
+    if 'label' not in kwargs:
+        kwargs['label'] = f'male s->s, A={model.par.grid_Aw[iA]:.2f}'    
+    grid = model.par.grid_Am
+    x_label = 't'
+    variables = {
+        'V':        model.sol.Vm_single_to_single[:, iA],
+        'EV':       model.sol.EVm_start_as_single[:, iA],
+        'EmargV':   model.sol.EmargVm_start_as_single[:, iA],
+    }
+    
+    # plot
+    plot_variables_over_grid(ax, variables, grid, x_label=x_label, **kwargs)
+
+    return ax
