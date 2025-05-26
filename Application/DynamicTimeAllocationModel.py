@@ -120,7 +120,7 @@ class HouseholdModelClass(EconModelClass):
         par.do_egm = False
         par.num_A_pd = par.num_A * 2
         par.max_A_pd = par.max_A
-        par.num_marg_u = 20
+        par.num_marg_u = 200
 
         # g. simulation
         par.seed = 9210
@@ -184,6 +184,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Cm_inter_couple_to_single = np.nan + np.ones(shape_single)    # Not used
         sol.Cw_tot_couple_to_single = np.nan + np.ones(shape_single)
         sol.Cm_tot_couple_to_single = np.nan + np.ones(shape_single)
+        sol.hw_couple_to_single = np.nan + np.ones(shape_single)                # housework,
+        sol.hm_couple_to_single = np.nan + np.ones(shape_single)
         sol.Qw_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
         sol.Qm_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
 
@@ -205,7 +207,7 @@ class HouseholdModelClass(EconModelClass):
         # b.1. couple to couple
         sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan                # value
         sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.V_couple_to_couple = np.ones(shape_couple) + np.nan                 # couple objective function
+        sol.V_couple_to_couple = np.ones(shape_couple) - np.inf                 # couple objective function
 
         sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan           # private consumption, couple
         sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
@@ -215,6 +217,7 @@ class HouseholdModelClass(EconModelClass):
         sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
         sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan                # housework, couple
         sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
 
         sol.Sw = np.ones(par.num_power) + np.nan                                 # surplus of marriage
         sol.Sm = np.ones(par.num_power) + np.nan
@@ -223,21 +226,19 @@ class HouseholdModelClass(EconModelClass):
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
-        # TBD: nedenstående udkommenterede kode er den gamle version
-        # shape_egm = (par.T, par.num_power,par.num_love,par.num_A_pd)
-        # sol.EmargU_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
-        # sol.C_tot_pd = np.zeros(shape_egm)                      # C for EGM
-        # sol.M_pd = np.zeros(shape_egm)                          # Endogenous grid
-        # sol.V_couple_to_couple_pd = np.zeros(shape_egm)         # Value of being couple, post-decision
+        shape_egm = (par.T, par.num_power,par.num_love,par.num_A_pd)
+        sol.EmargU_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
+        sol.C_tot_pd = np.zeros(shape_egm)                      # C for EGM
+        sol.M_pd = np.zeros(shape_egm)                          # Endogenous grid
+        sol.V_couple_to_couple_pd = np.zeros(shape_egm)         # Value of being couple, post-decision
 
         ## b.2. single to couple
-        # TBD: nedensteånede udkommenterede kode er den gamle version
-        # sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
-        # sol.Vm_single_to_couple = np.nan + np.ones(shape_couple)
-        # sol.V_single_to_couple = -np.inf + np.ones(shape_couple)           
+        sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
+        sol.Vm_single_to_couple = np.nan + np.ones(shape_couple)
+        sol.V_single_to_couple = -np.inf + np.ones(shape_couple)           
                                                                         
-        # sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)      
-        # sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)      
+        sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)      
+        sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)      
         # sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple)        
         # sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple)   
         # sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple) 
@@ -255,6 +256,7 @@ class HouseholdModelClass(EconModelClass):
         sol.EVm_start_as_couple = np.ones(shape_couple) + np.nan
         sol.EmargV_start_as_couple = np.ones(shape_couple) + np.nan             # expected marginal value
 
+        sol.C_tot_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
         sol.Cw_priv_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
         sol.Cm_priv_start_as_couple = np.ones(shape_couple) + np.nan
         sol.C_inter_start_as_couple = np.ones(shape_couple) + np.nan              # intermediate good
@@ -347,6 +349,9 @@ class HouseholdModelClass(EconModelClass):
     def setup_grids(self):
         par = self.par
         
+        # 0. time
+        par.grid_t = np.arange(par.T) # time grid
+        
         # a. state variables
         # a.1. wealth. Single grids are such to avoid interpolation
         par.grid_A = nonlinspace(0.0,par.max_A,par.num_A,1.1)       # asset grid
@@ -382,7 +387,7 @@ class HouseholdModelClass(EconModelClass):
         par.grid_Ctot = nonlinspace(1.0e-6,par.max_Ctot,par.num_Ctot,1.1)  
 
         # b.1. couple
-        shape_pre_couple = (par.num_l, par.num_l, par.num_marg_u, par.num_power)
+        shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_marg_u, )
         par.grid_marg_u_couple = np.ones(shape_pre_couple) + np.nan
         par.grid_marg_u_couple_for_inv = np.ones(shape_pre_couple) + np.nan
 

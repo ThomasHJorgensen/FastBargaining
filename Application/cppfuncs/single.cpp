@@ -498,24 +498,28 @@ namespace single {
     }
 
 
-    // void solve_couple_to_single(int t, sol_struct *sol, par_struct *par) {
-    //     #pragma omp parallel num_threads(par->threads)
-    //     {
-    //         #pragma omp for
-    //         for (int iA=0; iA<par->num_A;iA++){
-    //             auto idx = index::single(t,iA,par);
+    void solve_couple_to_single(int t, sol_struct *sol, par_struct *par) {
+        #pragma omp parallel num_threads(par->threads)
+        {
+            #pragma omp for
+            for (int iA=0; iA<par->num_A;iA++){
+                auto idx = index::single(t,iA,par);
 
-    //             sol->Vw_couple_to_single[idx] = sol->Vw_single_to_single[idx] - par->div_cost;
-    //             sol->Vm_couple_to_single[idx] = sol->Vm_single_to_single[idx] - par->div_cost;
-    //             sol->Cw_priv_couple_to_single[idx] = sol->Cw_priv_single_to_single[idx];
-    //             sol->Cm_priv_couple_to_single[idx] = sol->Cm_priv_single_to_single[idx];
-    //             sol->Cw_pub_couple_to_single[idx] = sol->Cw_pub_single_to_single[idx]; 
-    //             sol->Cm_pub_couple_to_single[idx] = sol->Cm_pub_single_to_single[idx]; 
-    //             sol->Cw_tot_couple_to_single[idx] = sol->Cw_tot_single_to_single[idx]; 
-    //             sol->Cm_tot_couple_to_single[idx] = sol->Cm_tot_single_to_single[idx]; 
-    //         }
-    //     }
-    // }
+                sol->Vw_couple_to_single[idx] = sol->Vw_single_to_single[idx] - par->div_cost;
+                sol->Vm_couple_to_single[idx] = sol->Vm_single_to_single[idx] - par->div_cost;
+                sol->Cw_priv_couple_to_single[idx] = sol->Cw_priv_single_to_single[idx];
+                sol->Cm_priv_couple_to_single[idx] = sol->Cm_priv_single_to_single[idx];
+                sol->hw_couple_to_single[idx] = sol->hw_single_to_single[idx]; 
+                sol->hm_couple_to_single[idx] = sol->hm_single_to_single[idx]; 
+                sol->Cw_inter_couple_to_single[idx] = sol->Cw_inter_single_to_single[idx]; 
+                sol->Cm_inter_couple_to_single[idx] = sol->Cm_inter_single_to_single[idx]; 
+                sol->Qw_couple_to_single[idx] = sol->Qw_single_to_single[idx]; 
+                sol->Qm_couple_to_single[idx] = sol->Qm_single_to_single[idx]; 
+                sol->Cw_tot_couple_to_single[idx] = sol->Cw_tot_single_to_single[idx]; 
+                sol->Cm_tot_couple_to_single[idx] = sol->Cm_tot_single_to_single[idx]; 
+            }
+        }
+    }
 
     //  double repartner_surplus(double power, index::state_couple_struct* state_couple, index::state_single_struct* state_single, int gender, par_struct* par, sol_struct* sol){ //TODO: add index
     //     // unpack
