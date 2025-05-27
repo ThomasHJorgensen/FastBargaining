@@ -245,13 +245,18 @@ namespace sim {
                         sim->C_tot[it] = C_tot;
 
                         // consumpton allocation
-                        double C_pub = 0.0; // placeholder for public consumption
-                        precompute::intraperiod_allocation_sim(&sim->Cw_priv[it], &sim->Cm_priv[it], &C_pub,  C_tot,power,sol,par); 
-                        sim->Cw_pub[it] = C_pub;
-                        sim->Cm_pub[it] = C_pub;
+                        double C_inter = 0.0; // placeholder for public consumption
+                        double Q = 0.0; // placeholder for public goods
+                        int ilw = 1; // OBS: Return to this when implementing labor choice
+                        int ilm = 1; // OBS: Return to this when implementing labor choice
+                        precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, C_tot,power,par, sol); 
+                        sim->Cw_inter[it] = C_inter;
+                        sim->Cm_inter[it] = C_inter;
+                        sim->Qw[it] = Q;
+                        sim->Qm[it] = Q;
 
                         // update end-of-period states
-                        sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_pub;
+                        sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
                         sim->Aw[it] = par->div_A_share * sim->A[it];
                         sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
                         sim->power[it] = power;
@@ -287,12 +292,14 @@ namespace sim {
                         sim->Cw_tot[it] = Cw_tot;
                         
                         // consumpton allocation
-                        single::intraperiod_allocation(&sim->Cw_priv[it],&sim->Cw_pub[it],Cw_tot,woman,par);
-                        single::intraperiod_allocation(&sim->Cm_priv[it],&sim->Cm_pub[it],Cm_tot,man,par);
+                        int ilw = 1; // OBS: Return to this when implementing labor choice
+                        int ilm = 1; // OBS: Return to this when implementing labor choice
+                        precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);
+                        precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
 
                         // update end-of-period states  
-                        sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_pub[it];
-                        sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_pub[it];
+                        sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
+                        sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
                         sim->power[it] = -1.0;
 
                     }
@@ -302,7 +309,9 @@ namespace sim {
                     if (sim->couple[it]){
                         love_now = sim->love[it];
                     }
-                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it],sim->Cw_pub[it],woman,par,love_now);
+
+                    double lh = par->grid_l[1] + sim->hw[it]; // labor and leisure // OBS: return to this when implementing labor choice
+                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh, sim->Qw[it],woman,par,love_now);
 
                 } // t
             } // i
