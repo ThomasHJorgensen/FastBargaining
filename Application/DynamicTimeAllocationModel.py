@@ -293,60 +293,62 @@ class HouseholdModelClass(EconModelClass):
     
 
         # d. simulation
-        # TBD: nedenstående udkommenterede kode er den gamle version
-        # # NB: all arrays not containing "init" or "draw" in name are wiped before each simulation
-        # shape_sim = (par.simN,par.simT)
-        # sim.Cw_priv = np.nan + np.ones(shape_sim)               
-        # sim.Cm_priv = np.nan + np.ones(shape_sim)
-        # sim.Cw_pub = np.nan + np.ones(shape_sim)
-        # sim.Cm_pub = np.nan + np.ones(shape_sim)
-        # sim.Cw_tot = np.nan + np.ones(shape_sim)
-        # sim.Cm_tot = np.nan + np.ones(shape_sim)
-        # sim.C_tot = np.nan + np.ones(shape_sim)
+        # NB: all arrays not containing "init" or "draw" in name are wiped before each simulation
+        shape_sim = (par.simN,par.simT)
+        sim.Cw_priv = np.nan + np.ones(shape_sim)               
+        sim.Cm_priv = np.nan + np.ones(shape_sim)
+        sim.hw = np.nan + np.ones(shape_sim)
+        sim.hm = np.nan + np.ones(shape_sim)
+        sim.Cw_inter = np.nan + np.ones(shape_sim)
+        sim.Cm_inter = np.nan + np.ones(shape_sim)
+        sim.Qw = np.nan + np.ones(shape_sim)
+        sim.Qm = np.nan + np.ones(shape_sim)
+        sim.Cw_tot = np.nan + np.ones(shape_sim)
+        sim.Cm_tot = np.nan + np.ones(shape_sim)
+        sim.C_tot = np.nan + np.ones(shape_sim)
         
-        # sim.A = np.nan + np.ones(shape_sim)
-        # sim.Aw = np.nan + np.ones(shape_sim)
-        # sim.Am = np.nan + np.ones(shape_sim)
-        # sim.couple = np.nan + np.ones(shape_sim)
-        # sim.power = np.nan + np.ones(shape_sim)
-        # sim.love = np.nan + np.ones(shape_sim)
+        sim.A = np.nan + np.ones(shape_sim)
+        sim.Aw = np.nan + np.ones(shape_sim)
+        sim.Am = np.nan + np.ones(shape_sim)
+        sim.couple = np.nan + np.ones(shape_sim)
+        sim.power = np.nan + np.ones(shape_sim)
+        sim.love = np.nan + np.ones(shape_sim)
 
-        # # lifetime utility
-        # sim.util = np.nan + np.ones((par.simN, par.simT))
-        # sim.mean_lifetime_util = np.array([np.nan])
+        # lifetime utility
+        sim.util = np.nan + np.ones((par.simN, par.simT))
+        sim.mean_lifetime_util = np.array([np.nan])
 
         # # containers for verifying simulaton
         # sim.A_own = np.nan + np.ones(shape_sim)
         # sim.A_partner = np.nan + np.ones(shape_sim)
 
-        # ## d.2. shocks
-        # self.allocate_draws()
+        ## d.2. shocks
+        self.allocate_draws()
 
-        # ## d.3. initial distribution
-        # sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
-        # sim.init_Aw = sim.init_A * par.div_A_share
-        # sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
-        # sim.init_couple = np.ones(par.simN,dtype=np.bool_)
-        # sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
-        # sim.init_love = np.zeros(par.simN)
+        ## d.3. initial distribution
+        sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
+        sim.init_Aw = sim.init_A * par.div_A_share
+        sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
+        sim.init_couple = np.ones(par.simN,dtype=np.bool_)
+        sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
+        sim.init_love = np.zeros(par.simN)
         
         # e. timing
         sol.solution_time = np.array([0.0])
 
-    # def allocate_draws(self):
-    #     # GAMMEL VERSION
-    #     par = self.par
-    #     sim = self.sim
-    #     shape_sim = (par.simN,par.simT)
+    def allocate_draws(self):
+        par = self.par
+        sim = self.sim
+        shape_sim = (par.simN,par.simT)
 
-    #     np.random.seed(par.seed)
-    #     sim.draw_love = np.random.normal(size=shape_sim)
-    #     sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
+        np.random.seed(par.seed)
+        sim.draw_love = np.random.normal(size=shape_sim)
+        sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
 
-    #     sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
-    #     sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
+        sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
+        sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
 
-    #     sim.draw_repartner_love = par.sigma_love*np.random.normal(0.0,1.0,size=shape_sim) #np.random.choice(par.num_love, p=par.prob_partner_love, size=shape_sim) # Love index when repartnering
+        sim.draw_repartner_love = par.sigma_love*np.random.normal(0.0,1.0,size=shape_sim) #np.random.choice(par.num_love, p=par.prob_partner_love, size=shape_sim) # Love index when repartnering
 
         
     def setup_grids(self):
@@ -432,8 +434,8 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_love = np.append(par.prob_partner_love,0.0) # lost last point in diff
         # par.prob_partner_love = np.ones(par.num_love)/par.num_love # uniform
 
-        # par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
-        # par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
+        par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
+        par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
 
 
 
@@ -450,20 +452,19 @@ class HouseholdModelClass(EconModelClass):
         self.cpp.solve(sol,par)
 
 
-    # def simulate(self):
-    #     # GAMMEL VERSION
-    #     sol = self.sol
-    #     sim = self.sim
-    #     par = self.par
+    def simulate(self):
+        sol = self.sol
+        sim = self.sim
+        par = self.par
 
-    #     # clear simulation
-    #     for key, val in sim.__dict__.items():
-    #         if 'init' in key or 'draw' in key: continue
-    #         setattr(sim, key, np.zeros(val.shape)+np.nan)
+        # clear simulation
+        for key, val in sim.__dict__.items():
+            if 'init' in key or 'draw' in key: continue
+            setattr(sim, key, np.zeros(val.shape)+np.nan)
 
-    #     self.cpp.simulate(sim,sol,par)
+        self.cpp.simulate(sim,sol,par)
 
-    #     sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
+        sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
 
         
 
