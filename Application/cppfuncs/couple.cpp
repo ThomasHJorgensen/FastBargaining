@@ -180,6 +180,120 @@ namespace couple {
         } // wealth   
     }
 
+    ////////////////////////////// EGM numerical solution //////////////////////////////
+    double marg_util_C_couple(double C_tot, int ilw, int ilm, int iP, par_struct* par, sol_struct* sol, double guess_Cw_priv, double guess_Cm_priv){
+        // baseline utility (could be passed as argument to avoid recomputation of utility at C_tot)
+
+        double power = par->grid_power[iP];
+        double love = 0.0; // does not matter for the marginal utility
+
+        // OBS: Implement start values for Cw_priv and Cm_priv as well as hw, hm (and C_inter?)
+
+        double util = precompute::util_C_couple(C_tot,ilw, ilm, power, love, par, sol
+            // interpolate
+        );
+
+        // forward difference
+        double delta = 0.0001;
+        double util_delta = precompute::util_C_couple(C_tot + delta,ilw, ilm, power, love, par, sol
+            // interpolate
+        );
+        return (util_delta - util)/delta;
+    }
+    
+    // numerical inverse marginal utility
+    typedef struct { 
+        double margU;
+        int iP;
+        int gender;
+        par_struct *par;
+        sol_struct *sol;
+        bool do_print;
+
+        double guess_Cw_priv;
+        double guess_Cm_priv;
+    } solver_inv_struct_couple;
+
+    double obj_inv_marg_util_couple(unsigned n, const double *x, double *grad, void *solver_data_in){
+         // unpack
+        solver_inv_struct_couple *solver_data = (solver_inv_struct_couple *) solver_data_in; 
+        
+        double C_tot = x[0];
+        double margU = solver_data->margU;
+        int iP = solver_data->iP;
+        double start_Cw_priv = solver_data->guess_Cw_priv;//C_tot/3.0;
+        double start_Cm_priv = solver_data->guess_Cm_priv;//C_tot/3.0;
+        bool do_print = solver_data->do_print;
+        par_struct *par = solver_data->par;
+        sol_struct *sol = solver_data->sol;
+        int ilw = 1; // OBS: Return to this when implementing labor choice (I think it should be part of x or something we max over afterwards)
+        int ilm = 1; // OBS: Return to this when implementing labor choice (I think it should be part of x or something we max over afterwards)
+
+        // clip
+        double penalty = 0.0;
+        if (C_tot <= 0.0) {
+            penalty += 1000.0*C_tot*C_tot;
+            C_tot = 1.0e-6;
+        }
+
+        // return squared difference
+        double diff = marg_util_C_couple(C_tot,ilm, ilw, iP,par,sol, start_Cw_priv, start_Cm_priv) - margU;
+
+        if (do_print){
+            logs::write("inverse_log.txt",1,"C_tot: %f, diff: %f, penalty: %f\n",C_tot,diff,penalty);
+        }
+        return diff*diff + penalty;
+
+    }
+
+    double inv_marg_util_couple(double margU, int ilw, int ilm, int iP,par_struct* par, sol_struct* sol, double guess_Ctot, double guess_Cw_priv, double guess_Cm_priv,bool do_print=false ){
+        // setup numerical solver
+        solver_inv_struct_couple* solver_data = new solver_inv_struct_couple;  
+                
+        int const dim = 1;
+        double lb[dim],ub[dim],x[dim];   
+        
+        auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim); // NLOPT_LD_MMA NLOPT_LD_LBFGS NLOPT_GN_ORIG_DIRECT NLOPT_LN_BOBYQA
+        double minf=0.0;
+
+        // search over optimal total consumption, C
+        // settings
+        solver_data->margU = margU;         
+        solver_data->iP = iP;
+        solver_data->par = par;
+        solver_data->sol = sol;
+        solver_data->do_print = do_print;    
+
+        solver_data->guess_Cw_priv = guess_Cw_priv;
+        solver_data->guess_Cm_priv = guess_Cm_priv;
+
+
+        if (do_print){
+            logs::write("inverse_log.txt",0,"margU: %f\n",margU);
+        }
+
+        nlopt_set_min_objective(opt, obj_inv_marg_util_couple, solver_data);   
+        nlopt_set_maxeval(opt, 2000);
+        nlopt_set_ftol_rel(opt, 1.0e-6);
+        nlopt_set_xtol_rel(opt, 1.0e-5);
+
+        // bounds
+        lb[0] = 0.0;  
+        ub[0] = 2.0*par->max_Ctot;
+        nlopt_set_lower_bounds(opt, lb);
+        nlopt_set_upper_bounds(opt, ub);
+
+        // optimize
+        x[0] = guess_Ctot; 
+        nlopt_optimize(opt, x, &minf);          
+        nlopt_destroy(opt);   
+
+        delete solver_data;              
+        
+        // return consumption value
+        return x[0];
+        
+    }
 
     //////////////////
     // EGM solution //
@@ -302,21 +416,21 @@ namespace couple {
                 // iii. Get total consumption by interpolation of pre-computed inverse marginal utility (coming from Euler)
                 if (strcmp(par->interp_method,"numerical")==0){
                     
-                    // // starting values
-                    // double guess_Ctot = 3.0;
-                    // double guess_Cw_priv = guess_Ctot/3.0;
-                    // double guess_Cm_priv = guess_Ctot/3.0;
-                    // if(iA_pd>0){
-                    //     // last found solution
-                    //     guess_Ctot = sol->C_tot_pd[index::couple_pd(t,iP,iL,iA_pd-1,par)];
-                    //     guess_Cw_priv = Cw_priv;
-                    //     guess_Cm_priv = Cm_priv;
+                    // starting values
+                    double guess_Ctot = 3.0;
+                    double guess_Cw_priv = guess_Ctot/3.0;
+                    double guess_Cm_priv = guess_Ctot/3.0;
+                    if(iA_pd>0){
+                        // last found solution
+                        guess_Ctot = sol->C_tot_pd[index::couple_pd(t,iP,iL,iA_pd-1,par)];
+                        guess_Cw_priv = Cw_priv;
+                        guess_Cm_priv = Cm_priv;
 
-                    // } else if (t<(par->T-2)) {
-                    //     guess_Ctot = sol->C_tot_pd[index::couple_pd(t+1,iP,iL,iA_pd,par)];
-                    // }
-                                        
-                    // sol->C_tot_pd[idx_pd] = precompute::inv_marg_util_couple(sol->EmargU_pd[idx_pd],iP,par,sol,guess_Ctot,guess_Cw_priv,guess_Cm_priv); // numerical inverse
+                    } else if (t<(par->T-2)) {
+                        guess_Ctot = sol->C_tot_pd[index::couple_pd(t+1,iP,iL,iA_pd,par)];
+                    }
+                    // OBS: starting values are not used. Also, there should be starting values for hw, hm, and C_inter as well
+                    sol->C_tot_pd[idx_pd] = inv_marg_util_couple(sol->EmargU_pd[idx_pd],ilw, ilm, iP,par,sol, guess_Ctot, guess_Cw_priv, guess_Cm_priv); // numerical inverse
 
                 } else {
                     if(strcmp(par->interp_method,"linear")==0){
@@ -610,5 +724,7 @@ namespace couple {
     //         } // power
     //     } // pragma
     // }
-    
+
+
+        
 }

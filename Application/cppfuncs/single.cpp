@@ -82,7 +82,119 @@ namespace single {
         );
     }
 
+    //////////////////// EGM ////////////////////////
+    ////// numerical EGM //////
+    double marg_util_C_single(double C_tot, int il, int gender, par_struct* par, sol_struct* sol, double guess_C_priv = 3.0, double guess_h = 3.0){
 
+        // OBS: Implement start values for C_priv and h
+        double C_priv = guess_C_priv;
+        double h = guess_h;
+
+        // closed form solution for intra-period problem of single
+        double util = precompute::util_C_single(C_tot, il, gender, par, sol
+            // interpolate=true
+        );
+
+        // forward difference
+        double delta = 0.0001;
+        double util_delta = precompute::util_C_single(C_tot + delta, il, gender, par, sol
+            // interpolate
+        );
+        return (util_delta - util)/delta;
+    }
+
+    typedef struct { 
+        double margU;
+        int gender;
+        par_struct *par;
+        sol_struct *sol;
+        bool do_print;
+
+        double guess_C_priv;
+        double guess_h;
+    } solver_inv_struct_single;
+
+    double obj_inv_marg_util_single(unsigned n, const double *x, double *grad, void *solver_data_in){
+         // unpack
+        solver_inv_struct_single *solver_data = (solver_inv_struct_single *) solver_data_in; 
+        
+        double C_tot = x[0];
+        double margU = solver_data->margU;
+        int gender = solver_data->gender;
+        bool do_print = solver_data->do_print;
+        par_struct *par = solver_data->par;
+        sol_struct *sol = solver_data->sol;
+        
+        double guess_C_priv = solver_data->guess_C_priv; // OBS: starting values not used
+        double guess_h = solver_data->guess_h; // OBS: starting values not used
+        int il = 1; // OBS: Return to this when implementing labor choice (I think it should be part of x or something we max over afterwards)
+
+        // clip
+        double penalty = 0.0;
+        if (C_tot <= 0.0) {
+            penalty += 1000.0*C_tot*C_tot;
+            C_tot = 1.0e-6;
+        }
+
+        // return squared difference (using analytical marginal utility)
+        double diff = marg_util_C_single(C_tot, il, gender, par, sol, guess_C_priv, guess_h) - margU;
+
+        if (do_print){
+            logs::write("inverse_log.txt",1,"C_tot: %f, diff: %f, penalty: %f\n",C_tot,diff,penalty);
+        }
+        return diff*diff + penalty;
+
+    }
+
+    double inv_marg_util_single(double margU, int il, int gender, par_struct* par, sol_struct* sol, double guess_C_tot, double guess_C_priv, double guess_h, bool do_print=false){
+        // setup numerical solver
+        solver_inv_struct_single* solver_data = new solver_inv_struct_single;  
+                
+        int const dim = 1;
+        double lb[dim],ub[dim],x[dim];   
+        
+        auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim); // NLOPT_LD_MMA NLOPT_LD_LBFGS NLOPT_GN_ORIG_DIRECT NLOPT_LN_BOBYQA
+        double minf=0.0;
+
+        // search over optimal total consumption, C
+        // settings
+        solver_data->margU = margU;  
+        solver_data->gender = gender;         
+        solver_data->par = par;
+        solver_data->sol = sol;
+        solver_data->do_print = do_print;   
+        solver_data->guess_C_priv = guess_C_priv;     
+        solver_data->guess_h = guess_h;
+
+        if (do_print){
+            logs::write("inverse_log.txt",0,"margU: %f\n",margU);
+        }
+
+        nlopt_set_min_objective(opt, obj_inv_marg_util_single, solver_data);   
+        nlopt_set_maxeval(opt, 2000);
+        nlopt_set_ftol_rel(opt, 1.0e-6);
+        nlopt_set_xtol_rel(opt, 1.0e-5);
+
+        // bounds
+        lb[0] = 0.0;  
+        ub[0] = 2.0*par->max_Ctot;
+        nlopt_set_lower_bounds(opt, lb);
+        nlopt_set_upper_bounds(opt, ub);
+
+        // optimize
+        x[0] = guess_C_tot; 
+        nlopt_optimize(opt, x, &minf);          
+        nlopt_destroy(opt);                 
+        
+        delete solver_data;
+
+        // return consumption value
+        return x[0];
+        
+    }
+
+
+    /////// iEGM //////
     void handle_liquidity_constraint_single_to_single(int t, int il, int gender, double* m_vec, double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V, double* EV_next, sol_struct* sol, par_struct* par){
         // 1. Check if liquidity constraint binds
         // constraint: binding if common m is smaller than smallest m in endogenous grid
@@ -227,13 +339,23 @@ namespace single {
             EmargU_pd[iA_pd] = par->beta*tools::interp_1d_index(grid_A, par->num_A, &margV[idx_next],A_next, min_point_A);
 
             /// c. invert marginal utility by interpolation from pre-computed grid
-            if(strcmp(par->interp_method,"linear")==0){
-                C_tot_pd[iA_pd] = tools::interp_1d(&grid_marg_u_single_for_inv[idx_interp],par->num_marg_u,par->grid_inv_marg_u, EmargU_pd[iA_pd]);
-                if (par->interp_inverse){
-                    C_tot_pd[iA_pd] = 1.0/C_tot_pd[iA_pd];
+            if(strcmp(par->interp_method,"numerical")==0){
+                // starting values
+                    double guess_C_tot = 3.0;
+                    double guess_C_priv = guess_C_tot/3.0;
+                    double guess_h = (par->Day - par->grid_l[il])/2.0; // OBS: Return to this when implementing labor choice (I think it should be part of x or something we max over afterwards)
+                    if(iA_pd>0){
+                        // last found solution
+                        guess_C_tot = C_tot_pd[iA_pd-1];
+                        // guess_C_priv = C_priv;
+                        // guess_C_priv = guess_h;
+                    }
+                    // OBS: starting values are not used.
+                    C_tot_pd[iA_pd] = inv_marg_util_single(EmargU_pd[iA_pd],il, gender, par,sol, guess_C_tot, guess_C_priv, guess_h); // numerical inverse
+            } else {
+                if(strcmp(par->interp_method,"linear")==0){
+                    C_tot_pd[iA_pd] = tools::interp_1d(&grid_marg_u_single_for_inv[idx_interp],par->num_marg_u,par->grid_inv_marg_u, EmargU_pd[iA_pd]);
                 }
-            } else { // OBS: I just copied the above. Here we can have numerical implementation. Method not implemented
-                C_tot_pd[iA_pd] = tools::interp_1d(&grid_marg_u_single_for_inv[idx_interp],par->num_marg_u,par->grid_inv_marg_u, EmargU_pd[iA_pd]);
                 if (par->interp_inverse){
                     C_tot_pd[iA_pd] = 1.0/C_tot_pd[iA_pd];
                 }
