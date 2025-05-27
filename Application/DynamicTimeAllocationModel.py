@@ -195,8 +195,8 @@ class HouseholdModelClass(EconModelClass):
         sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
         sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
 
-        # sol.EVw_cond_meet_partner = np.nan + np.ones(shape_single)
-        # sol.EVm_cond_meet_partner = np.nan + np.ones(shape_single)
+        sol.EVw_cond_meet_partner = np.nan + np.ones(shape_single)
+        sol.EVm_cond_meet_partner = np.nan + np.ones(shape_single)
 
 
         # b. couples
@@ -239,9 +239,12 @@ class HouseholdModelClass(EconModelClass):
                                                                         
         sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)      
         sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)      
-        # sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple)        
-        # sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple)   
-        # sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple) 
+        sol.hw_single_to_couple = np.nan + np.ones(shape_couple)      
+        sol.hm_single_to_couple = np.nan + np.ones(shape_couple)      
+        sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple)        
+        sol.Q_single_to_couple = np.nan + np.ones(shape_couple)        
+        sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple)   
+        sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple) 
   
         # shape_power =(par.T,par.num_love,par.num_A,par.num_A)          
         # sol.initial_power = np.nan + np.zeros(shape_power)
@@ -412,23 +415,22 @@ class HouseholdModelClass(EconModelClass):
 
 
         # re-partering probabilities
-        # TBD: nedenstående udkommenterede kode er den gamle version
-        # par.prob_repartner = par.p_meet*np.ones(par.T) # likelihood of meeting a partner
+        par.prob_repartner = par.p_meet*np.ones(par.T) # likelihood of meeting a partner
 
-        # if np.isnan(par.prob_partner_A_w[0,0]):
-        #     par.prob_partner_A_w = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
+        if np.isnan(par.prob_partner_A_w[0,0]):
+            par.prob_partner_A_w = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
     
-        # if np.isnan(par.prob_partner_A_m[0,0]):
-        #     par.prob_partner_A_m = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
+        if np.isnan(par.prob_partner_A_m[0,0]):
+            par.prob_partner_A_m = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
        
-        # # Norm distributed initial love - note: Probability mass between points (approximation of continuous distribution)
-        # if par.sigma_love<=1.0e-6:
-        #     love_cdf = np.where(par.grid_love>=0.0,1.0,0.0)
-        # else:
-        #     love_cdf = stats.norm.cdf(par.grid_love,0.0,par.sigma_love)
-        # par.prob_partner_love = np.diff(love_cdf,1)
-        # par.prob_partner_love = np.append(par.prob_partner_love,0.0) # lost last point in diff
-        # # par.prob_partner_love = np.ones(par.num_love)/par.num_love # uniform
+        # Norm distributed initial love - note: Probability mass between points (approximation of continuous distribution)
+        if par.sigma_love<=1.0e-6:
+            love_cdf = np.where(par.grid_love>=0.0,1.0,0.0)
+        else:
+            love_cdf = stats.norm.cdf(par.grid_love,0.0,par.sigma_love)
+        par.prob_partner_love = np.diff(love_cdf,1)
+        par.prob_partner_love = np.append(par.prob_partner_love,0.0) # lost last point in diff
+        # par.prob_partner_love = np.ones(par.num_love)/par.num_love # uniform
 
         # par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
         # par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
