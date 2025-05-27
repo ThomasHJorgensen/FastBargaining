@@ -643,165 +643,165 @@ namespace single {
         }
     }
 
-    //  double repartner_surplus(double power, index::state_couple_struct* state_couple, index::state_single_struct* state_single, int gender, par_struct* par, sol_struct* sol){ //TODO: add index
-    //     // unpack
-    //     int t = state_single->t;
-    //     double A = state_single->A;
-    //     double love = state_couple->love;
-    //     double A_tot = state_couple->A; 
+     double repartner_surplus(double power, index::state_couple_struct* state_couple, index::state_single_struct* state_single, int gender, par_struct* par, sol_struct* sol){ //TODO: add index
+        // unpack
+        int t = state_single->t;
+        double A = state_single->A;
+        double love = state_couple->love;
+        double A_tot = state_couple->A; 
 
-    //     // gender specific
-    //     double* V_single_to_single = sol->Vw_single_to_single;
-    //     double* V_single_to_couple = sol->Vw_single_to_couple;
-    //     double* grid_A_single = par->grid_Aw;
-    //     if (gender == man){
-    //         V_single_to_single = sol->Vm_single_to_single;
-    //         V_single_to_couple = sol->Vm_single_to_couple;
-    //         grid_A_single = par->grid_Am;
-    //     }
+        // gender specific
+        double* V_single_to_single = sol->Vw_single_to_single;
+        double* V_single_to_couple = sol->Vw_single_to_couple;
+        double* grid_A_single = par->grid_Aw;
+        if (gender == man){
+            V_single_to_single = sol->Vm_single_to_single;
+            V_single_to_couple = sol->Vm_single_to_couple;
+            grid_A_single = par->grid_Am;
+        }
         
-    //     // Get indices
-    //     int iA_single = state_single->iA;
-    //     int iL_couple = state_couple->iL;
-    //     int iA_couple = state_couple->iA;
-    //     int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
+        // Get indices
+        int iA_single = state_single->iA;
+        int iL_couple = state_couple->iL;
+        int iA_couple = state_couple->iA;
+        int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
 
-    //     // Get indices if not provided
-    //     if (iL_couple == -1){
-    //         iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
-    //     }
-    //     if (iA_couple == -1){
-    //         iA_couple = tools::binary_search(0, par->num_A, par->grid_A, A_tot);
-    //     }
-    //     if (iA_single == -1){
-    //         iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
-    //     }
+        // Get indices if not provided
+        if (iL_couple == -1){
+            iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
+        }
+        if (iA_couple == -1){
+            iA_couple = tools::binary_search(0, par->num_A, par->grid_A, A_tot);
+        }
+        if (iA_single == -1){
+            iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
+        }
 
-    //     //interpolate V_single_to_single
-    //     auto idx_single = index::single(t,0,par);
-    //     double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_single], A, iA_single); 
+        //interpolate V_single_to_single
+        auto idx_single = index::single(t,0,par);
+        double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_single], A, iA_single); 
 
-    //     // interpolate couple V_single_to_couple  
-    //     auto idx_couple = index::couple(t,0,0,0,par);
-    //     double Vstc = tools::_interp_3d(par->grid_power, par->grid_love, par->grid_A, 
-    //                                    par->num_power, par->num_love, par->num_A, 
-    //                                    &V_single_to_couple[idx_couple], power, love, A_tot,
-    //                                    iP, iL_couple, iA_couple);
+        // interpolate couple V_single_to_couple  
+        auto idx_couple = index::couple(t,0,0,0,par);
+        double Vstc = tools::_interp_3d(par->grid_power, par->grid_love, par->grid_A, 
+                                       par->num_power, par->num_love, par->num_A, 
+                                       &V_single_to_couple[idx_couple], power, love, A_tot,
+                                       iP, iL_couple, iA_couple);
 
-    //     // surplus
-    //     return Vstc - Vsts;
-    // }
+        // surplus
+        return Vstc - Vsts;
+    }
 
-    // double calc_initial_bargaining_weight(int t, double love, double Aw, double Am, sol_struct* sol, par_struct* par, int iL_couple=-1){ //TODO: add index
-    //     // state structs
-    //     index::state_couple_struct* state_couple = new index::state_couple_struct;
-    //     index::state_single_struct* state_single_w = new index::state_single_struct;
-    //     index::state_single_struct* state_single_m = new index::state_single_struct;
+    double calc_initial_bargaining_weight(int t, double love, double Aw, double Am, sol_struct* sol, par_struct* par, int iL_couple=-1){ //TODO: add index
+        // state structs
+        index::state_couple_struct* state_couple = new index::state_couple_struct;
+        index::state_single_struct* state_single_w = new index::state_single_struct;
+        index::state_single_struct* state_single_m = new index::state_single_struct;
 
-    //     // couple
-    //     state_couple->t = t;
-    //     state_couple->love = love;
-    //     state_couple->A = Aw+Am;
-    //     state_couple->iA = tools::binary_search(0, par->num_A, par->grid_A, Aw+Am);
-    //     if (iL_couple == -1){
-    //         iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
-    //     }
-    //     state_couple->iL = iL_couple;
+        // couple
+        state_couple->t = t;
+        state_couple->love = love;
+        state_couple->A = Aw+Am;
+        state_couple->iA = tools::binary_search(0, par->num_A, par->grid_A, Aw+Am);
+        if (iL_couple == -1){
+            iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
+        }
+        state_couple->iL = iL_couple;
 
-    //     // single woman
-    //     state_single_w->t = t;
-    //     state_single_w->A = Aw;
-    //     state_single_w->iA = tools::binary_search(0, par->num_A, par->grid_Aw, Aw);
+        // single woman
+        state_single_w->t = t;
+        state_single_w->A = Aw;
+        state_single_w->iA = tools::binary_search(0, par->num_A, par->grid_Aw, Aw);
 
-    //     // single man
-    //     state_single_m->t = t;
-    //     state_single_m->A = Am;
-    //     state_single_m->iA = tools::binary_search(0, par->num_A, par->grid_Am, Am);
-    //     // Note: We don't know whether we are on the woman or man asset grid, so we need to search both.
-    //     // We could pass gender to calc_initial_bargaining_weight to infer which grid we are on, and avoid binary search for that gender
+        // single man
+        state_single_m->t = t;
+        state_single_m->A = Am;
+        state_single_m->iA = tools::binary_search(0, par->num_A, par->grid_Am, Am);
+        // Note: We don't know whether we are on the woman or man asset grid, so we need to search both.
+        // We could pass gender to calc_initial_bargaining_weight to infer which grid we are on, and avoid binary search for that gender
 
-    //     //solver input
-    //     bargaining::nash_solver_struct* nash_struct = new bargaining::nash_solver_struct;
-    //     nash_struct->surplus_func = repartner_surplus;
-    //     nash_struct->state_couple = state_couple;
-    //     nash_struct->state_single_w = state_single_w;
-    //     nash_struct->state_single_m = state_single_m;
-    //     nash_struct->sol = sol;
-    //     nash_struct->par = par;
+        //solver input
+        bargaining::nash_solver_struct* nash_struct = new bargaining::nash_solver_struct;
+        nash_struct->surplus_func = repartner_surplus;
+        nash_struct->state_couple = state_couple;
+        nash_struct->state_single_w = state_single_w;
+        nash_struct->state_single_m = state_single_m;
+        nash_struct->sol = sol;
+        nash_struct->par = par;
 
-    //     // solve
-    //     double init_mu =  bargaining::nash_bargain(nash_struct);
+        // solve
+        double init_mu =  bargaining::nash_bargain(nash_struct);
 
-    //     delete state_couple;
-    //     delete state_single_w;
-    //     delete state_single_m;
-    //     delete nash_struct;
+        delete state_couple;
+        delete state_single_w;
+        delete state_single_m;
+        delete nash_struct;
 
-    //     return init_mu;
-    // }
+        return init_mu;
+    }
     
     
-    // double expected_value_cond_meet_partner(int t, int iA, int gender, sol_struct* sol, par_struct* par){
-    //     // unpack
-    //     double* V_single_to_single = sol->Vw_single_to_single;
-    //     double* V_single_to_couple = sol->Vw_single_to_couple;
-    //     double* prob_partner_A = par->prob_partner_A_w;
-    //     double* grid_A = par->grid_Aw;
-    //     if (gender == man){
-    //         V_single_to_single = sol->Vm_single_to_single;
-    //         V_single_to_couple = sol->Vm_single_to_couple;
-    //         prob_partner_A = par->prob_partner_A_m;
-    //         grid_A = par->grid_Am;
-    //     }
-    //     // // value of remaining single
-    //     auto idx_single = index::single(t,iA,par);
+    double expected_value_cond_meet_partner(int t, int iA, int gender, sol_struct* sol, par_struct* par){
+        // unpack
+        double* V_single_to_single = sol->Vw_single_to_single;
+        double* V_single_to_couple = sol->Vw_single_to_couple;
+        double* prob_partner_A = par->prob_partner_A_w;
+        double* grid_A = par->grid_Aw;
+        if (gender == man){
+            V_single_to_single = sol->Vm_single_to_single;
+            V_single_to_couple = sol->Vm_single_to_couple;
+            prob_partner_A = par->prob_partner_A_m;
+            grid_A = par->grid_Am;
+        }
+        // // value of remaining single
+        auto idx_single = index::single(t,iA,par);
 
-    //     // // b.1. loop over potential partners conditional on meeting a partner
-    //     double Ev_cond = 0.0;
-    //     double val = 0.0;
-    //     for(int iL=0;iL<par->num_love;iL++){
-    //         for(int iAp=0;iAp<par->num_A;iAp++){ // partner's wealth 
+        // // b.1. loop over potential partners conditional on meeting a partner
+        double Ev_cond = 0.0;
+        double val = 0.0;
+        for(int iL=0;iL<par->num_love;iL++){
+            for(int iAp=0;iAp<par->num_A;iAp++){ // partner's wealth 
 
-    //             // b.1.1. probability of meeting a specific type of partner
-    //             auto idx_A = index::index2(iA,iAp,par->num_A,par->num_A);
-    //             double prob_A = prob_partner_A[idx_A]; 
-    //             double prob_love = par->prob_partner_love[iL]; 
-    //             double prob = prob_A*prob_love;
+                // b.1.1. probability of meeting a specific type of partner
+                auto idx_A = index::index2(iA,iAp,par->num_A,par->num_A);
+                double prob_A = prob_partner_A[idx_A]; 
+                double prob_love = par->prob_partner_love[iL]; 
+                double prob = prob_A*prob_love;
 
-    //             // only calculate if match has positive probability of happening
-    //             if (prob>0.0) {
-    //                 // Figure out gender
-    //                 int iAw = iA;
-    //                 int iAm = iAp;
-    //                 if (gender==man) {
-    //                     int iAw = iAp;
-    //                     int iAm = iA;
-    //                 }
+                // only calculate if match has positive probability of happening
+                if (prob>0.0) {
+                    // Figure out gender
+                    int iAw = iA;
+                    int iAm = iAp;
+                    if (gender==man) {
+                        int iAw = iAp;
+                        int iAm = iA;
+                    }
 
-    //                 // // b.1.2. bargain over consumption
-    //                 double love = par->grid_love[iL];
-    //                 double Aw = grid_A[iAw];
-    //                 double Am = grid_A[iAm];
-    //                 double power = calc_initial_bargaining_weight(t, love, Aw, Am, sol, par, iL);
+                    // // b.1.2. bargain over consumption
+                    double love = par->grid_love[iL];
+                    double Aw = grid_A[iAw];
+                    double Am = grid_A[iAm];
+                    double power = calc_initial_bargaining_weight(t, love, Aw, Am, sol, par, iL);
                     
-    //                 // b.1.3 Value conditional on meeting partner
-    //                 if (power>=0.0){
-    //                     double A_tot = Aw + Am;
-    //                     auto idx_interp = index::couple(t, 0, 0, 0, par);
-    //                     val = tools::interp_3d(par->grid_power, par->grid_love, par->grid_A, 
-    //                                    par->num_power, par->num_love, par->num_A, 
-    //                                    &V_single_to_couple[idx_interp], power, love, A_tot); //TODO: reuse index
-    //                 } else {
-    //                     val = V_single_to_single[idx_single];
-    //                 }
+                    // b.1.3 Value conditional on meeting partner
+                    if (power>=0.0){
+                        double A_tot = Aw + Am;
+                        auto idx_interp = index::couple(t, 0, 0, 0, par);
+                        val = tools::interp_3d(par->grid_power, par->grid_love, par->grid_A, 
+                                       par->num_power, par->num_love, par->num_A, 
+                                       &V_single_to_couple[idx_interp], power, love, A_tot); //TODO: reuse index
+                    } else {
+                        val = V_single_to_single[idx_single];
+                    }
 
-    //                 // expected value conditional on meeting a partner
-    //                 Ev_cond += prob*val;
-    //             } // if
-    //         } // iAp
-    //     } // love 
-    //     return Ev_cond;
-    // }
+                    // expected value conditional on meeting a partner
+                    Ev_cond += prob*val;
+                } // if
+            } // iAp
+        } // love 
+        return Ev_cond;
+    }
 
 
 
@@ -816,20 +816,20 @@ namespace single {
                     sol->EVw_start_as_single[idx_single] = sol->Vw_single_to_single[idx_single];
                     sol->EVm_start_as_single[idx_single] = sol->Vm_single_to_single[idx_single];
                 }
-                // else {
-                //     // a.1 Value conditional on meeting partner
-                //     double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
-                //     double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
+                else {
+                    // a.1 Value conditional on meeting partner
+                    double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
+                    double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
 
-                //     // a.2. expected value of starting single
-                //     double p_meet = par->prob_repartner[t];
-                //     auto idx_single = index::single(t,iA,par);
-                //     sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vw_single_to_single[idx_single];
-                //     sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vm_single_to_single[idx_single];
+                    // a.2. expected value of starting single
+                    double p_meet = par->prob_repartner[t];
+                    auto idx_single = index::single(t,iA,par);
+                    sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vw_single_to_single[idx_single];
+                    sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vm_single_to_single[idx_single];
 
-                //     sol->EVw_cond_meet_partner[idx_single] = EVw_cond;
-                //     sol->EVm_cond_meet_partner[idx_single] = EVm_cond;
-                // } // if p_meet
+                    sol->EVw_cond_meet_partner[idx_single] = EVw_cond;
+                    sol->EVm_cond_meet_partner[idx_single] = EVm_cond;
+                } // if p_meet
             } // iA
         } // pragma
 
