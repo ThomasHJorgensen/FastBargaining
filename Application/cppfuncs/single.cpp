@@ -41,8 +41,7 @@ namespace single {
         if (gender == man) {
             double w = wage(K, man, par);
         }
-        double income = w * labor;
-        return par->R*A + income;
+        return par->R*A + w*labor;
     }
 
     double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q, double C_tot, int il, double M, int gender, double* V_next, par_struct* par, sol_struct* sol){
@@ -231,7 +230,7 @@ namespace single {
                 C_tot[iA] = M_now;
 
                 // c. Calculate value
-                V[iA] = value_of_choice_single_to_single(C_priv, h, C_inter, Q, C_tot[iA], il, M_now, gender, EV_next, par, sol);
+                V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], il, M_now, gender, EV_next, par, sol);
 
             }
         }
@@ -385,7 +384,7 @@ namespace single {
             M_pd[iA_pd] = C_tot_pd[iA_pd] + A_next;
 
             /// e. value
-            V_pd[iA_pd] = value_of_choice_single_to_single(C_priv, h, C_inter, Q, C_tot_pd[iA_pd], il, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
+            V_pd[iA_pd] = value_of_choice_single_to_single(&C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], C_tot_pd[iA_pd], il, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
         }
 
         // 3. liquidity constraint
