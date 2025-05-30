@@ -355,6 +355,24 @@ class model_plotter():
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
+    def plot_female_single_pd(self, ax, grid, index, **kwargs):
+        variables = [
+            "EmargUw_single_to_single_pd",
+            "C_totw_single_to_single_pd",
+            "Mw_single_to_single_pd",
+            "Vw_single_to_single_pd",
+        ]
+        return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
+    def plot_male_single_pd(self, ax, grid, index, **kwargs):
+        variables = [
+            "EmargUm_single_to_single_pd",
+            "C_totm_single_to_single_pd",
+            "Mm_single_to_single_pd",
+            "Vm_single_to_single_pd",
+        ]
+        return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
     def plot_couple_pd(self, ax, grid, index, **kwargs):
         variables = [
             'EmargU_pd',
