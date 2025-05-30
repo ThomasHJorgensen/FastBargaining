@@ -57,9 +57,9 @@
 #ifndef SINGLE
 #include "single.cpp"
 #endif
-#ifndef COUPLE
-#include "couple.cpp"
-#endif
-#ifndef SIMULATE
-#include "simulate.cpp"
-#endif
+// #ifndef COUPLE
+// #include "couple.cpp"
+// #endif
+// #ifndef SIMULATE
+// #include "simulate.cpp"
+// #endif

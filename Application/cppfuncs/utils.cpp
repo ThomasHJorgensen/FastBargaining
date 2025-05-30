@@ -17,7 +17,8 @@ namespace utils {
             lambda = par->lambda_m;
         }
 
-        return pow(C_priv, 1-rho)/(1-rho) - phi*pow(lh, 1+1/eta)/(1 + 1/eta) + lambda*log(Q) + love;
+        // note: the log(Q + 0.00001) is to avoid log(0) in case Q=0
+        return pow(C_priv, 1-rho)/(1-rho) - phi*pow(lh, 1+1/eta)/(1 + 1/eta) + lambda*log(Q + 0.00001) + love;
     }
 
     double util_couple(double Cw_priv, double Cm_priv, double lhw, double lhm, double Q, double power, int iL,par_struct* par){

@@ -28,6 +28,7 @@ class model_plotter():
                 'iL': 'grid_love', 
                 'iA': 'grid_A',
                 'iA_pd': 'grid_A_pd',
+                'il': 'grid_l',
             }
         elif isinstance(grid_names, dict):
             self.grid_names = grid_names

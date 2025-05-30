@@ -44,11 +44,11 @@ class HouseholdModelClass(EconModelClass):
         par.Day = 1.0 # time in day
         
         # a. income
-        par.inc_w = 1.0
+        # par.inc_w = 1.0
         par.mu_w = 0.5              # level
         par.gamma_w = 0.1           # return to human capital
 
-        par.inc_m = 1.0
+        # par.inc_m = 1.0
         par.mu_m = 0.5              # level
         par.gamma_m = 0.1           # return to human capital   
 
@@ -104,7 +104,7 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_A_m = np.array([[np.nan]])
 
         # e. discrete choices
-        par.grid_l = np.array([0.0, 0.5, 0.75])
+        par.grid_l = np.array([0.00, 0.5, 0.75])
         par.num_l = len(par.grid_l)
 
 
@@ -142,7 +142,7 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T, par.num_A)                        # single states: T, human capital, assets
+        shape_single = (par.T, par.num_l, par.num_A)                        # single states: T, human capital, assets
         # shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
