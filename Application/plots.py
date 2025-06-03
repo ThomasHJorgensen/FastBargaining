@@ -1,10 +1,11 @@
 import numpy as np
 
 class model_plotter():
-    def __init__(self, model, model_name=None, titles=['variable'], labels=['variable', 'index',], grid_names=None):
+    def __init__(self, model, model_name=None, titles=['variable'], labels=['variable', 'index',], grid_names=None, **kwargs):
         
         self.model = model
         self.model_name = model_name if model_name is not None else model.name
+        self.index_labels_per_row = kwargs.get('index_labels_per_row', 3)  # Default to 3 if not provided
         
         if isinstance(titles, str):
             self.titles = [titles]
@@ -146,12 +147,24 @@ class model_plotter():
                     idx_id for idx_id in variable_index_order
                     if (idx_id in index) and (self.grid_names[idx_id] != grid_modified)
                 ]
-                grid_values = [
-                    f"{self.grid_names[idx_id].removeprefix('grid_')}[{index[idx_id]}]={self.grids[idx_id][index[idx_id]]:.2f}"
+                label_texts = [
+                    "{}[{}]={:.2f}".format(
+                        self.grid_names[idx_id].removeprefix('grid_'),
+                        index[idx_id],
+                        self.grids[idx_id][index[idx_id]],
+                    )
                     for idx_id in label_indices
                 ]
-                if grid_values:
-                    my_label += f"{', '.join(grid_values)}"
+                if label_texts:
+                    label_text = ''
+                    for i, label_idx in enumerate(label_texts):
+                        label_text += label_idx
+                        if i < len(label_texts) - 1:
+                            label_text += ', '
+                        if (i + 1) % self.index_labels_per_row == 0:
+                            label_text += '\n'
+                    my_label += label_text
+
             else:
                 raise ValueError(f"Label '{label_id}' not recognized. Use 'variable', 'index', or 'model'.")
         return my_label
@@ -218,7 +231,7 @@ class model_plotter():
     def plot_female_single_choices(self, ax, grid, index, **kwargs):
         variables = [
             'Cw_tot_single_to_single',
-            'lw_single_to_single',
+            'lw_single_to_single_optimal',
             'Cw_priv_single_to_single',
             'hw_single_to_single',
             'Cw_inter_single_to_single',
@@ -231,7 +244,7 @@ class model_plotter():
     def plot_male_single_choices(self, ax, grid, index, **kwargs):
         variables = [
             'Cm_tot_single_to_single',
-            'lm_single_to_single',
+            'lm_single_to_single_optimal',
             'Cm_priv_single_to_single',
             'hm_single_to_single',
             'Cm_inter_single_to_single',
@@ -264,7 +277,7 @@ class model_plotter():
     def plot_couple_choices(self, ax, grid, index, **kwargs):
         female_variables = [
             None,
-            'lw_couple_to_couple',
+            'lw_couple_to_couple_optimal',
             'Cw_priv_couple_to_couple',
             'hw_couple_to_couple',
             None,
@@ -275,7 +288,7 @@ class model_plotter():
         
         male_variables = [
             None,
-            'lm_couple_to_couple',
+            'lm_couple_to_couple_optimal',
             'Cm_priv_couple_to_couple',
             'hm_couple_to_couple',
             None,
@@ -297,7 +310,7 @@ class model_plotter():
     def plot_female_couple_choices(self, ax, grid, index, **kwargs):
         variables = [
             'Cw_priv_couple_to_couple',
-            'lw_couple_to_couple',
+            'lw_couple_to_couple_optimal',
             'hw_couple_to_couple',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
@@ -305,7 +318,7 @@ class model_plotter():
     def plot_male_couple_choices(self, ax, grid, index, **kwargs):
         variables = [
             'Cm_priv_couple_to_couple',
-            'lm_couple_to_couple',
+            'lm_couple_to_couple_optimal',
             'hm_couple_to_couple',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
@@ -314,8 +327,8 @@ class model_plotter():
         variables = [
             'Cw_priv_couple_to_couple',
             'Cm_priv_couple_to_couple',
-            'lw_couple_to_couple',
-            'lm_couple_to_couple',
+            'lw_couple_to_couple_optimal',
+            'lm_couple_to_couple_optimal',
             'hw_couple_to_couple',
             'hm_couple_to_couple',
         ]

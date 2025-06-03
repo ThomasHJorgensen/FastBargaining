@@ -18,8 +18,8 @@ EXPORT void solve(sol_struct *sol, par_struct *par){
     // loop backwards
     for (int t = par->T-1; t >= 0; t--){
         single::solve_single_to_single(t,sol,par); 
-        // single::solve_couple_to_single(t,sol,par); 
-        // couple::solve_couple(t,sol,par);
+        single::solve_couple_to_single(t,sol,par); 
+        couple::solve_couple(t,sol,par);
         // couple::solve_single_to_couple(t,sol,par);
         single::expected_value_start_single(t,sol,par);
     }
@@ -30,6 +30,13 @@ EXPORT void simulate(sim_struct *sim, sol_struct *sol, par_struct *par){
     
     // sim::model(sim,sol,par);
     ;
+
+}
+
+EXPORT void find_optimal_decision(sol_struct *sol, par_struct *par){
+    
+    single::update_over_optimal_discrete_choice(sol, par);
+    couple::update_over_optimal_discrete_choice(sol, par);
 
 }
 

@@ -41,6 +41,14 @@ namespace utils {
         // return pow(inner, 1.0/sub);
     }
 
+    double wage(double K, int gender, par_struct* par) {
+        double log_wage = par->mu_w + par->gamma_w*K;
+        if (gender == man) {
+            log_wage = par->mu_m + par->gamma_m*K;
+        }
+        return exp(log_wage);
+    }
+
     // double cons_priv_single(double C_tot,int gender,par_struct *par){
     //     // closed form solution for intra-period problem of single.
     //     double rho = par->rho_w;

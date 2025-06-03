@@ -23,8 +23,8 @@ namespace index {
         return i6 + (i5 + (i4 + (i3 + (i2 + i1*N2)*N3)*N4)*N5)*N6;
     }
 
-    long long int couple(long long int t,long long int iP,long long int iL,long long int iA,par_struct* par){
-        return index4(t,iP,iL,iA , par->T,par->num_power,par->num_love,par->num_A); 
+    long long int couple(long long int t, long long int ilw, long long int ilm, long long int iP,long long int iL,long long int iA,par_struct* par){
+        return index6(t,ilw, ilw, iP,iL,iA , par->T,par->num_l,par->num_l,par->num_power,par->num_love,par->num_A); 
     }
     long long int couple_pd(long long int t,long long int iP,long long int iL,long long int iA_pd,par_struct* par){
         return index4(t,iP,iL,iA_pd , par->T,par->num_power,par->num_love,par->num_A_pd); 
@@ -33,16 +33,18 @@ namespace index {
     //     return index3(t,iL,iA , par->T,par->num_love,par->num_A); 
     // }
     long long int single(long long int t,long long int il,long long int iA,par_struct* par){
-        return index3(t,il,iA , par->T, par->num_l, par->num_A); 
+        return index3(t,il,iA, par->T, par->num_l, par->num_A); 
     }
 
     struct index_couple_struct {
             int t;
+            int ilw;
+            int ilm;
             int iL;
             int iA;
             par_struct *par; 
             long long int idx(long long int iP){
-                    return index::couple(t,iP,iL,iA , par); 
+                    return index::couple(t,ilw, ilm,iP,iL,iA , par); 
             }
     };
 
