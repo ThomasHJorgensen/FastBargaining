@@ -200,7 +200,7 @@ class HouseholdModelClass(EconModelClass):
 
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
+        shape_couple = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_A)
         # shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
@@ -335,6 +335,38 @@ class HouseholdModelClass(EconModelClass):
         
         # e. timing
         sol.solution_time = np.array([0.0])
+        
+        # f. optimal choices over discrete choices
+        ## a. single
+        shape_single_optimal = (par.T, par.num_A)
+        # sol.Vw_single_to_single_optimal = np.ones(shape_single_optimal) - np.nan
+        # sol.Vm_single_to_single_optimal = np.ones(shape_single_optimal) - np.nan
+        sol.Cw_tot_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        sol.Cm_tot_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        sol.lw_single_to_single_optimal = np.ones(shape_single_optimal, dtype = int) + np.nan
+        sol.lm_single_to_single_optimal = np.ones(shape_single_optimal, dtype = int) + np.nan
+        # sol.Cw_priv_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        # sol.Cm_priv_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        # sol.hw_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        # sol.hm_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        # sol.Cw_inter_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        # sol.Cm_inter_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
+        # sol.Qw_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan        
+        # sol.Qm_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan        
+
+        # b. couple
+        shape_couple_optimal = (par.T, par.num_power, par.num_love, par.num_A)
+        # sol.Vw_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.Vm_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        sol.C_tot_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        sol.lw_couple_to_couple_optimal = np.ones(shape_couple_optimal, dtype = int) + np.nan
+        sol.lm_couple_to_couple_optimal = np.ones(shape_couple_optimal, dtype = int) + np.nan
+        # sol.Cw_priv_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.Cm_priv_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.hw_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.hm_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.C_inter_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.Q_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
 
     def allocate_draws(self):
         par = self.par
@@ -466,6 +498,45 @@ class HouseholdModelClass(EconModelClass):
 
         sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
 
+    def find_optimal_decision(self):
+        """ Find optimal decision for a given state """
+        par = self.par
+        sol = self.sol
+        
+        # allocate
+        ## a. single
+        shape_single = (par.T, par.num_A)
+        sol.Vw_single_to_single_optimal = np.ones(shape_single) - np.nan
+        sol.Vm_single_to_single_optimal = np.ones(shape_single) - np.nan
+        sol.Cw_tot_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.Cm_tot_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.Cw_priv_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.Cm_priv_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.lw_single_to_single_optimal = np.ones(shape_single, dtype = int) + np.nan
+        sol.lm_single_to_single_optimal = np.ones(shape_single, dtype = int) + np.nan
+        sol.hw_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.hm_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.Cw_inter_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.Cm_inter_single_to_single_optimal = np.ones(shape_single) + np.nan
+        sol.Qw_single_to_single_optimal = np.ones(shape_single) + np.nan        
+        sol.Qm_single_to_single_optimal = np.ones(shape_single) + np.nan        
+
+        # b. couple
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
+        sol.Vw_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.Vm_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.Cw_priv_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.Cm_priv_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.C_inter_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.Q_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.lw_couple_to_couple_optimal = np.ones(shape_couple, dtype = int) + np.nan
+        sol.lm_couple_to_couple_optimal = np.ones(shape_couple, dtype = int) + np.nan
+        sol.hw_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.hm_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.C_tot_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        
+        # Find optimal decisions
+        self.cpp.find_optimal_decision(sol,par)
         
 
         

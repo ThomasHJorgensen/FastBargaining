@@ -150,9 +150,10 @@ venv.bak/
 # Ignore dll
 *.dll
 
-# Other
-*libnlopt-0.exp
-
 # Don't track output files
 output/*
 Application/output/*
+
+# Other
+*libnlopt-0.exp
+Application/compile.bat
