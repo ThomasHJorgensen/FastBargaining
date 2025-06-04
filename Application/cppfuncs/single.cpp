@@ -15,13 +15,6 @@ namespace single {
 
     } solver_single_struct;
 
-    // void intraperiod_allocation(double* C_priv, double* C_pub , double C_tot, int gender,par_struct *par){
-    //     C_priv[0] = utils::cons_priv_single(C_tot,gender,par);
-    //     C_pub[0] = C_tot - C_priv[0];
-    // }
-
-    // }
-
     double resources(double labor, double A,int gender,par_struct* par) {
         if (labor == 0.0) {
             // no labor income, just resources from assets
@@ -42,7 +35,7 @@ namespace single {
         double labor = par->grid_l[il];
 
         // intraperiod allocation
-        precompute::intraperiod_allocation_single(C_priv, h, C_inter, Q, C_tot, il, gender, par, sol);
+        precompute::intraperiod_allocation_single(C_priv, h, C_inter, Q, C_tot, il, gender, par, sol, par->precompute_intratemporal);
         
         // current utility from consumption allocation
         double lh = *h + labor;
@@ -100,15 +93,11 @@ namespace single {
         double h = guess_h;
 
         // closed form solution for intra-period problem of single
-        double util = precompute::util_C_single(C_tot, il, gender, par, sol
-            // interpolate=true
-        );
+        double util = precompute::util_C_single(C_tot, il, gender, par, sol, par->precompute_intratemporal);
 
         // forward difference
         double delta = 0.0001;
-        double util_delta = precompute::util_C_single(C_tot + delta, il, gender, par, sol
-            // interpolate
-        );
+        double util_delta = precompute::util_C_single(C_tot + delta, il, gender, par, sol, par->precompute_intratemporal);
         return (util_delta - util)/delta;
     }
 
@@ -482,8 +471,8 @@ namespace single {
                     il,
                     woman,
                     par,
-                    sol
-                    // interpolate,
+                    sol,
+                    par->precompute_intratemporal
                 );
 
                 precompute::intraperiod_allocation_single(
@@ -495,8 +484,8 @@ namespace single {
                     il,
                     man,
                     par,
-                    sol
-                    // interpolate,
+                    sol,
+                    par->precompute_intratemporal
                 );
 
                 // Calculate value
@@ -580,8 +569,8 @@ namespace single {
                             il,
                             woman,
                             par,
-                            sol
-                            // interpolate,
+                            sol,
+                            par->precompute_intratemporal
                         );
 
                         // MEN
@@ -618,8 +607,8 @@ namespace single {
                             il,
                             man,
                             par,
-                            sol
-                            // interpolate,
+                            sol,
+                            par->precompute_intratemporal
                         );
                         
                     } // iA

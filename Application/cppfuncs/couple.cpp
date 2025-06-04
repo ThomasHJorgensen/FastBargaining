@@ -51,8 +51,8 @@ namespace couple {
         // current utility from consumption allocation
         precompute::intraperiod_allocation_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, 
             ilw, ilm,C_tot,power, 
-            par, sol
-            // interpolate = true
+            par, sol,
+            par->precompute_intratemporal
         );
         // Note Vw and Vm are not a vector, just a pointer to one value
         Vw[0] = utils::util(*Cw_priv, *hw + par->grid_l[ilw], *Q, woman, par, love); 
@@ -204,15 +204,11 @@ namespace couple {
 
         // OBS: Implement start values for Cw_priv and Cm_priv as well as hw, hm (and C_inter?)
 
-        double util = precompute::util_C_couple(C_tot,ilw, ilm, power, love, par, sol
-            // interpolate
-        );
+        double util = precompute::util_C_couple(C_tot,ilw, ilm, power, love, par, sol, par->precompute_intratemporal);
 
         // forward difference
         double delta = 0.0001;
-        double util_delta = precompute::util_C_couple(C_tot + delta,ilw, ilm, power, love, par, sol
-            // interpolate
-        );
+        double util_delta = precompute::util_C_couple(C_tot + delta,ilw, ilm, power, love, par, sol, par->precompute_intratemporal);
         return (util_delta - util)/delta;
     }
     
