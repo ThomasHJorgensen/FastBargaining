@@ -33,7 +33,7 @@ namespace utils {
     double Q(double C_inter, double hw, double hm, par_struct *par){
 
         double h_agg = pow(par->alpha*pow(hw, par->zeta) + pow(hm, par->zeta), 1/par->zeta);
-        return pow(C_inter, par->omega) * pow(h_agg, 1.0 - par->omega);
+        return pow(C_inter + 1.0e-4, par->omega) * pow(h_agg, 1.0 - par->omega);
 
         // // alternative formulation - useful for testing, but should remain commented out
         // double sub = 0.5;
