@@ -24,10 +24,10 @@ namespace index {
     }
 
     long long int couple(long long int t, long long int ilw, long long int ilm, long long int iP,long long int iL,long long int iA,par_struct* par){
-        return index6(t,ilw, ilw, iP,iL,iA , par->T,par->num_l,par->num_l,par->num_power,par->num_love,par->num_A); 
+        return index6(t,ilw, ilm, iP,iL,iA , par->T,par->num_l,par->num_l,par->num_power,par->num_love,par->num_A); 
     }
-    long long int couple_pd(long long int t,long long int iP,long long int iL,long long int iA_pd,par_struct* par){
-        return index4(t,iP,iL,iA_pd , par->T,par->num_power,par->num_love,par->num_A_pd); 
+    long long int couple_pd(long long int t, long long int ilw, long long int ilm, long long int iP,long long int iL,long long int iA_pd,par_struct* par){
+        return index6(t,ilw,ilm,iP,iL,iA_pd , par->T,par->num_l,par->num_l,par->num_power,par->num_love,par->num_A_pd); 
     }
     // long long int single_to_couple(long long int t,long long int iL,long long int iA,par_struct* par){
     //     return index3(t,iL,iA , par->T,par->num_love,par->num_A); 

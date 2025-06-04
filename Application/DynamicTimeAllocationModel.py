@@ -226,7 +226,7 @@ class HouseholdModelClass(EconModelClass):
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
-        shape_egm = (par.T, par.num_power,par.num_love,par.num_A_pd)
+        shape_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
         sol.EmargU_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
         sol.C_tot_pd = np.zeros(shape_egm)                      # C for EGM
         sol.M_pd = np.zeros(shape_egm)                          # Endogenous grid
