@@ -690,8 +690,8 @@ namespace couple {
             for (int iL=0; iL<par->num_love; iL++){    
                 for (int iA=0; iA<par->num_A;iA++){
                     // i. Get indices
-                    auto idx_single_w = index::single(t,ilw,iA,par);
-                    auto idx_single_m = index::single(t,ilm,iA,par);
+                    auto idx_single_w = index::single_cs(t,ilw,iA,par);
+                    auto idx_single_m = index::single_cs(t,ilm,iA,par);
                     idx_couple->t = t;
                     idx_couple->ilw = ilw;
                     idx_couple->ilm = ilm;

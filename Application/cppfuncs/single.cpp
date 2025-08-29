@@ -325,8 +325,8 @@ namespace single {
 
         // 2. EGM step
         /// setup
-        auto idx = index::single(t,il,0, par);
-        auto idx_next = index::single(t+1,il,0, par);
+        auto idx = index::single_cs(t,il,0, par);
+        auto idx_next = index::single(t+1,0, par);
         auto idx_interp = index::index2(il,0,par->num_l,par->num_marg_u);
         int min_point_A = 0;
 
@@ -386,13 +386,13 @@ namespace single {
     }
 
 
-    void calc_marginal_value_single(int t, int il, int gender, sol_struct* sol, par_struct* par){
+    void calc_marginal_value_single(int t, int gender, sol_struct* sol, par_struct* par){
 
         // unpack
         int const &num_A = par->num_A;
 
         // set index
-        auto idx = index::single(t,il,0,par);
+        auto idx = index::single(t,0,par);
 
         // gender specific variables
         double* grid_A = par->grid_Aw;
@@ -451,7 +451,7 @@ namespace single {
         // terminal period
         if (t == (par->T-1)){
             for (int iA=0; iA<par->num_A;iA++){
-                auto idx = index::single(t,il,iA,par);
+                auto idx = index::single_cs(t,il,iA,par);
 
                 double Aw = par->grid_Aw[iA];
                 double Am = par->grid_Am[iA];
@@ -526,8 +526,8 @@ namespace single {
                     // 2. loop over assets
                     #pragma omp for
                     for (int iA=0; iA<par->num_A;iA++){
-                        auto idx = index::single(t,il,iA,par);
-                        auto idx_interp = index::single(t+1,il,0,par);
+                        auto idx = index::single_cs(t,il,iA,par);
+                        auto idx_interp = index::single(t+1,0,par);
                         
                         // resources
                         double Aw = par->grid_Aw[iA];
@@ -637,8 +637,8 @@ namespace single {
             #pragma omp for
             for (int il=0; il<par->num_l;il++){
                 for (int iA=0; iA<par->num_A;iA++){
-                    auto idx = index::single(t,il,iA,par);
-                    
+                    auto idx = index::single_cs(t,il,iA,par);
+
                     sol->Vw_couple_to_single[idx] = sol->Vw_single_to_single[idx] - par->div_cost;
                     sol->Vm_couple_to_single[idx] = sol->Vm_single_to_single[idx] - par->div_cost;
                     sol->Cw_priv_couple_to_single[idx] = sol->Cw_priv_single_to_single[idx];
@@ -832,7 +832,7 @@ namespace single {
 
                         // Find maximum value over all labor choices
                         for (int il = 0; il < par->num_l; il++) {
-                            auto index_choice = index::single(t,il,iA,par);
+                            auto index_choice = index::single_cs(t,il,iA,par);
 
                             list_choice_specific_values_w[il] = sol->Vw_single_to_single[index_choice];
                             list_choice_specific_values_m[il] = sol->Vm_single_to_single[index_choice];
@@ -843,7 +843,7 @@ namespace single {
                         
                         // find optimal choices
                         for (int il = 0; il < par->num_l; il++) {
-                            auto index_choice =  index::single(t,il,iA,par);
+                            auto index_choice =  index::single_cs(t,il,iA,par);
 
                             if (list_choice_specific_values_w[il] == maxVw) {
                                 // sol->Vw_single_to_single_optimal[idx] = sol->Vw_single_to_single[index_choice];
@@ -880,43 +880,40 @@ namespace single {
         
 
         // a. Loop over states
-        for (int il=0; il<par->num_l;il++){
-            for (int iA=0; iA<par->num_A;iA++){
-                if (par->p_meet == 0.0) {
-                    // get index
-                    auto idx_single = index::single(t,il,iA,par);
-
-                    // Find maximum value over all labor choices
-                    for (int il2 = 0; il2 < par->num_l; il2++) {
-                        list_choice_specific_values_w[il2] = sol->Vw_single_to_single[index::single(t,il2,iA,par)];
-                        list_choice_specific_values_m[il2] = sol->Vm_single_to_single[index::single(t,il2,iA,par)];
-                    }
+        for (int iA=0; iA<par->num_A;iA++){
+            if (par->p_meet == 0.0) {
+                // get index
+                auto idx_single = index::single(t,iA,par);
                 
-                    sol->EVw_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_w, par->num_l);
-                    sol->EVm_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_m, par->num_l);
-                    
-                } else {
-                    // // a.1 Value conditional on meeting partner
-                    // double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
-                    // double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
+                // Find maximum value over all labor choices
+                for (int il = 0; il < par->num_l; il++) {
+                    auto idx_single_cs = index::single_cs(t,il,iA,par);
+                    list_choice_specific_values_w[il] = sol->Vw_single_to_single[idx_single_cs];
+                    list_choice_specific_values_m[il] = sol->Vm_single_to_single[idx_single_cs];
+                }
+            
+                sol->EVw_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_w, par->num_l);
+                sol->EVm_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_m, par->num_l);
+                
+            } else {
+                // // a.1 Value conditional on meeting partner
+                // double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
+                // double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
 
-                    // // a.2. expected value of starting single
-                    // double p_meet = par->prob_repartner[t];
-                    // auto idx_single = index::single(t,iA,par);
-                    // sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vw_single_to_single[idx_single];
-                    // sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vm_single_to_single[idx_single];
+                // // a.2. expected value of starting single
+                // double p_meet = par->prob_repartner[t];
+                // auto idx_single = index::single(t,iA,par);
+                // sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vw_single_to_single[idx_single];
+                // sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vm_single_to_single[idx_single];
 
-                    // sol->EVw_cond_meet_partner[idx_single] = EVw_cond;
-                    // sol->EVm_cond_meet_partner[idx_single] = EVm_cond;
-                } // if p_meet
-            } // iA
-        } // il
+                // sol->EVw_cond_meet_partner[idx_single] = EVw_cond;
+                // sol->EVm_cond_meet_partner[idx_single] = EVm_cond;
+            } // if p_meet
+        } // iA
 
         if (par->do_egm){
-            for (int il=0; il<par->num_l;il++){
-                calc_marginal_value_single(t, il, woman, sol, par);
-                calc_marginal_value_single(t, il, man, sol, par);
-            }
+            calc_marginal_value_single(t, woman, sol, par);
+            calc_marginal_value_single(t, man, sol, par);
         }
 
         delete[] list_choice_specific_values_w;

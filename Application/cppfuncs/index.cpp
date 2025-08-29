@@ -32,7 +32,10 @@ namespace index {
     // long long int single_to_couple(long long int t,long long int iL,long long int iA,par_struct* par){
     //     return index3(t,iL,iA , par->T,par->num_love,par->num_A); 
     // }
-    long long int single(long long int t,long long int il,long long int iA,par_struct* par){
+    long long int single(long long int t, long long int iA,par_struct* par){
+        return index2(t,iA, par->T, par->num_A); 
+    }
+    long long int single_cs(long long int t,long long int il,long long int iA,par_struct* par){
         return index3(t,il,iA, par->T, par->num_l, par->num_A); 
     }
 
