@@ -547,35 +547,36 @@ namespace couple {
     }
 
     void calc_expected_value_couple(int t, int iP, int iL, int iA, double* Vw, double* Vm, double* EVw, double* EVm, sol_struct* sol, par_struct* par){
-        
-        int list_length = par->num_l * par->num_l;
-        double* list_choice_specific_values_w = new double[list_length];
-        double* list_choice_specific_values_m = new double[list_length];
-        
+                
         double love = par->grid_love[iL];
         auto idx = index::couple(t,iP,iL,iA,par);
         auto delta_love = index::couple_cs(t,0,0,iP,1,iA,par) - index::couple_cs(t,0,0,iP,0,iA,par);
         double Eval_w = 0;
         double Eval_m = 0;        
-        double maxVw = 0.0;
-        double maxVm = 0.0;
+        double Vw_now = 0;
+        double Vm_now = 0;        
         for (int i_love_shock=0; i_love_shock<par->num_shock_love; i_love_shock++){
             double love_next = love + par->grid_shock_love[i_love_shock];
             double weight = par->grid_weight_love[i_love_shock];
             auto idx_love = tools::binary_search(0,par->num_love,par->grid_love,love_next);
-                
+            double maxVw = -std::numeric_limits<double>::infinity();
+            double maxVm = -std::numeric_limits<double>::infinity();
+            
             for (int ilw = 0; ilw < par->num_l; ilw++) {
                 for (int ilm = 0; ilm < par->num_l; ilm++) {
                     auto il = index::index2(ilw, ilm, par->num_l, par->num_l);
                     auto idx_interp = index::couple_cs(t,ilw,ilm,iP,0,iA,par);
-                    list_choice_specific_values_w[il] = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vw[idx_interp], love_next, idx_love, delta_love);
-                    list_choice_specific_values_m[il] = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vm[idx_interp], love_next, idx_love, delta_love);
+                    Vw_now = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vw[idx_interp], love_next, idx_love, delta_love);
+                    Vm_now = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vm[idx_interp], love_next, idx_love, delta_love);
+
+                    if (maxVw < Vw_now) {
+                        maxVw = Vw_now;
+                    }
+                    if (maxVm < Vm_now) {
+                        maxVm = Vm_now;
+                    }
                 }
             }
-        
-            // max V over labor choices for this love shock
-            maxVw = tools::maxf(list_choice_specific_values_w, list_length); 
-            maxVm = tools::maxf(list_choice_specific_values_m, list_length);
 
             // add to expected value
             Eval_w += weight*maxVw;

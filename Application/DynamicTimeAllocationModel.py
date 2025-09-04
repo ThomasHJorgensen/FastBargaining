@@ -191,8 +191,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Qm_couple_to_single = np.nan + np.ones(shape_single_cs)        # home produced good, marriage -> single
 
         ## a.3. start as single
-        sol.EVw_start_as_single = np.nan + np.ones(shape_single)
-        sol.EVm_start_as_single = np.nan + np.ones(shape_single)  
+        sol.EVw_start_as_single = -np.inf + np.ones(shape_single)
+        sol.EVm_start_as_single = -np.inf + np.ones(shape_single)  
         sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
         sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
 

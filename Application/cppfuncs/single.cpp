@@ -875,25 +875,24 @@ namespace single {
 
     void expected_value_start_single(int t, sol_struct* sol,par_struct* par){
 
-        double* list_choice_specific_values_w = new double[par->num_l];
-        double* list_choice_specific_values_m = new double[par->num_l];
-        
-
         // a. Loop over states
         for (int iA=0; iA<par->num_A;iA++){
             if (par->p_meet == 0.0) {
                 // get index
                 auto idx_single = index::single(t,iA,par);
-                
+
                 // Find maximum value over all labor choices
                 for (int il = 0; il < par->num_l; il++) {
                     auto idx_single_cs = index::single_cs(t,il,iA,par);
-                    list_choice_specific_values_w[il] = sol->Vw_single_to_single[idx_single_cs];
-                    list_choice_specific_values_m[il] = sol->Vm_single_to_single[idx_single_cs];
+
+                    if (sol->EVw_start_as_single[idx_single] < sol->Vw_single_to_single[idx_single_cs]) {
+                        sol->EVw_start_as_single[idx_single] = sol->Vw_single_to_single[idx_single_cs];
+                    }
+                    if (sol->EVm_start_as_single[idx_single] < sol->Vm_single_to_single[idx_single_cs]) {
+                        sol->EVm_start_as_single[idx_single] = sol->Vm_single_to_single[idx_single_cs];
+                    }
+
                 }
-            
-                sol->EVw_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_w, par->num_l);
-                sol->EVm_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_m, par->num_l);
                 
             } else {
                 // // a.1 Value conditional on meeting partner
@@ -915,10 +914,6 @@ namespace single {
             calc_marginal_value_single(t, woman, sol, par);
             calc_marginal_value_single(t, man, sol, par);
         }
-
-        delete[] list_choice_specific_values_w;
-        delete[] list_choice_specific_values_m;
-
     }
 
 
