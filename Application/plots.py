@@ -230,12 +230,12 @@ class model_plotter():
     
     def plot_female_single_choices(self, ax, grid, index, **kwargs):
         variables = [
-            'Cw_tot_single_to_single',
-            'lw_single_to_single_optimal',
-            'Cw_priv_single_to_single',
-            'hw_single_to_single',
-            'Cw_inter_single_to_single',
-            'Qw_single_to_single'
+            'Cwd_tot_single_to_single',
+            'lw_single_to_single',
+            'Cwd_priv_single_to_single',
+            'hwd_single_to_single',
+            'Cwd_inter_single_to_single',
+            'Qwd_single_to_single'
         ]
         if grid == 'grid_A':
             print("Warning: plotting over grid_A, which is not the same as grid_Aw or grid_Am. Make sure this is intended.")
@@ -243,12 +243,12 @@ class model_plotter():
 
     def plot_male_single_choices(self, ax, grid, index, **kwargs):
         variables = [
-            'Cm_tot_single_to_single',
-            'lm_single_to_single_optimal',
-            'Cm_priv_single_to_single',
-            'hm_single_to_single',
-            'Cm_inter_single_to_single',
-            'Qm_single_to_single'
+            'Cmd_tot_single_to_single',
+            'lm_single_to_single',
+            'Cmd_priv_single_to_single',
+            'hmd_single_to_single',
+            'Cmd_inter_single_to_single',
+            'Qmd_single_to_single'
         ]
         if grid == 'grid_A':
             print("Warning: plotting over grid_A, which is not the same as grid_Aw or grid_Am. Make sure this is intended.")
@@ -256,7 +256,7 @@ class model_plotter():
 
     def plot_female_single_values(self, ax, grid, index, **kwargs):
         variables = [
-            'Vw_single_to_single',
+            'Vwd_single_to_single',
             'EVw_start_as_single',
             'EmargVw_start_as_single'
         ]
@@ -266,7 +266,7 @@ class model_plotter():
     
     def plot_male_single_values(self, ax, grid, index, **kwargs):
         variables = [
-            'Vm_single_to_single',
+            'Vmd_single_to_single',
             'EVm_start_as_single',
             'EmargVm_start_as_single'
         ]
@@ -277,9 +277,9 @@ class model_plotter():
     def plot_couple_choices(self, ax, grid, index, **kwargs):
         female_variables = [
             None,
-            'lw_couple_to_couple_optimal',
-            'Cw_priv_couple_to_couple',
-            'hw_couple_to_couple',
+            'lw_couple_to_couple',
+            'Cwd_priv_couple_to_couple',
+            'hwd_couple_to_couple',
             None,
             None,
         ]
@@ -288,9 +288,9 @@ class model_plotter():
         
         male_variables = [
             None,
-            'lm_couple_to_couple_optimal',
-            'Cm_priv_couple_to_couple',
-            'hm_couple_to_couple',
+            'lm_couple_to_couple',
+            'Cmd_priv_couple_to_couple',
+            'hmd_couple_to_couple',
             None,
             None,
         ]
@@ -298,47 +298,47 @@ class model_plotter():
         self.plot_vars_over_grid(ax, male_variables, gridm, index, namespace='sol', **kwargs)
         
         total_variables = [
-            'C_tot_couple_to_couple',
+            'Cd_tot_couple_to_couple',
             None,
             None,
             None,
-            'C_inter_couple_to_couple',
-            'Q_couple_to_couple',
+            'Cd_inter_couple_to_couple',
+            'Qd_couple_to_couple',
         ]
         self.plot_vars_over_grid(ax, total_variables, grid, index, namespace='sol', **kwargs)
     
     def plot_female_couple_choices(self, ax, grid, index, **kwargs):
         variables = [
-            'Cw_priv_couple_to_couple',
-            'lw_couple_to_couple_optimal',
-            'hw_couple_to_couple',
+            'Cwd_priv_couple_to_couple',
+            'lw_couple_to_couple',
+            'hwd_couple_to_couple',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
     def plot_male_couple_choices(self, ax, grid, index, **kwargs):
         variables = [
-            'Cm_priv_couple_to_couple',
-            'lm_couple_to_couple_optimal',
-            'hm_couple_to_couple',
+            'Cmd_priv_couple_to_couple',
+            'lm_couple_to_couple',
+            'hmd_couple_to_couple',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
     def plot_gender_couple_choices(self, ax, grid, index, **kwargs):
         variables = [
-            'Cw_priv_couple_to_couple',
-            'Cm_priv_couple_to_couple',
-            'lw_couple_to_couple_optimal',
-            'lm_couple_to_couple_optimal',
-            'hw_couple_to_couple',
-            'hm_couple_to_couple',
+            'Cwd_priv_couple_to_couple',
+            'Cmd_priv_couple_to_couple',
+            'lw_couple_to_couple',
+            'lm_couple_to_couple',
+            'hwd_couple_to_couple',
+            'hmd_couple_to_couple',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
     def plot_total_couple_choices(self, ax, grid, index, **kwargs):
         variables = [
-            'C_tot_couple_to_couple',
-            'C_inter_couple_to_couple',
-            'Q_couple_to_couple',
+            'Cd_tot_couple_to_couple',
+            'Cd_inter_couple_to_couple',
+            'Qd_couple_to_couple',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
@@ -362,7 +362,7 @@ class model_plotter():
     
     def plot_total_couple_values(self, ax, grid, index, **kwargs):
         variables = [
-            'V_couple_to_couple',
+            'Vd_couple_to_couple',
             'margV_start_as_couple',
             'EmargV_start_as_couple',
         ]
@@ -370,27 +370,27 @@ class model_plotter():
     
     def plot_female_single_pd(self, ax, grid, index, **kwargs):
         variables = [
-            "EmargUw_single_to_single_pd",
-            "C_totw_single_to_single_pd",
-            "Mw_single_to_single_pd",
-            "Vw_single_to_single_pd",
+            "EmargUwd_single_to_single_pd",
+            "Cd_totw_single_to_single_pd",
+            "Mwd_single_to_single_pd",
+            "Vwd_single_to_single_pd",
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
     def plot_male_single_pd(self, ax, grid, index, **kwargs):
         variables = [
-            "EmargUm_single_to_single_pd",
-            "C_totm_single_to_single_pd",
-            "Mm_single_to_single_pd",
-            "Vm_single_to_single_pd",
+            "EmargUmd_single_to_single_pd",
+            "Cd_totm_single_to_single_pd",
+            "Mmd_single_to_single_pd",
+            "Vmd_single_to_single_pd",
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
     def plot_couple_pd(self, ax, grid, index, **kwargs):
         variables = [
-            'EmargU_pd',
-            'C_tot_pd',
-            'M_pd',
-            'V_couple_to_couple_pd',
+            'EmargUd_pd',
+            'Cd_tot_pd',
+            'Md_pd',
+            'Vd_couple_to_couple_pd',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)

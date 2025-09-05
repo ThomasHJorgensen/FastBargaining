@@ -273,8 +273,8 @@ namespace sim {
                         double *sol_single_w = &sol->Cw_tot_couple_to_single[idx_sol_single];
                         double *sol_single_m = &sol->Cm_tot_couple_to_single[idx_sol_single];
                         if (power_lag<0.0){
-                            sol_single_w = &sol->Cw_tot_single_to_single[idx_sol_single];
-                            sol_single_m = &sol->Cm_tot_single_to_single[idx_sol_single];
+                            sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single];
+                            sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single];
                         } 
 
                         // total consumption

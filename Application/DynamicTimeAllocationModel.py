@@ -142,56 +142,56 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T, par.num_l, par.num_A)                        # single states: T, human capital, assets
-        # shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single = (par.T, par.num_A)                        # single states: T, human capital, assets
+        shape_single_d = (par.T, par.num_l, par.num_A)                        # single states: T, human capital, assets
+        # shape_single_d = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
-        sol.Vw_single_to_single = np.ones(shape_single) - np.inf                
-        sol.Vm_single_to_single = np.ones(shape_single) - np.inf
+        sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
+        sol.Vmd_single_to_single = np.ones(shape_single_d) - np.inf
 
-        sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan           # private consumption, single
-        sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan           # private consumption, single
-        sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan            # intermediate good, single
-        sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
-        sol.Qw_single_to_single = np.ones(shape_single) + np.nan                # home produced good, single
-        sol.Qm_single_to_single = np.ones(shape_single) + np.nan
-        sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan   # labor supply, single
-        sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        sol.hw_single_to_single = np.ones(shape_single) + np.nan                # housework, single
-        sol.hm_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cwd_tot_single_to_single = np.ones(shape_single_d) + np.nan           # private consumption, single
+        sol.Cmd_tot_single_to_single = np.ones(shape_single_d) + np.nan
+        sol.Cwd_priv_single_to_single = np.ones(shape_single_d) + np.nan           # private consumption, single
+        sol.Cmd_priv_single_to_single = np.ones(shape_single_d) + np.nan
+        sol.Cwd_inter_single_to_single = np.ones(shape_single_d) + np.nan            # intermediate good, single
+        sol.Cmd_inter_single_to_single = np.ones(shape_single_d) + np.nan
+        sol.Qwd_single_to_single = np.ones(shape_single_d) + np.nan                # home produced good, single
+        sol.Qmd_single_to_single = np.ones(shape_single_d) + np.nan
+        sol.lwd_single_to_single = np.ones(shape_single_d, dtype = int) + np.nan   # labor supply, single
+        sol.lmd_single_to_single = np.ones(shape_single_d, dtype = int) + np.nan
+        sol.hwd_single_to_single = np.ones(shape_single_d) + np.nan                # housework, single
+        sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
 
         ### a.1.1. post-decision grids (EGM)
-        # TBD: nedenstående udkommenterede kode er den gamle version
-        sol.EmargUw_single_to_single_pd = np.zeros(par.num_A_pd)           # Expected marginal utility post-decision, woman single
-        sol.C_totw_single_to_single_pd = np.zeros(par.num_A_pd)            # C for EGM, woman single 
-        sol.Mw_single_to_single_pd = np.zeros(par.num_A_pd)                # Endogenous grid, woman single
-        sol.Vw_single_to_single_pd = np.zeros(par.num_A_pd)                # Value of being single, post-decision
+        sol.EmargUwd_single_to_single_pd = np.zeros(par.num_A_pd)           # Expected marginal utility post-decision, woman single
+        sol.Cwd_tot_single_to_single_pd = np.zeros(par.num_A_pd)            # C for EGM, woman single 
+        sol.Mwd_single_to_single_pd = np.zeros(par.num_A_pd)                # Endogenous grid, woman single
+        sol.Vwd_single_to_single_pd = np.zeros(par.num_A_pd)                # Value of being single, post-decision
 
-        sol.EmargUm_single_to_single_pd = np.zeros(par.num_A_pd)          # Expected marginal utility post-decision, man single
-        sol.C_totm_single_to_single_pd = np.zeros(par.num_A_pd)           # C for EGM, man single
-        sol.Mm_single_to_single_pd = np.zeros(par.num_A_pd)               # Endogenous grid, man single
-        sol.Vm_single_to_single_pd = np.zeros(par.num_A_pd)               # Value of being single, post-decision
+        sol.EmargUmd_single_to_single_pd = np.zeros(par.num_A_pd)          # Expected marginal utility post-decision, man single
+        sol.Cmd_totm_single_to_single_pd = np.zeros(par.num_A_pd)           # C for EGM, man single
+        sol.Mmd_single_to_single_pd = np.zeros(par.num_A_pd)               # Endogenous grid, man single
+        sol.Vmd_single_to_single_pd = np.zeros(par.num_A_pd)               # Value of being single, post-decision
 
         ## a.2. couple to single
-        sol.Vw_couple_to_single = np.nan + np.ones(shape_single)        # Value marriage -> single
-        sol.Vm_couple_to_single = np.nan + np.ones(shape_single)
+        sol.Vw_couple_to_single = np.nan + np.ones(shape_single_d)        # Value marriage -> single
+        sol.Vm_couple_to_single = np.nan + np.ones(shape_single_d)
 
-        sol.Cw_priv_couple_to_single = np.nan + np.ones(shape_single)   # Private consumption marriage -> single
-        sol.Cm_priv_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Cw_inter_couple_to_single = np.nan + np.ones(shape_single)    # intermediate consumption marriage -> single 
-        sol.Cm_inter_couple_to_single = np.nan + np.ones(shape_single)    # Not used
-        sol.Cw_tot_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Cm_tot_couple_to_single = np.nan + np.ones(shape_single)
-        sol.hw_couple_to_single = np.nan + np.ones(shape_single)                # housework,
-        sol.hm_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Qw_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
-        sol.Qm_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
+        sol.Cw_priv_couple_to_single = np.nan + np.ones(shape_single_d)   # Private consumption marriage -> single
+        sol.Cm_priv_couple_to_single = np.nan + np.ones(shape_single_d)
+        sol.Cw_inter_couple_to_single = np.nan + np.ones(shape_single_d)    # intermediate consumption marriage -> single 
+        sol.Cm_inter_couple_to_single = np.nan + np.ones(shape_single_d)    # Not used
+        sol.Cw_tot_couple_to_single = np.nan + np.ones(shape_single_d)
+        sol.Cm_tot_couple_to_single = np.nan + np.ones(shape_single_d)
+        sol.hw_couple_to_single = np.nan + np.ones(shape_single_d)                # housework,
+        sol.hm_couple_to_single = np.nan + np.ones(shape_single_d)
+        sol.Qw_couple_to_single = np.nan + np.ones(shape_single_d)        # home produced good, marriage -> single
+        sol.Qm_couple_to_single = np.nan + np.ones(shape_single_d)        # home produced good, marriage -> single
 
         ## a.3. start as single
-        sol.EVw_start_as_single = np.nan + np.ones(shape_single)
-        sol.EVm_start_as_single = np.nan + np.ones(shape_single)  
+        sol.EVw_start_as_single = -np.inf + np.ones(shape_single)
+        sol.EVm_start_as_single = -np.inf + np.ones(shape_single)  
         sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
         sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
 
@@ -200,96 +200,97 @@ class HouseholdModelClass(EconModelClass):
 
 
         # b. couples
-        shape_couple = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_A)
-        # shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
+        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_A)
+        # shape_couple_d = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
         # b.1. couple to couple
-        sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan                # value
-        sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.V_couple_to_couple = np.ones(shape_couple) - np.inf                 # couple objective function
+        sol.Vwd_couple_to_couple = np.ones(shape_couple_d) + np.nan                # value
+        sol.Vmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
+        sol.Vd_couple_to_couple = np.ones(shape_couple_d) - np.inf                 # couple objective function
 
-        sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan           # private consumption, couple
-        sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan             # intermediate good, couple
-        sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan                 # home produced good, couple
-        sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan   # labor supply, couple
-        sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan                # housework, couple
-        sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.Cwd_priv_couple_to_couple = np.ones(shape_couple_d) + np.nan           # private consumption, couple
+        sol.Cmd_priv_couple_to_couple = np.ones(shape_couple_d) + np.nan
+        sol.Cd_inter_couple_to_couple = np.ones(shape_couple_d) + np.nan             # intermediate good, couple
+        sol.Qd_couple_to_couple = np.ones(shape_couple_d) + np.nan                 # home produced good, couple
+        sol.lwd_couple_to_couple = np.ones(shape_couple_d, dtype = int) + np.nan   # labor supply, couple
+        sol.lmd_couple_to_couple = np.ones(shape_couple_d, dtype = int) + np.nan
+        sol.hwd_couple_to_couple = np.ones(shape_couple_d) + np.nan                # housework, couple
+        sol.hmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
+        sol.Cd_tot_couple_to_couple = np.ones(shape_couple_d) + np.nan
 
         sol.Sw = np.ones(par.num_power) + np.nan                                 # surplus of marriage
         sol.Sm = np.ones(par.num_power) + np.nan
 
-        sol.power_idx = np.zeros(shape_couple, dtype = int)                     # index of bargaining weight (approx)
-        sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
+        sol.power_idx = np.zeros(shape_couple_d, dtype = int)                     # index of bargaining weight (approx)
+        sol.power = np.zeros(shape_couple_d) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
         shape_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
-        sol.EmargU_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
-        sol.C_tot_pd = np.zeros(shape_egm)                      # C for EGM
-        sol.M_pd = np.zeros(shape_egm)                          # Endogenous grid
-        sol.V_couple_to_couple_pd = np.zeros(shape_egm)         # Value of being couple, post-decision
+        sol.EmargUd_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
+        sol.Cd_tot_pd = np.zeros(shape_egm)                      # C for EGM
+        sol.Md_pd = np.zeros(shape_egm)                          # Endogenous grid
+        sol.Vd_couple_to_couple_pd = np.zeros(shape_egm)         # Value of being couple, post-decision
 
         ## b.2. single to couple
-        sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
-        sol.Vm_single_to_couple = np.nan + np.ones(shape_couple)
-        sol.V_single_to_couple = -np.inf + np.ones(shape_couple)           
+        sol.Vw_single_to_couple = np.nan + np.ones(shape_couple_d)           # value single -> marriage
+        sol.Vm_single_to_couple = np.nan + np.ones(shape_couple_d)
+        sol.V_single_to_couple = -np.inf + np.ones(shape_couple_d)           
                                                                         
-        sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)      
-        sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)      
-        sol.hw_single_to_couple = np.nan + np.ones(shape_couple)      
-        sol.hm_single_to_couple = np.nan + np.ones(shape_couple)      
-        sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple)        
-        sol.Q_single_to_couple = np.nan + np.ones(shape_couple)        
-        sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple)   
-        sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple) 
+        sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple_d)      
+        sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple_d)      
+        sol.hw_single_to_couple = np.nan + np.ones(shape_couple_d)      
+        sol.hm_single_to_couple = np.nan + np.ones(shape_couple_d)      
+        sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple_d)        
+        sol.Q_single_to_couple = np.nan + np.ones(shape_couple_d)        
+        sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple_d)   
+        sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple_d) 
   
         # shape_power =(par.T,par.num_love,par.num_A,par.num_A)          
         # sol.initial_power = np.nan + np.zeros(shape_power)
         # sol.initial_power_idx = np.zeros(shape_power,dtype=np.int_)
 
         ## b.3. start as couple
-        sol.Vw_start_as_couple = np.ones(shape_couple) + np.nan                 # value
-        sol.Vm_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.margV_start_as_couple = np.ones(shape_couple) + np.nan              # marginal value
+        sol.Vw_start_as_couple = np.ones(shape_couple_d) + np.nan                 # value
+        sol.Vm_start_as_couple = np.ones(shape_couple_d) + np.nan
+        sol.margV_start_as_couple = np.ones(shape_couple_d) + np.nan              # marginal value
 
         sol.EVw_start_as_couple = np.ones(shape_couple) + np.nan                # expected value
         sol.EVm_start_as_couple = np.ones(shape_couple) + np.nan
         sol.EmargV_start_as_couple = np.ones(shape_couple) + np.nan             # expected marginal value
 
-        sol.C_tot_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
-        sol.Cw_priv_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
-        sol.Cm_priv_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.C_inter_start_as_couple = np.ones(shape_couple) + np.nan              # intermediate good
-        sol.Q_start_as_couple = np.ones(shape_couple) + np.nan                  # home produced good
-        sol.lw_start_as_couple = np.ones(shape_couple, dtype = int) + np.nan    # labor supply
-        sol.lm_start_as_couple = np.ones(shape_couple, dtype = int) + np.nan
-        sol.hw_start_as_couple = np.ones(shape_couple) + np.nan                 # housework
-        sol.hm_start_as_couple = np.ones(shape_couple) + np.nan
+        sol.C_tot_start_as_couple = np.ones(shape_couple_d) + np.nan            # private consumption
+        sol.Cw_priv_start_as_couple = np.ones(shape_couple_d) + np.nan            # private consumption
+        sol.Cm_priv_start_as_couple = np.ones(shape_couple_d) + np.nan
+        sol.C_inter_start_as_couple = np.ones(shape_couple_d) + np.nan              # intermediate good
+        sol.Q_start_as_couple = np.ones(shape_couple_d) + np.nan                  # home produced good
+        sol.lw_start_as_couple = np.ones(shape_couple_d, dtype = int) + np.nan    # labor supply
+        sol.lm_start_as_couple = np.ones(shape_couple_d, dtype = int) + np.nan
+        sol.hw_start_as_couple = np.ones(shape_couple_d) + np.nan                 # housework
+        sol.hm_start_as_couple = np.ones(shape_couple_d) + np.nan
         
 
         # c. Precomputed intratemporal solution
         # c.1. couple
         shape_pre = (par.num_l, par.num_l, par.num_Ctot, par.num_power)
-        sol.pre_Cw_priv_couple = np.ones(shape_pre) + np.nan
-        sol.pre_Cm_priv_couple = np.ones(shape_pre) + np.nan
-        sol.pre_C_inter_couple = np.ones(shape_pre) + np.nan
-        sol.pre_Q_couple = np.ones(shape_pre) + np.nan
-        sol.pre_hw_couple = np.ones(shape_pre) + np.nan
-        sol.pre_hm_couple = np.ones(shape_pre) + np.nan
+        sol.pre_Cwd_priv_couple = np.ones(shape_pre) + np.nan
+        sol.pre_Cmd_priv_couple = np.ones(shape_pre) + np.nan
+        sol.pre_Cd_inter_couple = np.ones(shape_pre) + np.nan
+        sol.pre_Qd_couple = np.ones(shape_pre) + np.nan
+        sol.pre_hwd_couple = np.ones(shape_pre) + np.nan
+        sol.pre_hmd_couple = np.ones(shape_pre) + np.nan
 
         # c.2. single
         shape_pre_single = (par.num_l, par.num_Ctot)
-        sol.pre_Cw_priv_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cm_priv_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cw_inter_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cm_inter_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Qw_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Qm_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_hw_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_hm_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Cwd_priv_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Cmd_priv_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Cwd_inter_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Cmd_inter_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Qwd_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_Qmd_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_hwd_single = np.ones(shape_pre_single) + np.nan
+        sol.pre_hmd_single = np.ones(shape_pre_single) + np.nan
     
 
         # d. simulation
@@ -338,35 +339,33 @@ class HouseholdModelClass(EconModelClass):
         
         # f. optimal choices over discrete choices
         ## a. single
-        shape_single_optimal = (par.T, par.num_A)
-        # sol.Vw_single_to_single_optimal = np.ones(shape_single_optimal) - np.nan
-        # sol.Vm_single_to_single_optimal = np.ones(shape_single_optimal) - np.nan
-        sol.Cw_tot_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        sol.Cm_tot_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        sol.lw_single_to_single_optimal = np.ones(shape_single_optimal, dtype = int) + np.nan
-        sol.lm_single_to_single_optimal = np.ones(shape_single_optimal, dtype = int) + np.nan
-        # sol.Cw_priv_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        # sol.Cm_priv_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        # sol.hw_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        # sol.hm_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        # sol.Cw_inter_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        # sol.Cm_inter_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan
-        # sol.Qw_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan        
-        # sol.Qm_single_to_single_optimal = np.ones(shape_single_optimal) + np.nan        
+        # sol.Vw_single_to_single = np.ones(shape_single) - np.nan
+        # sol.Vm_single_to_single = np.ones(shape_single) - np.nan
+        sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
+        sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        # sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
+        # sol.hw_single_to_single = np.ones(shape_single) + np.nan
+        # sol.hm_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
+        # sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
 
         # b. couple
-        shape_couple_optimal = (par.T, par.num_power, par.num_love, par.num_A)
-        # sol.Vw_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        # sol.Vm_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        sol.C_tot_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        sol.lw_couple_to_couple_optimal = np.ones(shape_couple_optimal, dtype = int) + np.nan
-        sol.lm_couple_to_couple_optimal = np.ones(shape_couple_optimal, dtype = int) + np.nan
-        # sol.Cw_priv_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        # sol.Cm_priv_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        # sol.hw_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        # sol.hm_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        # sol.C_inter_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
-        # sol.Q_couple_to_couple_optimal = np.ones(shape_couple_optimal) + np.nan
+        # sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        # sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
 
     def allocate_draws(self):
         par = self.par
@@ -506,34 +505,34 @@ class HouseholdModelClass(EconModelClass):
         # allocate
         ## a. single
         shape_single = (par.T, par.num_A)
-        sol.Vw_single_to_single_optimal = np.ones(shape_single) - np.nan
-        sol.Vm_single_to_single_optimal = np.ones(shape_single) - np.nan
-        sol.Cw_tot_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.Cm_tot_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.Cw_priv_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.Cm_priv_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.lw_single_to_single_optimal = np.ones(shape_single, dtype = int) + np.nan
-        sol.lm_single_to_single_optimal = np.ones(shape_single, dtype = int) + np.nan
-        sol.hw_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.hm_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.Cw_inter_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.Cm_inter_single_to_single_optimal = np.ones(shape_single) + np.nan
-        sol.Qw_single_to_single_optimal = np.ones(shape_single) + np.nan        
-        sol.Qm_single_to_single_optimal = np.ones(shape_single) + np.nan        
+        sol.Vw_single_to_single = np.ones(shape_single) - np.nan
+        sol.Vm_single_to_single = np.ones(shape_single) - np.nan
+        sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
+        sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        sol.hw_single_to_single = np.ones(shape_single) + np.nan
+        sol.hm_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
+        sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
+        sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
+        sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
 
         # b. couple
         shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
-        sol.Vw_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.Vm_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.Cw_priv_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.Cm_priv_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.C_inter_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.Q_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.lw_couple_to_couple_optimal = np.ones(shape_couple, dtype = int) + np.nan
-        sol.lm_couple_to_couple_optimal = np.ones(shape_couple, dtype = int) + np.nan
-        sol.hw_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.hm_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
-        sol.C_tot_couple_to_couple_optimal = np.ones(shape_couple) + np.nan
+        sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
         
         # Find optimal decisions
         self.cpp.find_optimal_decision(sol,par)

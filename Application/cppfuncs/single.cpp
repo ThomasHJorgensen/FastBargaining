@@ -287,35 +287,35 @@ namespace single {
         double* grid_A {par->grid_Aw};
         double* grid_A_pd {par->grid_Aw_pd};
         double* grid_marg_u_single_for_inv {par->grid_marg_u_single_w_for_inv};
-        double* V {sol->Vw_single_to_single};
+        double* V {sol->Vwd_single_to_single};
         double* EV {sol->EVw_start_as_single};
         double* margV {sol->EmargVw_start_as_single};
-        double* C_tot {sol->Cw_tot_single_to_single};
-        double* C_priv {sol->Cw_priv_single_to_single};
-        double* h {sol->hw_single_to_single};
-        double* C_inter {sol->Cw_inter_single_to_single};
-        double* Q {sol->Qw_single_to_single};
-        double* EmargU_pd {sol->EmargUw_single_to_single_pd};
-        double* C_tot_pd {sol->C_totw_single_to_single_pd};
-        double* M_pd {sol->Mw_single_to_single_pd};
-        double* V_pd {sol->Vw_single_to_single_pd};
+        double* C_tot {sol->Cwd_tot_single_to_single};
+        double* C_priv {sol->Cwd_priv_single_to_single};
+        double* h {sol->hwd_single_to_single};
+        double* C_inter {sol->Cwd_inter_single_to_single};
+        double* Q {sol->Qwd_single_to_single};
+        double* EmargU_pd {sol->EmargUwd_single_to_single_pd};
+        double* C_tot_pd {sol->Cwd_tot_single_to_single_pd};
+        double* M_pd {sol->Mwd_single_to_single_pd};
+        double* V_pd {sol->Vwd_single_to_single_pd};
         //// oo. man
         if (gender == man){
             grid_A = par->grid_Am;
             grid_A_pd = par->grid_Am_pd;
             grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
-            V = sol->Vm_single_to_single;
+            V = sol->Vmd_single_to_single;
             EV = sol->EVm_start_as_single;
             margV = sol->EmargVm_start_as_single;
-            C_tot = sol->Cm_tot_single_to_single;
-            C_priv = sol->Cm_priv_single_to_single;
-            h = {sol->hm_single_to_single};
-            C_inter = {sol->Cm_inter_single_to_single};
-            Q = {sol->Qm_single_to_single};
-            EmargU_pd = sol->EmargUm_single_to_single_pd;
-            C_tot_pd = sol->C_totm_single_to_single_pd;
-            M_pd = sol->Mm_single_to_single_pd;
-            V_pd = sol->Vm_single_to_single_pd;
+            C_tot = sol->Cmd_tot_single_to_single;
+            C_priv = sol->Cmd_priv_single_to_single;
+            h = {sol->hmd_single_to_single};
+            C_inter = {sol->Cmd_inter_single_to_single};
+            Q = {sol->Qmd_single_to_single};
+            EmargU_pd = sol->EmargUmd_single_to_single_pd;
+            C_tot_pd = sol->Cmd_totm_single_to_single_pd;
+            M_pd = sol->Mmd_single_to_single_pd;
+            V_pd = sol->Vmd_single_to_single_pd;
         }
 
         /// c. Allocate memory
@@ -325,8 +325,8 @@ namespace single {
 
         // 2. EGM step
         /// setup
-        auto idx = index::single(t,il,0, par);
-        auto idx_next = index::single(t+1,il,0, par);
+        auto idx = index::single_d(t,il,0, par);
+        auto idx_next = index::single(t+1,0, par);
         auto idx_interp = index::index2(il,0,par->num_l,par->num_marg_u);
         int min_point_A = 0;
 
@@ -386,13 +386,13 @@ namespace single {
     }
 
 
-    void calc_marginal_value_single(int t, int il, int gender, sol_struct* sol, par_struct* par){
+    void calc_marginal_value_single(int t, int gender, sol_struct* sol, par_struct* par){
 
         // unpack
         int const &num_A = par->num_A;
 
         // set index
-        auto idx = index::single(t,il,0,par);
+        auto idx = index::single(t,0,par);
 
         // gender specific variables
         double* grid_A = par->grid_Aw;
@@ -451,23 +451,23 @@ namespace single {
         // terminal period
         if (t == (par->T-1)){
             for (int iA=0; iA<par->num_A;iA++){
-                auto idx = index::single(t,il,iA,par);
+                auto idx = index::single_d(t,il,iA,par);
 
                 double Aw = par->grid_Aw[iA];
                 double Am = par->grid_Am[iA];
 
-                sol->Cw_tot_single_to_single[idx] = resources(labor, Aw,woman,par); 
-                sol->Cm_tot_single_to_single[idx] = resources(labor, Am,man,par); 
-                // sol->lw_single_to_single[idx] = ;  // OBS: Return to this when implementing labor choice
-                // sol->lm_single_to_single[idx] = ;  // OBS: Return to this when implementing labor choice
+                sol->Cwd_tot_single_to_single[idx] = resources(labor, Aw,woman,par); 
+                sol->Cmd_tot_single_to_single[idx] = resources(labor, Am,man,par); 
+                // sol->lwd_single_to_single[idx] = ;  // OBS: Return to this when implementing labor choice
+                // sol->lmd_single_to_single[idx] = ;  // OBS: Return to this when implementing labor choice
 
                 // intraperiod allocation
                 precompute::intraperiod_allocation_single(
-                    &sol->Cw_priv_single_to_single[idx],
-                    &sol->hw_single_to_single[idx],
-                    &sol->Cw_inter_single_to_single[idx],
-                    &sol->Qw_single_to_single[idx],
-                    sol->Cw_tot_single_to_single[idx],
+                    &sol->Cwd_priv_single_to_single[idx],
+                    &sol->hwd_single_to_single[idx],
+                    &sol->Cwd_inter_single_to_single[idx],
+                    &sol->Qwd_single_to_single[idx],
+                    sol->Cwd_tot_single_to_single[idx],
                     il,
                     woman,
                     par,
@@ -476,11 +476,11 @@ namespace single {
                 );
 
                 precompute::intraperiod_allocation_single(
-                    &sol->Cm_priv_single_to_single[idx],
-                    &sol->hm_single_to_single[idx],
-                    &sol->Cm_inter_single_to_single[idx],
-                    &sol->Qm_single_to_single[idx],
-                    sol->Cm_tot_single_to_single[idx],
+                    &sol->Cmd_priv_single_to_single[idx],
+                    &sol->hmd_single_to_single[idx],
+                    &sol->Cmd_inter_single_to_single[idx],
+                    &sol->Qmd_single_to_single[idx],
+                    sol->Cmd_tot_single_to_single[idx],
                     il,
                     man,
                     par,
@@ -489,18 +489,18 @@ namespace single {
                 );
 
                 // Calculate value
-                sol->Vw_single_to_single[idx] = utils::util(
-                    sol->Cw_priv_single_to_single[idx], 
-                    sol->hm_single_to_single[idx] + par->grid_l[il], 
-                    sol->Qw_single_to_single[idx],
+                sol->Vwd_single_to_single[idx] = utils::util(
+                    sol->Cwd_priv_single_to_single[idx], 
+                    sol->hmd_single_to_single[idx] + par->grid_l[il], 
+                    sol->Qwd_single_to_single[idx],
                     woman, 
                     par, 
                     love);
 
-                sol->Vm_single_to_single[idx] = utils::util(
-                    sol->Cm_priv_single_to_single[idx], 
-                    sol->hm_single_to_single[idx] + par->grid_l[il], 
-                    sol->Qm_single_to_single[idx],
+                sol->Vmd_single_to_single[idx] = utils::util(
+                    sol->Cmd_priv_single_to_single[idx], 
+                    sol->hmd_single_to_single[idx] + par->grid_l[il], 
+                    sol->Qmd_single_to_single[idx],
                     man, 
                     par, 
                     love);
@@ -526,8 +526,8 @@ namespace single {
                     // 2. loop over assets
                     #pragma omp for
                     for (int iA=0; iA<par->num_A;iA++){
-                        auto idx = index::single(t,il,iA,par);
-                        auto idx_interp = index::single(t+1,il,0,par);
+                        auto idx = index::single_d(t,il,iA,par);
+                        auto idx_interp = index::single(t+1,0,par);
                         
                         // resources
                         double Aw = par->grid_Aw[iA];
@@ -558,14 +558,14 @@ namespace single {
                         nlopt_optimize(opt, x, &minf); 
 
                         // unpack results
-                        sol->Cw_tot_single_to_single[idx] = x[0];
-                        sol->Vw_single_to_single[idx] = -minf;
+                        sol->Cwd_tot_single_to_single[idx] = x[0];
+                        sol->Vwd_single_to_single[idx] = -minf;
                         precompute::intraperiod_allocation_single(
-                            &sol->Cw_priv_single_to_single[idx],
-                            &sol->hw_single_to_single[idx],
-                            &sol->Cw_inter_single_to_single[idx],
-                            &sol->Qw_single_to_single[idx],
-                            sol->Cw_tot_single_to_single[idx],
+                            &sol->Cwd_priv_single_to_single[idx],
+                            &sol->hwd_single_to_single[idx],
+                            &sol->Cwd_inter_single_to_single[idx],
+                            &sol->Qwd_single_to_single[idx],
+                            sol->Cwd_tot_single_to_single[idx],
                             il,
                             woman,
                             par,
@@ -594,16 +594,16 @@ namespace single {
                         nlopt_optimize(opt, x, &minf);
 
                         // unpack results
-                        sol->Cm_tot_single_to_single[idx] = x[0];
-                        sol->Vm_single_to_single[idx] = -minf;       
+                        sol->Cmd_tot_single_to_single[idx] = x[0];
+                        sol->Vmd_single_to_single[idx] = -minf;       
                         
                         // intraperiod allocation
                         precompute::intraperiod_allocation_single(
-                            &sol->Cm_priv_single_to_single[idx],
-                            &sol->hm_single_to_single[idx],
-                            &sol->Cm_inter_single_to_single[idx],
-                            &sol->Qm_single_to_single[idx],
-                            sol->Cm_tot_single_to_single[idx],
+                            &sol->Cmd_priv_single_to_single[idx],
+                            &sol->hmd_single_to_single[idx],
+                            &sol->Cmd_inter_single_to_single[idx],
+                            &sol->Qmd_single_to_single[idx],
+                            sol->Cmd_tot_single_to_single[idx],
                             il,
                             man,
                             par,
@@ -637,20 +637,20 @@ namespace single {
             #pragma omp for
             for (int il=0; il<par->num_l;il++){
                 for (int iA=0; iA<par->num_A;iA++){
-                    auto idx = index::single(t,il,iA,par);
-                    
-                    sol->Vw_couple_to_single[idx] = sol->Vw_single_to_single[idx] - par->div_cost;
-                    sol->Vm_couple_to_single[idx] = sol->Vm_single_to_single[idx] - par->div_cost;
-                    sol->Cw_priv_couple_to_single[idx] = sol->Cw_priv_single_to_single[idx];
-                    sol->Cm_priv_couple_to_single[idx] = sol->Cm_priv_single_to_single[idx];
-                    sol->hw_couple_to_single[idx] = sol->hw_single_to_single[idx]; 
-                    sol->hm_couple_to_single[idx] = sol->hm_single_to_single[idx]; 
-                    sol->Cw_inter_couple_to_single[idx] = sol->Cw_inter_single_to_single[idx]; 
-                    sol->Cm_inter_couple_to_single[idx] = sol->Cm_inter_single_to_single[idx]; 
-                    sol->Qw_couple_to_single[idx] = sol->Qw_single_to_single[idx]; 
-                    sol->Qm_couple_to_single[idx] = sol->Qm_single_to_single[idx]; 
-                    sol->Cw_tot_couple_to_single[idx] = sol->Cw_tot_single_to_single[idx]; 
-                    sol->Cm_tot_couple_to_single[idx] = sol->Cm_tot_single_to_single[idx]; 
+                    auto idx = index::single_d(t,il,iA,par);
+
+                    sol->Vw_couple_to_single[idx] = sol->Vwd_single_to_single[idx] - par->div_cost;
+                    sol->Vm_couple_to_single[idx] = sol->Vmd_single_to_single[idx] - par->div_cost;
+                    sol->Cw_priv_couple_to_single[idx] = sol->Cwd_priv_single_to_single[idx];
+                    sol->Cm_priv_couple_to_single[idx] = sol->Cmd_priv_single_to_single[idx];
+                    sol->hw_couple_to_single[idx] = sol->hwd_single_to_single[idx]; 
+                    sol->hm_couple_to_single[idx] = sol->hmd_single_to_single[idx]; 
+                    sol->Cw_inter_couple_to_single[idx] = sol->Cwd_inter_single_to_single[idx]; 
+                    sol->Cm_inter_couple_to_single[idx] = sol->Cmd_inter_single_to_single[idx]; 
+                    sol->Qw_couple_to_single[idx] = sol->Qwd_single_to_single[idx]; 
+                    sol->Qm_couple_to_single[idx] = sol->Qmd_single_to_single[idx]; 
+                    sol->Cw_tot_couple_to_single[idx] = sol->Cwd_tot_single_to_single[idx]; 
+                    sol->Cm_tot_couple_to_single[idx] = sol->Cmd_tot_single_to_single[idx]; 
                 }
             }
         }
@@ -664,11 +664,11 @@ namespace single {
     //     double A_tot = state_couple->A; 
 
     //     // gender specific
-    //     double* V_single_to_single = sol->Vw_single_to_single;
+    //     double* V_single_to_single = sol->Vwd_single_to_single;
     //     double* V_single_to_couple = sol->Vw_single_to_couple;
     //     double* grid_A_single = par->grid_Aw;
     //     if (gender == man){
-    //         V_single_to_single = sol->Vm_single_to_single;
+    //         V_single_to_single = sol->Vmd_single_to_single;
     //         V_single_to_couple = sol->Vm_single_to_couple;
     //         grid_A_single = par->grid_Am;
     //     }
@@ -756,12 +756,12 @@ namespace single {
     
     // double expected_value_cond_meet_partner(int t, int iA, int gender, sol_struct* sol, par_struct* par){
     //     // unpack
-    //     double* V_single_to_single = sol->Vw_single_to_single;
+    //     double* V_single_to_single = sol->Vwd_single_to_single;
     //     double* V_single_to_couple = sol->Vw_single_to_couple;
     //     double* prob_partner_A = par->prob_partner_A_w;
     //     double* grid_A = par->grid_Aw;
     //     if (gender == man){
-    //         V_single_to_single = sol->Vm_single_to_single;
+    //         V_single_to_single = sol->Vmd_single_to_single;
     //         V_single_to_couple = sol->Vm_single_to_couple;
     //         prob_partner_A = par->prob_partner_A_m;
     //         grid_A = par->grid_Am;
@@ -832,10 +832,10 @@ namespace single {
 
                         // Find maximum value over all labor choices
                         for (int il = 0; il < par->num_l; il++) {
-                            auto index_choice = index::single(t,il,iA,par);
+                            auto index_choice = index::single_d(t,il,iA,par);
 
-                            list_choice_specific_values_w[il] = sol->Vw_single_to_single[index_choice];
-                            list_choice_specific_values_m[il] = sol->Vm_single_to_single[index_choice];
+                            list_choice_specific_values_w[il] = sol->Vwd_single_to_single[index_choice];
+                            list_choice_specific_values_m[il] = sol->Vmd_single_to_single[index_choice];
                         }
 
                         maxVw = tools::maxf(list_choice_specific_values_w, par->num_l);
@@ -843,25 +843,25 @@ namespace single {
                         
                         // find optimal choices
                         for (int il = 0; il < par->num_l; il++) {
-                            auto index_choice =  index::single(t,il,iA,par);
+                            auto index_choice =  index::single_d(t,il,iA,par);
 
                             if (list_choice_specific_values_w[il] == maxVw) {
-                                // sol->Vw_single_to_single_optimal[idx] = sol->Vw_single_to_single[index_choice];
-                                sol->Cw_tot_single_to_single_optimal[idx] = sol->Cw_tot_single_to_single[index_choice];
-                                sol->lw_single_to_single_optimal[idx] = par->grid_l[il];
-                                // sol->Cw_priv_single_to_single_optimal[idx] = sol->Cw_priv_single_to_single[index_choice];
-                                // sol->hw_single_to_single_optimal[idx] = sol->hw_single_to_single[index_choice];
-                                // sol->Cw_inter_single_to_single_optimal[idx] = sol->Cw_inter_single_to_single[index_choice];
-                                // sol->Qw_single_to_single_optimal[idx] = sol->Qw_single_to_single[index_choice];
+                                // sol->Vw_single_to_single[idx] = sol->Vw_single_to_single[index_choice];
+                                sol->Cw_tot_single_to_single[idx] = sol->Cw_tot_single_to_single[index_choice];
+                                sol->lw_single_to_single[idx] = par->grid_l[il];
+                                // sol->Cw_priv_single_to_single[idx] = sol->Cw_priv_single_to_single[index_choice];
+                                // sol->hw_single_to_single[idx] = sol->hw_single_to_single[index_choice];
+                                // sol->Cw_inter_single_to_single[idx] = sol->Cw_inter_single_to_single[index_choice];
+                                // sol->Qw_single_to_single[idx] = sol->Qw_single_to_single[index_choice];
                             }
                             if (list_choice_specific_values_m[il] == maxVm) {
-                                // sol->Vm_single_to_single_optimal[idx] = sol->Vm_single_to_single[index_choice];
-                                sol->Cm_tot_single_to_single_optimal[idx] = sol->Cm_tot_single_to_single[index_choice];
-                                sol->lm_single_to_single_optimal[idx] = par->grid_l[il];
-                                // sol->Cm_priv_single_to_single_optimal[idx] = sol->Cm_priv_single_to_single[index_choice];
-                                // sol->hm_single_to_single_optimal[idx] = sol->hm_single_to_single[index_choice];
-                                // sol->Cm_inter_single_to_single_optimal[idx] = sol->Cm_inter_single_to_single[index_choice];
-                                // sol->Qm_single_to_single_optimal[idx] = sol->Qm_single_to_single[index_choice];
+                                // sol->Vm_single_to_single[idx] = sol->Vm_single_to_single[index_choice];
+                                sol->Cm_tot_single_to_single[idx] = sol->Cm_tot_single_to_single[index_choice];
+                                sol->lm_single_to_single[idx] = par->grid_l[il];
+                                // sol->Cm_priv_single_to_single[idx] = sol->Cm_priv_single_to_single[index_choice];
+                                // sol->hm_single_to_single[idx] = sol->hm_single_to_single[index_choice];
+                                // sol->Cm_inter_single_to_single[idx] = sol->Cm_inter_single_to_single[index_choice];
+                                // sol->Qm_single_to_single[idx] = sol->Qm_single_to_single[index_choice];
                             }
                         }
                     
@@ -875,53 +875,45 @@ namespace single {
 
     void expected_value_start_single(int t, sol_struct* sol,par_struct* par){
 
-        double* list_choice_specific_values_w = new double[par->num_l];
-        double* list_choice_specific_values_m = new double[par->num_l];
-        
-
         // a. Loop over states
-        for (int il=0; il<par->num_l;il++){
-            for (int iA=0; iA<par->num_A;iA++){
-                if (par->p_meet == 0.0) {
-                    // get index
-                    auto idx_single = index::single(t,il,iA,par);
+        for (int iA=0; iA<par->num_A;iA++){
+            if (par->p_meet == 0.0) {
+                // get index
+                auto idx_single = index::single(t,iA,par);
 
-                    // Find maximum value over all labor choices
-                    for (int il2 = 0; il2 < par->num_l; il2++) {
-                        list_choice_specific_values_w[il2] = sol->Vw_single_to_single[index::single(t,il2,iA,par)];
-                        list_choice_specific_values_m[il2] = sol->Vm_single_to_single[index::single(t,il2,iA,par)];
+                // Find maximum value over all labor choices
+                for (int il = 0; il < par->num_l; il++) {
+                    auto idx_single_d = index::single_d(t,il,iA,par);
+
+                    if (sol->EVw_start_as_single[idx_single] < sol->Vwd_single_to_single[idx_single_d]) {
+                        sol->EVw_start_as_single[idx_single] = sol->Vwd_single_to_single[idx_single_d];
                     }
+                    if (sol->EVm_start_as_single[idx_single] < sol->Vmd_single_to_single[idx_single_d]) {
+                        sol->EVm_start_as_single[idx_single] = sol->Vmd_single_to_single[idx_single_d];
+                    }
+
+                }
                 
-                    sol->EVw_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_w, par->num_l);
-                    sol->EVm_start_as_single[idx_single] = tools::maxf(list_choice_specific_values_m, par->num_l);
-                    
-                } else {
-                    // // a.1 Value conditional on meeting partner
-                    // double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
-                    // double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
+            } else {
+                // // a.1 Value conditional on meeting partner
+                // double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
+                // double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
 
-                    // // a.2. expected value of starting single
-                    // double p_meet = par->prob_repartner[t];
-                    // auto idx_single = index::single(t,iA,par);
-                    // sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vw_single_to_single[idx_single];
-                    // sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vm_single_to_single[idx_single];
+                // // a.2. expected value of starting single
+                // double p_meet = par->prob_repartner[t];
+                // auto idx_single = index::single(t,iA,par);
+                // sol->EVw_start_as_single[idx_single] = p_meet*EVw_cond + (1.0-p_meet)*sol->Vwd_single_to_single[idx_single];
+                // sol->EVm_start_as_single[idx_single] = p_meet*EVm_cond + (1.0-p_meet)*sol->Vmd_single_to_single[idx_single];
 
-                    // sol->EVw_cond_meet_partner[idx_single] = EVw_cond;
-                    // sol->EVm_cond_meet_partner[idx_single] = EVm_cond;
-                } // if p_meet
-            } // iA
-        } // il
+                // sol->EVw_cond_meet_partner[idx_single] = EVw_cond;
+                // sol->EVm_cond_meet_partner[idx_single] = EVm_cond;
+            } // if p_meet
+        } // iA
 
         if (par->do_egm){
-            for (int il=0; il<par->num_l;il++){
-                calc_marginal_value_single(t, il, woman, sol, par);
-                calc_marginal_value_single(t, il, man, sol, par);
-            }
+            calc_marginal_value_single(t, woman, sol, par);
+            calc_marginal_value_single(t, man, sol, par);
         }
-
-        delete[] list_choice_specific_values_w;
-        delete[] list_choice_specific_values_m;
-
     }
 
 
