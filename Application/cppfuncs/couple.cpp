@@ -647,7 +647,7 @@ namespace couple {
         {   
             // 1. Setup
             /// a. lists
-            int num = 8;
+            int num = 2;
             double** list_start_as_couple = new double*[num]; 
             double** list_couple_to_couple = new double*[num];
             double* list_couple_to_single = new double[num];             
@@ -711,42 +711,42 @@ namespace couple {
                     int i = 0;
                     list_start_as_couple[i] = sol->Vw_start_as_couple; i++;
                     list_start_as_couple[i] = sol->Vm_start_as_couple; i++;
-                    list_start_as_couple[i] = sol->Cw_priv_start_as_couple; i++;
-                    list_start_as_couple[i] = sol->Cm_priv_start_as_couple; i++;
-                    list_start_as_couple[i] = sol->hw_start_as_couple; i++;
-                    list_start_as_couple[i] = sol->hm_start_as_couple; i++;
-                    list_start_as_couple[i] = sol->C_inter_start_as_couple; i++;
-                    list_start_as_couple[i] = sol->Q_start_as_couple; i++; // OBS: Maybe Q should be calculated from hw, hw and C_inter
+                    // list_start_as_couple[i] = sol->Cw_priv_start_as_couple; i++;
+                    // list_start_as_couple[i] = sol->Cm_priv_start_as_couple; i++;
+                    // list_start_as_couple[i] = sol->hw_start_as_couple; i++;
+                    // list_start_as_couple[i] = sol->hm_start_as_couple; i++;
+                    // list_start_as_couple[i] = sol->C_inter_start_as_couple; i++;
+                    // list_start_as_couple[i] = sol->Q_start_as_couple; i++; // OBS: Maybe Q should be calculated from hw, hw and C_inter
                     i = 0;
                     list_couple_to_couple[i] = sol->Vwd_couple_to_couple; i++;
                     list_couple_to_couple[i] = sol->Vmd_couple_to_couple; i++;
-                    list_couple_to_couple[i] = sol->Cwd_priv_couple_to_couple; i++;
-                    list_couple_to_couple[i] = sol->Cmd_priv_couple_to_couple; i++;
-                    list_couple_to_couple[i] = sol->hwd_couple_to_couple; i++;
-                    list_couple_to_couple[i] = sol->hmd_couple_to_couple; i++;
-                    list_couple_to_couple[i] = sol->Cd_inter_couple_to_couple; i++;
-                    list_couple_to_couple[i] = sol->Qd_couple_to_couple; i++; // OBS: Maybe Q should be calculated from hw, hw and C_inter
+                    // list_couple_to_couple[i] = sol->Cwd_priv_couple_to_couple; i++;
+                    // list_couple_to_couple[i] = sol->Cmd_priv_couple_to_couple; i++;
+                    // list_couple_to_couple[i] = sol->hwd_couple_to_couple; i++;
+                    // list_couple_to_couple[i] = sol->hmd_couple_to_couple; i++;
+                    // list_couple_to_couple[i] = sol->Cd_inter_couple_to_couple; i++;
+                    // list_couple_to_couple[i] = sol->Qd_couple_to_couple; i++; // OBS: Maybe Q should be calculated from hw, hw and C_inter
                     i = 0;
                     list_couple_to_single[i] = sol->Vw_couple_to_single[idx_single_w]; i++;
                     list_couple_to_single[i] = sol->Vm_couple_to_single[idx_single_m]; i++;
-                    list_couple_to_single[i] = sol->Cw_priv_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->Cm_priv_couple_to_single[idx_single_m]; i++;
-                    list_couple_to_single[i] = sol->hw_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->hm_couple_to_single[idx_single_m]; i++;
-                    list_couple_to_single[i] = sol->Cw_inter_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->Qw_couple_to_single[idx_single_w]; i++;
+                    // list_couple_to_single[i] = sol->Cw_priv_couple_to_single[idx_single_w]; i++;
+                    // list_couple_to_single[i] = sol->Cm_priv_couple_to_single[idx_single_m]; i++;
+                    // list_couple_to_single[i] = sol->hw_couple_to_single[idx_single_w]; i++;
+                    // list_couple_to_single[i] = sol->hm_couple_to_single[idx_single_m]; i++;
+                    // list_couple_to_single[i] = sol->Cw_inter_couple_to_single[idx_single_w]; i++;
+                    // list_couple_to_single[i] = sol->Qw_couple_to_single[idx_single_w]; i++;
 
                     // iv. Update solution
                     // Update solutions in list_start_as_couple
                     bargaining::check_participation_constraints(sol->power_idx, sol->power, Sw, Sm, idx_couple, list_start_as_couple, list_couple_to_couple, list_couple_to_single, num, par);
                     
                     // update C_tot_couple (Note: C__start_as_couple is nan when they divorce)
-                    for (int iP=0; iP<par->num_power; iP++){
-                        auto idx = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
-                        if (sol->power[idx] >= 0.0){
-                            sol->C_tot_start_as_couple[idx] = sol->Cw_priv_start_as_couple[idx] + sol->Cm_priv_start_as_couple[idx] + sol->C_inter_start_as_couple[idx];
-                        }
-                    }
+                    // for (int iP=0; iP<par->num_power; iP++){
+                    //     auto idx = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
+                    //     if (sol->power[idx] >= 0.0){
+                    //         sol->C_tot_start_as_couple[idx] = sol->Cw_priv_start_as_couple[idx] + sol->Cm_priv_start_as_couple[idx] + sol->C_inter_start_as_couple[idx];
+                    //     }
+                    // }
 
                 } // wealth
             } // love
