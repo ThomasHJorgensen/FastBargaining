@@ -818,52 +818,50 @@ namespace single {
 
     void update_over_optimal_discrete_choice(sol_struct* sol, par_struct* par){
         
-        double maxVw = 0.0;
-        double maxVm = 0.0;
-        double* list_choice_specific_values_w = new double[par->num_l];
-        double* list_choice_specific_values_m = new double[par->num_l];
-
+        // Loop over states
         for (int t=0; t<par->T; t++){
             for (int iP=0; iP<par->num_power; iP++){
                 for (int iL=0; iL<par->num_love; iL++){
                     for (int iA=0; iA<par->num_A;iA++){
                         // get index
-                        auto idx = index::index2(t,iA,par->T,par->num_A);
+                        auto idx_single = index::index2(t,iA,par->T,par->num_A);
 
                         // Find maximum value over all labor choices
                         for (int il = 0; il < par->num_l; il++) {
-                            auto index_choice = index::single_d(t,il,iA,par);
+                            auto idx_single_d = index::single_d(t,il,iA,par);
 
-                            list_choice_specific_values_w[il] = sol->Vwd_single_to_single[index_choice];
-                            list_choice_specific_values_m[il] = sol->Vmd_single_to_single[index_choice];
-                        }
-
-                        maxVw = tools::maxf(list_choice_specific_values_w, par->num_l);
-                        maxVm = tools::maxf(list_choice_specific_values_m, par->num_l);
-                        
-                        // find optimal choices
-                        for (int il = 0; il < par->num_l; il++) {
-                            auto index_choice =  index::single_d(t,il,iA,par);
-
-                            if (list_choice_specific_values_w[il] == maxVw) {
-                                // sol->Vw_single_to_single[idx] = sol->Vw_single_to_single[index_choice];
-                                sol->Cw_tot_single_to_single[idx] = sol->Cw_tot_single_to_single[index_choice];
-                                sol->lw_single_to_single[idx] = par->grid_l[il];
-                                // sol->Cw_priv_single_to_single[idx] = sol->Cw_priv_single_to_single[index_choice];
-                                // sol->hw_single_to_single[idx] = sol->hw_single_to_single[index_choice];
-                                // sol->Cw_inter_single_to_single[idx] = sol->Cw_inter_single_to_single[index_choice];
-                                // sol->Qw_single_to_single[idx] = sol->Qw_single_to_single[index_choice];
+                            if (sol->Vw_single_to_single[idx_single] < sol->Vwd_single_to_single[idx_single_d]) {
+                                sol->Vw_single_to_single[idx_single] = sol->Vwd_single_to_single[idx_single_d];
+                                sol->lw_single_to_single[idx_single] = par->grid_l[il];
                             }
-                            if (list_choice_specific_values_m[il] == maxVm) {
-                                // sol->Vm_single_to_single[idx] = sol->Vm_single_to_single[index_choice];
-                                sol->Cm_tot_single_to_single[idx] = sol->Cm_tot_single_to_single[index_choice];
-                                sol->lm_single_to_single[idx] = par->grid_l[il];
-                                // sol->Cm_priv_single_to_single[idx] = sol->Cm_priv_single_to_single[index_choice];
-                                // sol->hm_single_to_single[idx] = sol->hm_single_to_single[index_choice];
-                                // sol->Cm_inter_single_to_single[idx] = sol->Cm_inter_single_to_single[index_choice];
-                                // sol->Qm_single_to_single[idx] = sol->Qm_single_to_single[index_choice];
+                            if (sol->Vm_single_to_single[idx_single] < sol->Vmd_single_to_single[idx_single_d]) {
+                                sol->Vm_single_to_single[idx_single] = sol->Vmd_single_to_single[idx_single_d];
+                                sol->lm_single_to_single[idx_single] = par->grid_l[il];
                             }
                         }
+                        // // find optimal choices
+                        // for (int il = 0; il < par->num_l; il++) {
+                        //     auto index_choice =  index::single_d(t,il,iA,par);
+
+                        //     if (list_choice_specific_values_w[il] == maxVw) {
+                        //         // sol->Vw_single_to_single[idx] = sol->Vw_single_to_single[index_choice];
+                        //         sol->Cw_tot_single_to_single[idx] = sol->Cw_tot_single_to_single[index_choice];
+                        //         sol->lw_single_to_single[idx] = par->grid_l[il];
+                        //         // sol->Cw_priv_single_to_single[idx] = sol->Cw_priv_single_to_single[index_choice];
+                        //         // sol->hw_single_to_single[idx] = sol->hw_single_to_single[index_choice];
+                        //         // sol->Cw_inter_single_to_single[idx] = sol->Cw_inter_single_to_single[index_choice];
+                        //         // sol->Qw_single_to_single[idx] = sol->Qw_single_to_single[index_choice];
+                        //     }
+                        //     if (list_choice_specific_values_m[il] == maxVm) {
+                        //         // sol->Vm_single_to_single[idx] = sol->Vm_single_to_single[index_choice];
+                        //         sol->Cm_tot_single_to_single[idx] = sol->Cm_tot_single_to_single[index_choice];
+                        //         sol->lm_single_to_single[idx] = par->grid_l[il];
+                        //         // sol->Cm_priv_single_to_single[idx] = sol->Cm_priv_single_to_single[index_choice];
+                        //         // sol->hm_single_to_single[idx] = sol->hm_single_to_single[index_choice];
+                        //         // sol->Cm_inter_single_to_single[idx] = sol->Cm_inter_single_to_single[index_choice];
+                        //         // sol->Qm_single_to_single[idx] = sol->Qm_single_to_single[index_choice];
+                        //     }
+                        // }
                     
                     } // wealth
                 } // iP

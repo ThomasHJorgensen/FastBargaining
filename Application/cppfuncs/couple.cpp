@@ -492,54 +492,54 @@ namespace couple {
     }
 
     void update_over_optimal_discrete_choice(sol_struct* sol, par_struct* par){
-        
-        int list_length = par->num_l * par->num_l;
-        double power = -1000.0; // default value, will be overwritten in the loop below
-        double value = -1000.0;
-        double* list_choice_specific_values = new double[list_length];
-
+                
         for (int t=0; t<par->T; t++){
             for (int iP=0; iP<par->num_power; iP++){
-                power = par->grid_power[iP];
+                double power = par->grid_power[iP];
                 for (int iL=0; iL<par->num_love; iL++){
                     for (int iA=0; iA<par->num_A;iA++){
                         // get index
-                        auto idx = index::index4(t,iP,iL,iA,par->T, par->num_power, par->num_love, par->num_A);
+                        auto idx_couple = index::index4(t,iP,iL,iA,par->T, par->num_power, par->num_love, par->num_A);
                         
-                        // fill choice specific values
+                        // loop over labor choices
                         for (int ilw = 0; ilw < par->num_l; ilw++) {
                             for (int ilm = 0; ilm < par->num_l; ilm++) {
-                                auto i = index::index2(ilw, ilm, par->num_l, par->num_l);
-                                auto idx_choice = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
-                                value = power*sol->Vwd_couple_to_couple[idx_choice] + (1.0-power)*sol->Vmd_couple_to_couple[idx_choice];
-                                list_choice_specific_values[i] = value;
+                                // get index for choice specific value
+                                auto idx_couple_d = index::couple_d(t,ilw,ilm,iP,iL,iA,par); 
+
+                                // max V over labor choices
+                                double maxV_d = power*sol->Vwd_couple_to_couple[idx_couple_d] + (1.0-power)*sol->Vmd_couple_to_couple[idx_couple_d];
+                                if (sol->V_couple_to_couple[idx_couple] < maxV_d) {
+                                    sol->V_couple_to_couple[idx_couple] = maxV_d;
+                                    sol->Vw_couple_to_couple[idx_couple] = sol->Vwd_couple_to_couple[idx_couple_d];
+                                    sol->Vm_couple_to_couple[idx_couple] = sol->Vmd_couple_to_couple[idx_couple_d];
+                                    sol->lw_couple_to_couple[idx_couple] = par->grid_l[ilw];
+                                    sol->lm_couple_to_couple[idx_couple] = par->grid_l[ilm];
+                                }
                             }
                         }
 
-                        // max V over labor choices
-                        double maxV = tools::maxf(list_choice_specific_values, list_length); 
+                        // // update solution
+                        // for (int ilw = 0; ilw < par->num_l; ilw++) {
+                        //     for (int ilm = 0; ilm < par->num_l; ilm++) {
+                        //         auto i = index::index2(ilw, ilm, par->num_l, par->num_l);
+                        //         auto idx_choice = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
 
-                        // update solution
-                        for (int ilw = 0; ilw < par->num_l; ilw++) {
-                            for (int ilm = 0; ilm < par->num_l; ilm++) {
-                                auto i = index::index2(ilw, ilm, par->num_l, par->num_l);
-                                auto idx_choice = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
-
-                                if (list_choice_specific_values[i] == maxV) {
-                                    // sol->Vw_couple_to_couple[idx] = sol->Vw_couple_to_couple[idx_choice];
-                                    // sol->Vm_couple_to_couple[idx] = sol->Vm_couple_to_couple[idx_choice];
-                                    sol->C_tot_couple_to_couple[idx] = sol->Cd_tot_couple_to_couple[idx_choice];
-                                    sol->lw_couple_to_couple[idx] = par->grid_l[ilw];
-                                    sol->lm_couple_to_couple[idx] = par->grid_l[ilm];
-                                    // sol->Cw_priv_couple_to_couple[idx] = sol->Cw_priv_couple_to_couple[idx_choice];
-                                    // sol->Cm_priv_couple_to_couple[idx] = sol->Cm_priv_couple_to_couple[idx_choice];
-                                    // sol->hw_couple_to_couple[idx] = sol->hw_couple_to_couple[idx_choice];
-                                    // sol->hm_couple_to_couple[idx] = sol->hm_couple_to_couple[idx_choice];
-                                    // sol->C_inter_couple_to_couple[idx] = sol->C_inter_couple_to_couple[idx_choice];
-                                    // sol->Q_couple_to_couple[idx] = sol->Q_couple_to_couple[idx_choice];
-                                }
-                            } // ilm
-                        } // ilw
+                        //         if (list_choice_specific_values[i] == maxV) {
+                        //             // sol->Vw_couple_to_couple[idx] = sol->Vw_couple_to_couple[idx_choice];
+                        //             // sol->Vm_couple_to_couple[idx] = sol->Vm_couple_to_couple[idx_choice];
+                        //             sol->C_tot_couple_to_couple[idx] = sol->Cd_tot_couple_to_couple[idx_choice];
+                        //             sol->lw_couple_to_couple[idx] = par->grid_l[ilw];
+                        //             sol->lm_couple_to_couple[idx] = par->grid_l[ilm];
+                        //             // sol->Cw_priv_couple_to_couple[idx] = sol->Cw_priv_couple_to_couple[idx_choice];
+                        //             // sol->Cm_priv_couple_to_couple[idx] = sol->Cm_priv_couple_to_couple[idx_choice];
+                        //             // sol->hw_couple_to_couple[idx] = sol->hw_couple_to_couple[idx_choice];
+                        //             // sol->hm_couple_to_couple[idx] = sol->hm_couple_to_couple[idx_choice];
+                        //             // sol->C_inter_couple_to_couple[idx] = sol->C_inter_couple_to_couple[idx_choice];
+                        //             // sol->Q_couple_to_couple[idx] = sol->Q_couple_to_couple[idx_choice];
+                        //         }
+                        //     } // ilm
+                        // } // ilw
                     } // iA
                 } // iL
             } // iP
@@ -549,6 +549,7 @@ namespace couple {
     void calc_expected_value_couple(int t, int iP, int iL, int iA, double* Vw, double* Vm, double* EVw, double* EVm, sol_struct* sol, par_struct* par){
                 
         double love = par->grid_love[iL];
+        double power = par->grid_power[iP];
         auto idx = index::couple(t,iP,iL,iA,par);
         auto delta_love = index::couple_d(t,0,0,iP,1,iA,par) - index::couple_d(t,0,0,iP,0,iA,par);
         double Eval_w = 0;
@@ -559,21 +560,22 @@ namespace couple {
             double love_next = love + par->grid_shock_love[i_love_shock];
             double weight = par->grid_weight_love[i_love_shock];
             auto idx_love = tools::binary_search(0,par->num_love,par->grid_love,love_next);
+            double maxV = -std::numeric_limits<double>::infinity();
             double maxVw = -std::numeric_limits<double>::infinity();
             double maxVm = -std::numeric_limits<double>::infinity();
             
+            // loop over labor choices to find max value
             for (int ilw = 0; ilw < par->num_l; ilw++) {
                 for (int ilm = 0; ilm < par->num_l; ilm++) {
-                    auto il = index::index2(ilw, ilm, par->num_l, par->num_l);
                     auto idx_interp = index::couple_d(t,ilw,ilm,iP,0,iA,par);
-                    Vw_now = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vw[idx_interp], love_next, idx_love, delta_love);
-                    Vm_now = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vm[idx_interp], love_next, idx_love, delta_love);
-
-                    if (maxVw < Vw_now) {
-                        maxVw = Vw_now;
-                    }
-                    if (maxVm < Vm_now) {
-                        maxVm = Vm_now;
+                    
+                    double Vw_now_d = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vw[idx_interp], love_next, idx_love, delta_love);
+                    double Vm_now_d = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vm[idx_interp], love_next, idx_love, delta_love);
+                    double V_now_d = power*Vw_now_d + (1.0-power)*Vm_now_d;
+                    if (maxV < V_now_d) {
+                        maxV = V_now_d;
+                        maxVw = Vw_now_d;
+                        maxVm = Vm_now_d;
                     }
                 }
             }

@@ -339,8 +339,8 @@ class HouseholdModelClass(EconModelClass):
         
         # f. optimal choices over discrete choices
         ## a. single
-        # sol.Vw_single_to_single = np.ones(shape_single) - np.nan
-        # sol.Vm_single_to_single = np.ones(shape_single) - np.nan
+        sol.Vw_single_to_single = np.ones(shape_single) - np.nan
+        sol.Vm_single_to_single = np.ones(shape_single) - np.nan
         sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
         sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
         sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
@@ -355,8 +355,9 @@ class HouseholdModelClass(EconModelClass):
         # sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
 
         # b. couple
-        # sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.V_couple_to_couple = np.ones(shape_couple) - np.inf
+        sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
         sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
         sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
         sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
@@ -504,35 +505,36 @@ class HouseholdModelClass(EconModelClass):
         
         # allocate
         ## a. single
-        shape_single = (par.T, par.num_A)
-        sol.Vw_single_to_single = np.ones(shape_single) - np.nan
-        sol.Vm_single_to_single = np.ones(shape_single) - np.nan
-        sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
-        sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        sol.hw_single_to_single = np.ones(shape_single) + np.nan
-        sol.hm_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
-        sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
-        sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
+        # shape_single = (par.T, par.num_A)
+        # sol.Vw_single_to_single = np.ones(shape_single) - np.inf
+        # sol.Vm_single_to_single = np.ones(shape_single) - np.inf
+        # sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
+        # sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        # sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        # sol.hw_single_to_single = np.ones(shape_single) + np.nan
+        # sol.hm_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
+        # sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
+        # sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
 
-        # b. couple
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
-        sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
+        # # b. couple
+        # shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
+        # sol.V_couple_to_couple = np.ones(shape_couple) - np.inf
+        # sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        # sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        # sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
+        # sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
         
         # Find optimal decisions
         self.cpp.find_optimal_decision(sol,par)
