@@ -36,7 +36,7 @@ EXPORT void simulate(sim_struct *sim, sol_struct *sol, par_struct *par){
 EXPORT void find_optimal_decision(sol_struct *sol, par_struct *par){
     
     // single::update_over_optimal_discrete_choice(sol, par);
-    couple::update_over_optimal_discrete_choice(sol, par);
+    // couple::update_over_optimal_discrete_choice(sol, par);
 
 }
 
