@@ -177,6 +177,8 @@ class HouseholdModelClass(EconModelClass):
         ## a.2. couple to single
         sol.Vw_couple_to_single = np.nan + np.ones(shape_single_d)        # Value marriage -> single
         sol.Vm_couple_to_single = np.nan + np.ones(shape_single_d)
+        sol.lw_couple_to_single = np.nan + np.ones(shape_single_d, dtype = int)   # labor supply marriage -> single
+        sol.lm_couple_to_single = np.nan + np.ones(shape_single_d, dtype = int)
 
         sol.Cw_priv_couple_to_single = np.nan + np.ones(shape_single_d)   # Private consumption marriage -> single
         sol.Cm_priv_couple_to_single = np.nan + np.ones(shape_single_d)
@@ -339,8 +341,8 @@ class HouseholdModelClass(EconModelClass):
         
         # f. optimal choices over discrete choices
         ## a. single
-        sol.Vw_single_to_single = np.ones(shape_single) - np.nan
-        sol.Vm_single_to_single = np.ones(shape_single) - np.nan
+        sol.Vw_single_to_single = np.ones(shape_single) - np.inf
+        sol.Vm_single_to_single = np.ones(shape_single) - np.inf
         sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
         sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
         sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan

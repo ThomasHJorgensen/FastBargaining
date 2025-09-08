@@ -693,8 +693,7 @@ namespace couple {
             for (int iL=0; iL<par->num_love; iL++){    
                 for (int iA=0; iA<par->num_A;iA++){
                     // i. Get indices
-                    auto idx_single_w = index::single_d(t,ilw,iA,par);
-                    auto idx_single_m = index::single_d(t,ilm,iA,par);
+                    auto idx_single = index::single(t,iA,par);
                     idx_couple->t = t;
                     idx_couple->ilw = ilw;
                     idx_couple->ilm = ilm;
@@ -705,8 +704,8 @@ namespace couple {
                     // ii Calculate marital surplus
                     for (int iP=0; iP<par->num_power; iP++){
                         auto idx_tmp = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
-                        Sw[iP] = calc_marital_surplus(sol->Vwd_couple_to_couple[idx_tmp],sol->Vw_couple_to_single[idx_single_w],par);
-                        Sm[iP] = calc_marital_surplus(sol->Vmd_couple_to_couple[idx_tmp],sol->Vm_couple_to_single[idx_single_m],par);
+                        Sw[iP] = calc_marital_surplus(sol->Vwd_couple_to_couple[idx_tmp],sol->Vw_couple_to_single[idx_single],par);
+                        Sm[iP] = calc_marital_surplus(sol->Vmd_couple_to_couple[idx_tmp],sol->Vm_couple_to_single[idx_single],par);
                     }
 
                     // iii. setup relevant lists 
@@ -729,14 +728,14 @@ namespace couple {
                     list_couple_to_couple[i] = sol->Cd_inter_couple_to_couple; i++;
                     list_couple_to_couple[i] = sol->Qd_couple_to_couple; i++; // OBS: Maybe Q should be calculated from hw, hw and C_inter
                     i = 0;
-                    list_couple_to_single[i] = sol->Vw_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->Vm_couple_to_single[idx_single_m]; i++;
-                    list_couple_to_single[i] = sol->Cw_priv_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->Cm_priv_couple_to_single[idx_single_m]; i++;
-                    list_couple_to_single[i] = sol->hw_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->hm_couple_to_single[idx_single_m]; i++;
-                    list_couple_to_single[i] = sol->Cw_inter_couple_to_single[idx_single_w]; i++;
-                    list_couple_to_single[i] = sol->Qw_couple_to_single[idx_single_w]; i++;
+                    list_couple_to_single[i] = sol->Vw_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->Vm_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->Cw_priv_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->Cm_priv_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->hw_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->hm_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->Cw_inter_couple_to_single[idx_single]; i++;
+                    list_couple_to_single[i] = sol->Qw_couple_to_single[idx_single]; i++;
 
                     // iv. Update solution
                     // Update solutions in list_start_as_couple
