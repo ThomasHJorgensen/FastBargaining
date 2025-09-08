@@ -44,13 +44,11 @@ namespace index {
 
     struct index_couple_struct {
             int t;
-            int ilw;
-            int ilm;
             int iL;
             int iA;
             par_struct *par; 
             long long int idx(long long int iP){
-                    return index::couple_d(t,ilw, ilm,iP,iL,iA , par); 
+                    return index::couple(t,iP,iL,iA,par); 
             }
     };
 
