@@ -300,6 +300,8 @@ class HouseholdModelClass(EconModelClass):
         # d. simulation
         # NB: all arrays not containing "init" or "draw" in name are wiped before each simulation
         shape_sim = (par.simN,par.simT)
+        sim.lw = np.nan + np.ones(shape_sim)
+        sim.lm = np.nan + np.ones(shape_sim)
         sim.Cw_priv = np.nan + np.ones(shape_sim)               
         sim.Cm_priv = np.nan + np.ones(shape_sim)
         sim.hw = np.nan + np.ones(shape_sim)
