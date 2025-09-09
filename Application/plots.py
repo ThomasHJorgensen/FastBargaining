@@ -257,8 +257,11 @@ class model_plotter():
     def plot_female_single_values(self, ax, grid, index, **kwargs):
         variables = [
             'Vwd_single_to_single',
+            'Vw_single_to_single',
+            'Vw_single_to_couple',
             'EVw_start_as_single',
-            'EmargVw_start_as_single'
+            'EmargVw_start_as_single',
+            'EVw_cond_meet_partner',
         ]
         if grid == 'grid_A':
             print("Warning: plotting over grid_A, which is not the same as grid_Aw or grid_Am. Make sure this is intended.")
@@ -267,8 +270,11 @@ class model_plotter():
     def plot_male_single_values(self, ax, grid, index, **kwargs):
         variables = [
             'Vmd_single_to_single',
+            'Vm_single_to_single',
+            'Vm_single_to_couple',
             'EVm_start_as_single',
-            'EmargVm_start_as_single'
+            'EmargVm_start_as_single',
+            'EVm_cond_meet_partner',
         ]
         if grid == 'grid_A':
             print("Warning: plotting over grid_A, which is not the same as grid_Aw or grid_Am. Make sure this is intended.")
