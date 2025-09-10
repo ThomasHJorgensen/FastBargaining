@@ -302,8 +302,8 @@ namespace sim {
                         if (Cm_tot > Mm){
                             Cm_tot = Mm;
                         }
-                        sim->Cm_tot[it] = Cm_tot;
                         sim->Cw_tot[it] = Cw_tot;
+                        sim->Cm_tot[it] = Cm_tot;
 
                         // consumption allocation
                         precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);

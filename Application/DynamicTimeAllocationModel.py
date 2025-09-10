@@ -1,6 +1,8 @@
 import numpy as np
 import numba as nb
 import scipy.optimize as optimize
+import polars as pl
+
 
 from EconModel import EconModelClass
 from consav.grids import nonlinspace
@@ -336,7 +338,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
         sim.init_Aw = sim.init_A * par.div_A_share
         sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple = np.ones(par.simN,dtype=np.bool_)
+        sim.init_couple = np.zeros(par.simN,dtype=np.bool_)
         sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
         sim.init_love = np.zeros(par.simN)
         
@@ -503,47 +505,6 @@ class HouseholdModelClass(EconModelClass):
         self.cpp.simulate(sim,sol,par)
 
         sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
-
-    def find_optimal_decision(self):
-        """ Find optimal decision for a given state """
-        par = self.par
-        sol = self.sol
         
-        # allocate
-        ## a. single
-        # shape_single = (par.T, par.num_A)
-        # sol.Vw_single_to_single = np.ones(shape_single) - np.inf
-        # sol.Vm_single_to_single = np.ones(shape_single) - np.inf
-        # sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
-        # sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        # sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        # sol.hw_single_to_single = np.ones(shape_single) + np.nan
-        # sol.hm_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
-        # sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
-
-        # # b. couple
-        # shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
-        # sol.V_couple_to_couple = np.ones(shape_couple) - np.inf
-        # sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        # sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        # sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
-        
-        # Find optimal decisions
-        self.cpp.find_optimal_decision(sol,par)
-        
-
-        
+    # Make a function that takes sim and makes it into a polars dataframe
+    

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class model_plotter():
     def __init__(self, model, model_name=None, titles=['variable'], labels=['variable', 'index',], grid_names=None, **kwargs):
@@ -6,6 +7,7 @@ class model_plotter():
         self.model = model
         self.model_name = model_name if model_name is not None else model.name
         self.index_labels_per_row = kwargs.get('index_labels_per_row', 3)  # Default to 3 if not provided
+        self.sim_data = self.sim_to_df()
         
         if isinstance(titles, str):
             self.titles = [titles]
@@ -157,14 +159,13 @@ class model_plotter():
                 ]
                 if label_texts:
                     label_text = ''
-                    for i, label_idx in enumerate(label_texts):
+                    for j, label_idx in enumerate(label_texts):
                         label_text += label_idx
-                        if i < len(label_texts) - 1:
+                        if j < len(label_texts) - 1:
                             label_text += ', '
-                        if (i + 1) % self.index_labels_per_row == 0:
+                        if (j + 1) % self.index_labels_per_row == 0:
                             label_text += '\n'
                     my_label += label_text
-
             else:
                 raise ValueError(f"Label '{label_id}' not recognized. Use 'variable', 'index', or 'model'.")
         return my_label
@@ -400,3 +401,67 @@ class model_plotter():
             'Vd_couple_to_couple_pd',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
+    
+            
+    def sim_to_df(self):
+
+        par = self.model.par
+        sim = self.model.sim
+
+        # Extract variable names from sim that are arrays with shape (par.simN, par.simT)
+        var_names = [
+            key for key, val in sim.__dict__.items()
+            if isinstance(val, np.ndarray) and val.shape == (par.simN, par.simT)
+        ]
+
+        data = {
+            'id': np.repeat(np.arange(par.simN), par.simT),
+            't': np.tile(np.arange(par.simT), par.simN)
+        }
+
+        for var in var_names:
+            data[var] = getattr(sim, var).reshape(-1)
+
+        df = pd.DataFrame(data)
+        return df
+
+    def plot_simulated_vars(self, ax, variables, agg_fct=np.mean, **kwargs):
+
+        # check if ax has enough axes
+        if len(ax) < len(variables):
+            raise ValueError(f"length of ax ({len(ax)}) must be at least the number of variables ({len(variables)})")
+    
+
+        
+        # get grid
+        x = np.arange(self.model.par.simT)
+        
+        for i, var in enumerate(variables):
+            # get variable
+            if var is None:
+                y = np.nan * np.ones_like(x)
+            elif var in self.sim_data.columns:
+                var_data = self.sim_data.loc[:, ['id', 't', var]]
+                y = var_data.groupby('t')[var].agg(agg_fct).sort_index().values
+            else:
+                raise ValueError(f"Variable '{var}' not found in simulated data")
+            
+            # handle label
+            if var is None:
+                label = None
+            elif 'label' in kwargs and kwargs['label'] is not None:
+                label = kwargs['label']
+            else: # default label
+                label = f"{agg_fct.__name__.capitalize()} of {var} ({self.model_name})"
+            
+            # plot
+            plot_kwargs = {k: v for k, v in kwargs.items() if k != 'label'}
+            ax[i].plot(x, y, label=label, **plot_kwargs)
+            ax[i].set_xlabel("Period (t)")
+            ax[i].legend()
+            if self.titles:
+                self.add_title(ax[i], var)
+        
+        return ax
+    
