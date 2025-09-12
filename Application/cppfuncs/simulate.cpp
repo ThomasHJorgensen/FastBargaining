@@ -277,8 +277,8 @@ namespace sim {
                         sim->lw[it] = labor_w;
                         sim->lm[it] = labor_m; 
 
-                        auto idx_sol_single_w = index::index2(t,ilw,par->T,par->num_A);
-                        auto idx_sol_single_m = index::index2(t,ilm,par->T,par->num_A);
+                        auto idx_sol_single_w = index::single_d(t,ilw,0,par);
+                        auto idx_sol_single_m = index::single_d(t,ilm,0,par);
                         double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
                         double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 
@@ -322,8 +322,8 @@ namespace sim {
                         love_now = sim->love[it];
                     }
 
-                    double lh = par->grid_l[1] + sim->hw[it]; // labor and leisure // OBS: return to this when implementing labor choice
-                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh, sim->Qw[it],woman,par,love_now);
+                    double lh_w = sim->lw[it] + sim->hw[it];
+                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
 
                 } // t
             } // i

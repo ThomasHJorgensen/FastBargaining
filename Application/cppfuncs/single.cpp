@@ -882,7 +882,7 @@ namespace single {
 
         //--- Set variables based on gender ---
         double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
-        double* V_single_to_single = (gender == woman) ? sol->Vw_single_to_single : sol->Vm_single_to_single;
+        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
 
         //--- Find asset index ---
         int iA = tools::binary_search(0, par->num_A, grid_A, A);
@@ -894,7 +894,7 @@ namespace single {
         //--- Loop over labor choices ---
         for (int il = 0; il < par->num_l; il++) {
             auto idx_interp = index::single_d(t, il, 0, par);
-            double V_now = tools::interp_1d_index(grid_A, par->num_A, &V_single_to_single[idx_interp], A, iA);
+            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_interp], A, iA);
 
             //--- Update maximum value and labor choice ---
             if (maxV < V_now) {

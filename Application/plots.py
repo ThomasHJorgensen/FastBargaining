@@ -442,7 +442,7 @@ class model_plotter():
             if var is None:
                 y = np.nan * np.ones_like(x)
             elif var in self.sim_data.columns:
-                var_data = self.sim_data.loc[:, ['id', 't', var]]
+                var_data = self.sim_data.loc[:, ['id', 't', var]].sort_values(['t', 'id'])
                 y = var_data.groupby('t')[var].agg(agg_fct).sort_index().values
             else:
                 raise ValueError(f"Variable '{var}' not found in simulated data")
