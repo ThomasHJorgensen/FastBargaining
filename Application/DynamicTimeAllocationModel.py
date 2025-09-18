@@ -227,8 +227,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Sw = np.ones(par.num_power) + np.nan                                 # surplus of marriage
         sol.Sm = np.ones(par.num_power) + np.nan
 
-        sol.power_idx = np.zeros(shape_couple_d, dtype = int)                     # index of bargaining weight (approx)
-        sol.power = np.zeros(shape_couple_d) + np.nan                             # bargainng weight (interpolated)
+        sol.power_idx = np.zeros(shape_couple, dtype = int)                     # index of bargaining weight (approx)
+        sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
         shape_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)

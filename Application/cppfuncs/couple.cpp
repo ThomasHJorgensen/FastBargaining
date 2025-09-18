@@ -613,12 +613,12 @@ namespace couple {
         } // omp
     }
 
-    int find_interpolated_labor_index_couple(int t, double power, double love, double A, double* ilw_out, double* ilm_out, sol_struct* sol, par_struct* par){
+    void find_interpolated_labor_index_couple(int t, double power, double love, double A, double* ilw_out, double* ilm_out, sol_struct* sol, par_struct* par){
 
         //--- Find index ---
         int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
         int iL = tools::binary_search(0, par->num_love, par->grid_love, love);
-        int iA = tools::binary_search(0, par->num_A, grid_A, A);
+        int iA = tools::binary_search(0, par->num_A, par->grid_A, A);
 
         //--- Initialize variables ---
         double maxV = -std::numeric_limits<double>::infinity();
@@ -636,14 +636,14 @@ namespace couple {
                 //--- Interpolate value ---
                 auto idx_interp = index::couple_d(t, ilw, ilm, 0,0,0, par);
                 double Vw_now = tools::_interp_3d(
-                    grid_power, grid_love, grid_A,
+                    par->grid_power, par->grid_love, par->grid_A,
                     par->num_power, par->num_love, par->num_A,
                     &sol->Vwd_couple_to_couple[idx_interp],
                     power, love, A,
                     iP, iL, iA
                 );
                 double Vm_now = tools::_interp_3d(
-                    grid_power, grid_love, grid_A,
+                    par->grid_power, par->grid_love, par->grid_A,
                     par->num_power, par->num_love, par->num_A,
                     &sol->Vmd_couple_to_couple[idx_interp],
                     power, love, A,

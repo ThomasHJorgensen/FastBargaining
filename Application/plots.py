@@ -402,6 +402,12 @@ class model_plotter():
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
+    def plot_power(self, ax, grid, index, **kwargs):
+        variables = [
+            'power',
+            'power_idx',
+        ]
+        return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
     
             
     def sim_to_df(self):
