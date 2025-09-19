@@ -613,7 +613,61 @@ namespace couple {
         } // omp
     }
 
-        void find_unconditional_couple_solution(int t, sol_struct* sol, par_struct* par){
+    void find_interpolated_labor_index_couple(int t, double power, double love, double A, int* ilw_out, int* ilm_out, sol_struct* sol, par_struct* par){
+
+        //--- Find index ---
+        int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
+        int iL = tools::binary_search(0, par->num_love, par->grid_love, love);
+        int iA = tools::binary_search(0, par->num_A, par->grid_A, A);
+
+        //--- Initialize variables ---
+        double maxV = -std::numeric_limits<double>::infinity();
+        int labor_index_w = 0;
+        int labor_index_m = 0;
+
+        //--- Loop over labor choices ---
+        for (int ilw = 0; ilw < par->num_l; ilw++) {
+            for (int ilm = 0; ilm < par->num_l; ilm++) {
+
+                // get index for choice specific value
+                auto idx_couple_d = index::couple_d(t,ilw,ilm,iP,iL,iA,par); 
+
+
+                //--- Interpolate value ---
+                auto idx_interp = index::couple_d(t, ilw, ilm, 0,0,0, par);
+                double Vw_now = tools::_interp_3d(
+                    par->grid_power, par->grid_love, par->grid_A,
+                    par->num_power, par->num_love, par->num_A,
+                    &sol->Vwd_couple_to_couple[idx_interp],
+                    power, love, A,
+                    iP, iL, iA
+                );
+                double Vm_now = tools::_interp_3d(
+                    par->grid_power, par->grid_love, par->grid_A,
+                    par->num_power, par->num_love, par->num_A,
+                    &sol->Vmd_couple_to_couple[idx_interp],
+                    power, love, A,
+                    iP, iL, iA
+                );
+
+                // max V over labor choices 
+                double V_now = power*Vw_now + (1.0-power)*Vm_now;
+
+                //--- Update maximum value and labor choice ---
+                if (maxV < V_now) {
+                    maxV = V_now;
+                    labor_index_w = ilw;
+                    labor_index_m = ilm;
+                }
+            }
+        }
+
+        //--- Return optimal labor choice ---
+        *ilw_out = labor_index_w;
+        *ilm_out = labor_index_m;
+    }
+
+    void find_unconditional_couple_solution(int t, sol_struct* sol, par_struct* par){
                 
         for (int iP=0; iP<par->num_power; iP++){
             double power = par->grid_power[iP];

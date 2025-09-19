@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class model_plotter():
     def __init__(self, model, model_name=None, titles=['variable'], labels=['variable', 'index',], grid_names=None, **kwargs):
@@ -6,6 +7,7 @@ class model_plotter():
         self.model = model
         self.model_name = model_name if model_name is not None else model.name
         self.index_labels_per_row = kwargs.get('index_labels_per_row', 3)  # Default to 3 if not provided
+        self.sim_data = self.sim_to_df()
         
         if isinstance(titles, str):
             self.titles = [titles]
@@ -157,14 +159,13 @@ class model_plotter():
                 ]
                 if label_texts:
                     label_text = ''
-                    for i, label_idx in enumerate(label_texts):
+                    for j, label_idx in enumerate(label_texts):
                         label_text += label_idx
-                        if i < len(label_texts) - 1:
+                        if j < len(label_texts) - 1:
                             label_text += ', '
-                        if (i + 1) % self.index_labels_per_row == 0:
+                        if (j + 1) % self.index_labels_per_row == 0:
                             label_text += '\n'
                     my_label += label_text
-
             else:
                 raise ValueError(f"Label '{label_id}' not recognized. Use 'variable', 'index', or 'model'.")
         return my_label
@@ -400,3 +401,123 @@ class model_plotter():
             'Vd_couple_to_couple_pd',
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
+    def plot_power(self, ax, grid, index, **kwargs):
+        variables = [
+            'power',
+            'power_idx',
+        ]
+        return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
+            
+    def sim_to_df(self):
+
+        par = self.model.par
+        sim = self.model.sim
+
+        # Extract variable names from sim that are arrays with shape (par.simN, par.simT)
+        var_names = [
+            key for key, val in sim.__dict__.items()
+            if isinstance(val, np.ndarray) and val.shape == (par.simN, par.simT)
+        ]
+
+        data = {
+            'id': np.repeat(np.arange(par.simN), par.simT),
+            't': np.tile(np.arange(par.simT), par.simN)
+        }
+
+        for var in var_names:
+            data[var] = getattr(sim, var).reshape(-1)
+
+        df = pd.DataFrame(data)
+        return df
+
+    def plot_simulated_vars(self, ax, variables, where=None, agg_fct="mean", **kwargs):
+
+        # check if ax has enough axes
+        if len(ax) < len(variables):
+            raise ValueError(f"length of ax ({len(ax)}) must be at least the number of variables ({len(variables)})")
+    
+        # Select data
+        df = self.sim_data.copy()
+        if where is not None:
+            mask = df.eval(where)
+            if not mask.any():
+                raise ValueError(f"No data points match the condition: {where}")
+            df = df[mask]
+
+        # Get time grid
+        x = np.arange(self.model.par.simT)
+
+        for i, var in enumerate(variables):
+            if var is None:
+                y = np.full_like(x, np.nan, dtype=float)
+            elif var in df.columns:
+                var_data = df[['id', 't', var]].sort_values(['t', 'id'])
+                if agg_fct:
+                    y = var_data.groupby('t')[var].agg(agg_fct).reindex(x, fill_value=np.nan).values
+                else:
+                    y = var_data.pivot(index='t', columns='id', values=var).reindex(index=x).values
+            else:
+                raise ValueError(f"Variable '{var}' not found in simulated data")
+            # handle label
+            if var is None:
+                label = None
+            elif 'label' in kwargs and kwargs['label'] is not None:
+                label = kwargs['label']
+            elif agg_fct: # default label with aggregation function
+                label = f"{agg_fct.capitalize() if isinstance(agg_fct, str) else agg_fct.__name__.capitalize()} of {var} ({self.model_name})"
+            else: # default label
+                label = None
+            
+            # plot
+            plot_kwargs = {k: v for k, v in kwargs.items() if k != 'label'}
+            ax[i].plot(x, y, label=label, **plot_kwargs)
+            ax[i].set_xlabel("Period (t)")
+            ax[i].set_xlim([x.min()-0.5, x.max()+0.5])
+            if label:
+                ax[i].legend()
+            if self.titles:
+                self.add_title(ax[i], var)
+            if agg_fct is None:
+                # Set all lines to grey, alpha=0.1, and no markers
+                for line in ax[i].get_lines():
+                    line.set_color('grey')
+                    line.set_linestyle('-')
+                    line.set_alpha(0.1)
+                    line.set_marker('')
+        
+        return ax
+    
+    def plot_sim_female_single(self, ax, agg_fct='mean', **kwargs):
+        singles_mask = 'couple == 0'
+        variables = ['Aw','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util']
+        return self.plot_simulated_vars(ax, variables, where=singles_mask, agg_fct=agg_fct, **kwargs)
+    
+    def plot_sim_male_single(self, ax, agg_fct='mean', **kwargs):
+        singles_mask = 'couple == 0'
+        variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm']
+        return self.plot_simulated_vars(ax, variables, where=singles_mask, agg_fct=agg_fct, **kwargs)
+        
+    def plot_sim_female_couple(self, ax, agg_fct='mean', **kwargs):
+        couples_mask = 'couple == 1'
+        variables = ['A','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util']
+        return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
+
+    def plot_sim_male_couple(self, ax, agg_fct='mean', **kwargs):
+        couples_mask = 'couple == 1'
+        variables = ['A','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm']
+        return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
+
+    def plot_sim_couple(self, ax, agg_fct='mean', **kwargs):
+        couples_mask = 'couple == 1'
+        variables = ['A','C_tot', 'power', 'love']
+        return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
+
+    def plot_sim_female(self, ax, where=None, agg_fct='mean', **kwargs):
+        variables = ['Aw','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','couple']
+        return self.plot_simulated_vars(ax, variables, where=where, agg_fct=agg_fct, **kwargs)
+
+    def plot_sim_male(self, ax, where=None, agg_fct='mean', **kwargs):
+        variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm', 'couple']
+        return self.plot_simulated_vars(ax, variables, where=where, agg_fct=agg_fct, **kwargs)

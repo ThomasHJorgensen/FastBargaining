@@ -878,6 +878,36 @@ namespace single {
     }
 
 
+    int find_interpolated_labor_index_single(int t, double A, int gender, sol_struct* sol, par_struct* par){
+
+        //--- Set variables based on gender ---
+        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
+        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
+
+        //--- Find asset index ---
+        int iA = tools::binary_search(0, par->num_A, grid_A, A);
+
+        //--- Initialize variables ---
+        double maxV = -std::numeric_limits<double>::infinity();
+        int labor_index = 0;
+
+        //--- Loop over labor choices ---
+        for (int il = 0; il < par->num_l; il++) {
+            auto idx_interp = index::single_d(t, il, 0, par);
+            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_interp], A, iA);
+
+            //--- Update maximum value and labor choice ---
+            if (maxV < V_now) {
+                maxV = V_now;
+                labor_index = il;
+            }
+        }
+
+        //--- Return optimal labor choice ---
+        return labor_index;
+    }
+
+
     void expected_value_start_single(int t, sol_struct* sol,par_struct* par){
 
         // a. Loop over states

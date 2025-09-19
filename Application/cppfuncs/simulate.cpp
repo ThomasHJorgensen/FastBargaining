@@ -65,9 +65,9 @@ namespace sim {
             for (int iP=0; iP<par->num_power; iP++){ 
                 auto idx = 0;
                 if(flip){
-                    idx = index::index4(t,par->num_power-1 - iP,0,0,par->T,par->num_power,par->num_love,par->num_A); // flipped for men
+                    idx = index::couple(t,par->num_power-1 - iP,0,0, par); // flipped for men
                 } else {
-                    idx = index::index4(t,iP,0,0,par->T,par->num_power,par->num_love,par->num_A); 
+                    idx = index::couple(t,iP,0,0, par); 
                 }
                 V_power_vec[iP] = tools::_interp_2d(par->grid_love,par->grid_A,par->num_love,par->num_A,&V_couple_to_couple[idx],love,A_lag,j_love,j_A);
             }
@@ -215,7 +215,7 @@ namespace sim {
 
                             power = single::calc_initial_bargaining_weight(t, love, Aw_lag, Ap, sol, par);
 
-                            if (0.0 <= power) { // if meet and agree to couple
+                            if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
                                 sim->couple[it] = true;
 
                                 // set beginning-of-period couple states
@@ -234,11 +234,21 @@ namespace sim {
 
                     // ii) Find choices and update states
                     if (sim->couple[it]){
-                        
+
+                        // Find labor choice
+                        int ilw = -1;
+                        int ilm = -1;
+                        couple::find_interpolated_labor_index_couple(t, power, love, A_lag, &ilw, &ilm, sol, par);
+                        double labor_w = par->grid_l[ilw];
+                        double labor_m = par->grid_l[ilm];
+                        sim->lw[it] = labor_w;
+                        sim->lm[it] = labor_m;
+
                         // total consumption
-                        auto idx_sol = index::index4(t,0,0,0,par->T,par->num_power,par->num_love,par->num_A);
-                        double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->C_tot_couple_to_couple[idx_sol],power,love,A_lag);
-                        double M_resources = couple::resources(A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0, par);
+                        double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->Cd_tot_couple_to_couple[idx_sol],power,love,A_lag);
+
+                        double M_resources = couple::resources(labor_w,labor_m,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
                             C_tot = M_resources;
                         }
@@ -247,8 +257,6 @@ namespace sim {
                         // consumpton allocation
                         double C_inter = 0.0; // placeholder for public consumption
                         double Q = 0.0; // placeholder for public goods
-                        int ilw = 1; // OBS: Return to this when implementing labor choice
-                        int ilm = 1; // OBS: Return to this when implementing labor choice
                         precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, C_tot,power,par, sol); 
                         sim->Cw_inter[it] = C_inter;
                         sim->Cm_inter[it] = C_inter;
@@ -267,33 +275,43 @@ namespace sim {
 
 
                     } else { // single
+                        // find labor choice
+                        int ilw = single::find_interpolated_labor_index_single(t, Aw_lag, woman, sol, par);
+                        int ilm = single::find_interpolated_labor_index_single(t, Am_lag, man, sol, par);
+                        double labor_w = par->grid_l[ilw]; 
+                        double labor_m = par->grid_l[ilm];
+                        sim->lw[it] = labor_w;
+                        sim->lm[it] = labor_m; 
+
+                        auto idx_sol_single_w = index::single_d(t,ilw,0,par);
+                        auto idx_sol_single_m = index::single_d(t,ilm,0,par);
+                        double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
+                        double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 
                         // pick relevant solution for single, depending on whether just became single
-                        auto idx_sol_single = index::index2(t,0,par->T,par->num_A);
-                        double *sol_single_w = &sol->Cw_tot_couple_to_single[idx_sol_single];
-                        double *sol_single_m = &sol->Cm_tot_couple_to_single[idx_sol_single];
-                        if (power_lag<0.0){
-                            sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single];
-                            sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single];
-                        } 
+                        // auto idx_sol_single = index::index2(t,0,par->T,par->num_A);
+                        // double *sol_single_w = &sol->Cw_tot_couple_to_single[idx_sol_single];
+                        // double *sol_single_m = &sol->Cm_tot_couple_to_single[idx_sol_single];
+                        // if (power_lag<0.0){
+                        //     sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single];
+                        //     sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single];
+                        // } 
 
                         // total consumption
                         double Cw_tot = tools::interp_1d(par->grid_Aw,par->num_A,sol_single_w,Aw_lag);
                         double Cm_tot = tools::interp_1d(par->grid_Am,par->num_A,sol_single_m,Am_lag);
-                        double Mw = single::resources(Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                        double Mm = single::resources(Am_lag, man, par);
+                        double Mw = single::resources(labor_w, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double Mm = single::resources(labor_m, Am_lag, man, par);
                         if (Cw_tot > Mw){
                             Cw_tot = Mw;
                         }
                         if (Cm_tot > Mm){
                             Cm_tot = Mm;
                         }
-                        sim->Cm_tot[it] = Cm_tot;
                         sim->Cw_tot[it] = Cw_tot;
-                        
-                        // consumpton allocation
-                        int ilw = 1; // OBS: Return to this when implementing labor choice
-                        int ilm = 1; // OBS: Return to this when implementing labor choice
+                        sim->Cm_tot[it] = Cm_tot;
+
+                        // consumption allocation
                         precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);
                         precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
 
@@ -310,8 +328,8 @@ namespace sim {
                         love_now = sim->love[it];
                     }
 
-                    double lh = par->grid_l[1] + sim->hw[it]; // labor and leisure // OBS: return to this when implementing labor choice
-                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh, sim->Qw[it],woman,par,love_now);
+                    double lh_w = sim->lw[it] + sim->hw[it];
+                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
 
                 } // t
             } // i

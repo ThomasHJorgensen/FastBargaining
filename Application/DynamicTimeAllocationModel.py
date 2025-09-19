@@ -1,6 +1,8 @@
 import numpy as np
 import numba as nb
 import scipy.optimize as optimize
+import polars as pl
+
 
 from EconModel import EconModelClass
 from consav.grids import nonlinspace
@@ -225,8 +227,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Sw = np.ones(par.num_power) + np.nan                                 # surplus of marriage
         sol.Sm = np.ones(par.num_power) + np.nan
 
-        sol.power_idx = np.zeros(shape_couple_d, dtype = int)                     # index of bargaining weight (approx)
-        sol.power = np.zeros(shape_couple_d) + np.nan                             # bargainng weight (interpolated)
+        sol.power_idx = np.zeros(shape_couple, dtype = int)                     # index of bargaining weight (approx)
+        sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
         shape_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
@@ -300,6 +302,8 @@ class HouseholdModelClass(EconModelClass):
         # d. simulation
         # NB: all arrays not containing "init" or "draw" in name are wiped before each simulation
         shape_sim = (par.simN,par.simT)
+        sim.lw = np.nan + np.ones(shape_sim)
+        sim.lm = np.nan + np.ones(shape_sim)
         sim.Cw_priv = np.nan + np.ones(shape_sim)               
         sim.Cm_priv = np.nan + np.ones(shape_sim)
         sim.hw = np.nan + np.ones(shape_sim)
@@ -501,47 +505,6 @@ class HouseholdModelClass(EconModelClass):
         self.cpp.simulate(sim,sol,par)
 
         sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
-
-    def find_optimal_decision(self):
-        """ Find optimal decision for a given state """
-        par = self.par
-        sol = self.sol
         
-        # allocate
-        ## a. single
-        # shape_single = (par.T, par.num_A)
-        # sol.Vw_single_to_single = np.ones(shape_single) - np.inf
-        # sol.Vm_single_to_single = np.ones(shape_single) - np.inf
-        # sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
-        # sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        # sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        # sol.hw_single_to_single = np.ones(shape_single) + np.nan
-        # sol.hm_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
-        # sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
-
-        # # b. couple
-        # shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
-        # sol.V_couple_to_couple = np.ones(shape_couple) - np.inf
-        # sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        # sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        # sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
-        
-        # Find optimal decisions
-        self.cpp.find_optimal_decision(sol,par)
-        
-
-        
+    # Make a function that takes sim and makes it into a polars dataframe
+    
