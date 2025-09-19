@@ -613,7 +613,7 @@ namespace couple {
         } // omp
     }
 
-    void find_interpolated_labor_index_couple(int t, double power, double love, double A, double* ilw_out, double* ilm_out, sol_struct* sol, par_struct* par){
+    void find_interpolated_labor_index_couple(int t, double power, double love, double A, int* ilw_out, int* ilm_out, sol_struct* sol, par_struct* par){
 
         //--- Find index ---
         int iP = tools::binary_search(0, par->num_power, par->grid_power, power);

@@ -65,9 +65,9 @@ namespace sim {
             for (int iP=0; iP<par->num_power; iP++){ 
                 auto idx = 0;
                 if(flip){
-                    idx = index::index4(t,par->num_power-1 - iP,0,0,par->T,par->num_power,par->num_love,par->num_A); // flipped for men
+                    idx = index::couple(t,par->num_power-1 - iP,0,0, par); // flipped for men
                 } else {
-                    idx = index::index4(t,iP,0,0,par->T,par->num_power,par->num_love,par->num_A); 
+                    idx = index::couple(t,iP,0,0, par); 
                 }
                 V_power_vec[iP] = tools::_interp_2d(par->grid_love,par->grid_A,par->num_love,par->num_A,&V_couple_to_couple[idx],love,A_lag,j_love,j_A);
             }
@@ -234,13 +234,21 @@ namespace sim {
 
                     // ii) Find choices and update states
                     if (sim->couple[it]){
-                        
+
+                        // Find labor choice
+                        int ilw = -1;
+                        int ilm = -1;
+                        couple::find_interpolated_labor_index_couple(t, power, love, A_lag, &ilw, &ilm, sol, par);
+                        double labor_w = par->grid_l[ilw];
+                        double labor_m = par->grid_l[ilm];
+                        sim->lw[it] = labor_w;
+                        sim->lm[it] = labor_m;
+
                         // total consumption
-                        auto idx_sol = index::index4(t,0,0,0,par->T,par->num_power,par->num_love,par->num_A);
-                        double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->C_tot_couple_to_couple[idx_sol],power,love,A_lag);
-                        
-                        double labor = par->grid_l[1]; // placeholder for labor choice
-                        double M_resources = couple::resources(labor,labor,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0, par);
+                        double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->Cd_tot_couple_to_couple[idx_sol],power,love,A_lag);
+
+                        double M_resources = couple::resources(labor_w,labor_m,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
                             C_tot = M_resources;
                         }
@@ -249,8 +257,6 @@ namespace sim {
                         // consumpton allocation
                         double C_inter = 0.0; // placeholder for public consumption
                         double Q = 0.0; // placeholder for public goods
-                        int ilw = 1; // OBS: Return to this when implementing labor choice
-                        int ilm = 1; // OBS: Return to this when implementing labor choice
                         precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, C_tot,power,par, sol); 
                         sim->Cw_inter[it] = C_inter;
                         sim->Cm_inter[it] = C_inter;
