@@ -432,102 +432,92 @@ class model_plotter():
         df = pd.DataFrame(data)
         return df
 
-    def plot_simulated_vars(self, ax, variables, agg_fct="mean", **kwargs):
+    def plot_simulated_vars(self, ax, variables, where=None, agg_fct="mean", **kwargs):
 
         # check if ax has enough axes
         if len(ax) < len(variables):
             raise ValueError(f"length of ax ({len(ax)}) must be at least the number of variables ({len(variables)})")
     
+        # Select data
+        df = self.sim_data.copy()
+        if where is not None:
+            mask = df.eval(where)
+            if not mask.any():
+                raise ValueError(f"No data points match the condition: {where}")
+            df = df[mask]
 
-        
-        # get grid
+        # Get time grid
         x = np.arange(self.model.par.simT)
-        
+
         for i, var in enumerate(variables):
-            # get variable
             if var is None:
-                y = np.nan * np.ones_like(x)
-            elif var in self.sim_data.columns:
-                var_data = self.sim_data.loc[:, ['id', 't', var]].sort_values(['t', 'id'])
-                y = var_data.groupby('t')[var].agg(agg_fct).sort_index().values
+                y = np.full_like(x, np.nan, dtype=float)
+            elif var in df.columns:
+                var_data = df[['id', 't', var]].sort_values(['t', 'id'])
+                if agg_fct:
+                    y = var_data.groupby('t')[var].agg(agg_fct).reindex(x, fill_value=np.nan).values
+                else:
+                    y = var_data.pivot(index='t', columns='id', values=var).reindex(index=x).values
             else:
                 raise ValueError(f"Variable '{var}' not found in simulated data")
-            
             # handle label
             if var is None:
                 label = None
             elif 'label' in kwargs and kwargs['label'] is not None:
                 label = kwargs['label']
-            else: # default label
+            elif agg_fct: # default label with aggregation function
                 label = f"{agg_fct.capitalize() if isinstance(agg_fct, str) else agg_fct.__name__.capitalize()} of {var} ({self.model_name})"
+            else: # default label
+                label = None
             
             # plot
             plot_kwargs = {k: v for k, v in kwargs.items() if k != 'label'}
             ax[i].plot(x, y, label=label, **plot_kwargs)
             ax[i].set_xlabel("Period (t)")
-            ax[i].legend()
+            ax[i].set_xlim([x.min()-0.5, x.max()+0.5])
+            if label:
+                ax[i].legend()
             if self.titles:
                 self.add_title(ax[i], var)
+            if agg_fct is None:
+                # Set all lines to grey, alpha=0.1, and no markers
+                for line in ax[i].get_lines():
+                    line.set_color('grey')
+                    line.set_linestyle('-')
+                    line.set_alpha(0.1)
+                    line.set_marker('')
         
         return ax
     
-    def plot_sim_female_single(self, ax, agg_fct=np.mean, **kwargs):
-        singles_mask = self.sim_data['couple'] == 0
-
-        def masked_agg(x):
-            return agg_fct(x[singles_mask])
-        masked_agg.__name__ = agg_fct.__name__
-
-        
+    def plot_sim_female_single(self, ax, agg_fct='mean', **kwargs):
+        singles_mask = 'couple == 0'
         variables = ['Aw','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util']
-        return self.plot_simulated_vars(ax, variables, agg_fct=masked_agg, **kwargs)
+        return self.plot_simulated_vars(ax, variables, where=singles_mask, agg_fct=agg_fct, **kwargs)
     
-    def plot_sim_male_single(self, ax, agg_fct=np.mean, **kwargs):
-        singles_mask = (self.sim_data['couple'] == 0)
-
-        def masked_agg(x):
-            return agg_fct(x[singles_mask])
-        masked_agg.__name__ = agg_fct.__name__
-
+    def plot_sim_male_single(self, ax, agg_fct='mean', **kwargs):
+        singles_mask = 'couple == 0'
         variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm']
-        return self.plot_simulated_vars(ax, variables, agg_fct=masked_agg, **kwargs)
+        return self.plot_simulated_vars(ax, variables, where=singles_mask, agg_fct=agg_fct, **kwargs)
         
-    def plot_sim_female_couple(self, ax, agg_fct=np.mean, **kwargs):
-        couples_mask = (self.sim_data['couple'] == 1)
-
-        def masked_agg(x):
-            return agg_fct(x[couples_mask])
-        masked_agg.__name__ = agg_fct.__name__
-
+    def plot_sim_female_couple(self, ax, agg_fct='mean', **kwargs):
+        couples_mask = 'couple == 1'
         variables = ['A','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util']
-        return self.plot_simulated_vars(ax, variables, agg_fct=masked_agg, **kwargs)
+        return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
 
-    def plot_sim_male_couple(self, ax, agg_fct=np.mean, **kwargs):
-        couples_mask = (self.sim_data['couple'] == 1)
-
-        def masked_agg(x):
-            return agg_fct(x[couples_mask])
-        masked_agg.__name__ = agg_fct.__name__
-
+    def plot_sim_male_couple(self, ax, agg_fct='mean', **kwargs):
+        couples_mask = 'couple == 1'
         variables = ['A','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm']
-        return self.plot_simulated_vars(ax, variables, agg_fct=masked_agg, **kwargs)
+        return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
 
-    def plot_sim_couple(self, ax, agg_fct=np.mean, **kwargs):
-        couples_mask = (self.sim_data['couple'] == 1)
-
-        def masked_agg(x):
-            return agg_fct(x[couples_mask])
-        masked_agg.__name__ = agg_fct.__name__
-
+    def plot_sim_couple(self, ax, agg_fct='mean', **kwargs):
+        couples_mask = 'couple == 1'
         variables = ['A','C_tot', 'power', 'love']
-        return self.plot_simulated_vars(ax, variables, agg_fct=masked_agg, **kwargs)
+        return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
 
-    def plot_sim_female(self, ax, agg_fct='mean', **kwargs):
+    def plot_sim_female(self, ax, where=None, agg_fct='mean', **kwargs):
         variables = ['Aw','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','couple']
-        return self.plot_simulated_vars(ax, variables, agg_fct=agg_fct, **kwargs)
-    
-    def plot_sim_male(self, ax, agg_fct='mean', **kwargs):
-        variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm', 'couple']
-        return self.plot_simulated_vars(ax, variables, agg_fct=agg_fct, **kwargs)
+        return self.plot_simulated_vars(ax, variables, where=where, agg_fct=agg_fct, **kwargs)
 
-    
+    def plot_sim_male(self, ax, where=None, agg_fct='mean', **kwargs):
+        variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm', 'couple']
+        return self.plot_simulated_vars(ax, variables, where=where, agg_fct=agg_fct, **kwargs)

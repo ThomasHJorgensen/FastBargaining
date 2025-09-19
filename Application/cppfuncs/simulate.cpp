@@ -215,7 +215,7 @@ namespace sim {
 
                             power = single::calc_initial_bargaining_weight(t, love, Aw_lag, Ap, sol, par);
 
-                            if (0.0 <= power) { // if meet and agree to couple
+                            if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
                                 sim->couple[it] = true;
 
                                 // set beginning-of-period couple states
