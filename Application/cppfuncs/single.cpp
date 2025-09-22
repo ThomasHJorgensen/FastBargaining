@@ -442,6 +442,22 @@ namespace single {
         }
     }
 
+    void update_optimal_discrete_solution_single(int t, int il, int iA, sol_struct* sol, par_struct* par){
+
+        // get index
+        auto idx_single = index::single(t,iA,par);
+        auto idx_single_d = index::single_d(t,il,iA,par);
+
+        // Find maximum value over all labor choices
+        if (sol->Vw_single_to_single[idx_single] < sol->Vwd_single_to_single[idx_single_d]) {
+            sol->Vw_single_to_single[idx_single] = sol->Vwd_single_to_single[idx_single_d];
+            sol->lw_single_to_single[idx_single] = par->grid_l[il];
+        }
+        if (sol->Vm_single_to_single[idx_single] < sol->Vmd_single_to_single[idx_single_d]) {
+            sol->Vm_single_to_single[idx_single] = sol->Vmd_single_to_single[idx_single_d];
+            sol->lm_single_to_single[idx_single] = par->grid_l[il];
+        }
+    }
 
 
     void solve_choice_specific_single_to_single(int t, int il, sol_struct *sol,par_struct *par){
@@ -619,6 +635,10 @@ namespace single {
 
                 } // pragma
             } // VFI /EGM
+            // 5. calculate marginal value function
+            for (int iA=0; iA<par->num_A;iA++){
+                update_optimal_discrete_solution_single(t, il, iA, sol, par);
+            } // iA
         }   // t
         
     }
@@ -645,29 +665,6 @@ namespace single {
                             sol->lm_single_to_single[idx_single] = par->grid_l[il];
                         }
                     }
-                    // // find optimal choices
-                    // for (int il = 0; il < par->num_l; il++) {
-                    //     auto index_choice =  index::single_d(t,il,iA,par);
-
-                    //     if (list_choice_specific_values_w[il] == maxVw) {
-                    //         // sol->Vw_single_to_single[idx] = sol->Vw_single_to_single[index_choice];
-                    //         sol->Cw_tot_single_to_single[idx] = sol->Cw_tot_single_to_single[index_choice];
-                    //         sol->lw_single_to_single[idx] = par->grid_l[il];
-                    //         // sol->Cw_priv_single_to_single[idx] = sol->Cw_priv_single_to_single[index_choice];
-                    //         // sol->hw_single_to_single[idx] = sol->hw_single_to_single[index_choice];
-                    //         // sol->Cw_inter_single_to_single[idx] = sol->Cw_inter_single_to_single[index_choice];
-                    //         // sol->Qw_single_to_single[idx] = sol->Qw_single_to_single[index_choice];
-                    //     }
-                    //     if (list_choice_specific_values_m[il] == maxVm) {
-                    //         // sol->Vm_single_to_single[idx] = sol->Vm_single_to_single[index_choice];
-                    //         sol->Cm_tot_single_to_single[idx] = sol->Cm_tot_single_to_single[index_choice];
-                    //         sol->lm_single_to_single[idx] = par->grid_l[il];
-                    //         // sol->Cm_priv_single_to_single[idx] = sol->Cm_priv_single_to_single[index_choice];
-                    //         // sol->hm_single_to_single[idx] = sol->hm_single_to_single[index_choice];
-                    //         // sol->Cm_inter_single_to_single[idx] = sol->Cm_inter_single_to_single[index_choice];
-                    //         // sol->Qm_single_to_single[idx] = sol->Qm_single_to_single[index_choice];
-                    //     }
-                    // }
                 
                 } // wealth
             } // iP

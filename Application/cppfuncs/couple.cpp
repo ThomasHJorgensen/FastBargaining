@@ -580,6 +580,26 @@ namespace couple {
         }
     }
 
+    void update_optimal_discrete_solution(int t, int ilw, int ilm, int iP, int iL, int iA, sol_struct* sol, par_struct* par){
+        
+        // get index
+        auto idx_couple = index::couple(t,iP,iL,iA,par);
+        auto idx_couple_d = index::couple_d(t,ilw,ilm,iP,iL,iA,par); 
+
+        // get power
+        double power = par->grid_power[iP];
+        
+        // max V over labor choices
+        double maxV_d = power*sol->Vwd_couple_to_couple[idx_couple_d] + (1.0-power)*sol->Vmd_couple_to_couple[idx_couple_d];
+        if (sol->V_couple_to_couple[idx_couple] < maxV_d) {
+            sol->V_couple_to_couple[idx_couple] = maxV_d;
+            sol->Vw_couple_to_couple[idx_couple] = sol->Vwd_couple_to_couple[idx_couple_d];
+            sol->Vm_couple_to_couple[idx_couple] = sol->Vmd_couple_to_couple[idx_couple_d];
+            sol->lw_couple_to_couple[idx_couple] = par->grid_l[ilw];
+            sol->lm_couple_to_couple[idx_couple] = par->grid_l[ilm];
+        }
+    }
+
     void solve_choice_specific_couple(int t, int ilw, int ilm, sol_struct *sol,par_struct *par){
         
         #pragma omp parallel num_threads(par->threads)
@@ -608,6 +628,11 @@ namespace couple {
                         solve_couple_to_couple_Agrid_vfi(t,ilw,ilm,iP,iL,EVw_next,EVm_next,sol,par); 
 
                     }
+
+                    for (int iA=0; iA<par->num_A;iA++){
+                        // update optimal discrete solution (for next iteration)
+                        update_optimal_discrete_solution(t, ilw, ilm, iP, iL, iA, sol, par);
+                    } // assets
                 } // love
             } // power
         } // omp
@@ -693,28 +718,6 @@ namespace couple {
                             }
                         }
                     }
-
-                    // // update solution
-                    // for (int ilw = 0; ilw < par->num_l; ilw++) {
-                    //     for (int ilm = 0; ilm < par->num_l; ilm++) {
-                    //         auto i = index::index2(ilw, ilm, par->num_l, par->num_l);
-                    //         auto idx_choice = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
-
-                    //         if (list_choice_specific_values[i] == maxV) {
-                    //             // sol->Vw_couple_to_couple[idx] = sol->Vw_couple_to_couple[idx_choice];
-                    //             // sol->Vm_couple_to_couple[idx] = sol->Vm_couple_to_couple[idx_choice];
-                    //             sol->C_tot_couple_to_couple[idx] = sol->Cd_tot_couple_to_couple[idx_choice];
-                    //             sol->lw_couple_to_couple[idx] = par->grid_l[ilw];
-                    //             sol->lm_couple_to_couple[idx] = par->grid_l[ilm];
-                    //             // sol->Cw_priv_couple_to_couple[idx] = sol->Cw_priv_couple_to_couple[idx_choice];
-                    //             // sol->Cm_priv_couple_to_couple[idx] = sol->Cm_priv_couple_to_couple[idx_choice];
-                    //             // sol->hw_couple_to_couple[idx] = sol->hw_couple_to_couple[idx_choice];
-                    //             // sol->hm_couple_to_couple[idx] = sol->hm_couple_to_couple[idx_choice];
-                    //             // sol->C_inter_couple_to_couple[idx] = sol->C_inter_couple_to_couple[idx_choice];
-                    //             // sol->Q_couple_to_couple[idx] = sol->Q_couple_to_couple[idx_choice];
-                    //         }
-                    //     } // ilm
-                    // } // ilw
                 } // iA
             } // iL
         } // iP
@@ -826,39 +829,14 @@ namespace couple {
         // #pragma omp parallel num_threads(par->threads) 
         // {
 
-            // 1. Solve choice specific values
-            for (int ilw=0; ilw<par->num_l; ilw++){
-                for (int ilm=0; ilm<par->num_l; ilm++){
-                    // solve choice specific
-                    solve_choice_specific_couple(t,ilw,ilm,sol,par);
-                } // ilm
-            } // ilw
+        // 1. Solve choice specific values
+        for (int ilw=0; ilw<par->num_l; ilw++){
+            for (int ilm=0; ilm<par->num_l; ilm++){
+                // solve choice specific
+                solve_choice_specific_couple(t,ilw,ilm,sol,par);
+            } // ilm
+        } // ilw
 
-            // 2. Solve unconditional values
-            find_unconditional_couple_solution(t,sol,par);
-
-            // 3. Solve starting as couple
-            solve_start_as_couple(t,sol,par);
-
-            // 4. Find expected value
-            // #pragma omp for
-            for (int iP=0; iP<par->num_power; iP++){
-                for (int iL=0; iL<par->num_love; iL++){
-                    for (int iA=0; iA<par->num_A;iA++){
-                        // Update expected value
-                        calc_expected_value_couple(t, iP, iL, iA, sol->Vw_start_as_couple, sol->Vm_start_as_couple, sol->EVw_start_as_couple, sol->EVm_start_as_couple, sol, par);
-
-                        // vi. Update marginal value
-                        if (par->do_egm){
-                            auto idx_interp = index::couple(t,iP,iL,0,par);
-                            double power = par->grid_power[iP];
-                            // calc_marginal_value_couple(power, &sol->Vw_start_as_couple[idx_interp], &sol->Vm_start_as_couple[idx_interp], &sol->margV_start_as_couple[idx_interp], sol, par);
-                            calc_marginal_value_couple(power, &sol->EVw_start_as_couple[idx_interp], &sol->EVm_start_as_couple[idx_interp], &sol->EmargV_start_as_couple[idx_interp], sol, par);
-                        }
-                    } // wealth
-                } // iP
-            } // iL
-        // } // pragma
     }
 
 
@@ -897,6 +875,29 @@ namespace couple {
         } // pragma
     }
 
+    void expected_value_start_couple(int t, sol_struct* sol,par_struct* par){
 
+        // Solve starting as couple
+        solve_start_as_couple(t,sol,par);
+
+        // #pragma omp for
+        for (int iP=0; iP<par->num_power; iP++){
+            for (int iL=0; iL<par->num_love; iL++){
+                for (int iA=0; iA<par->num_A;iA++){
+                    // Update expected value
+                    calc_expected_value_couple(t, iP, iL, iA, sol->Vw_start_as_couple, sol->Vm_start_as_couple, sol->EVw_start_as_couple, sol->EVm_start_as_couple, sol, par);
+
+                    // vi. Update marginal value
+                    if (par->do_egm){
+                        auto idx_interp = index::couple(t,iP,iL,0,par);
+                        double power = par->grid_power[iP];
+                        // calc_marginal_value_couple(power, &sol->Vw_start_as_couple[idx_interp], &sol->Vm_start_as_couple[idx_interp], &sol->margV_start_as_couple[idx_interp], sol, par);
+                        calc_marginal_value_couple(power, &sol->EVw_start_as_couple[idx_interp], &sol->EVm_start_as_couple[idx_interp], &sol->EmargV_start_as_couple[idx_interp], sol, par);
+                    }
+                } // wealth
+            } // iP
+        } // iL
+        // } // pragma
+    }
         
 }

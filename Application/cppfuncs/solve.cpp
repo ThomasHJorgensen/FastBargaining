@@ -22,6 +22,7 @@ EXPORT void solve(sol_struct *sol, par_struct *par){
         couple::solve_couple(t,sol,par);
         couple::solve_single_to_couple(t,sol,par);
         single::expected_value_start_single(t,sol,par);
+        couple::expected_value_start_couple(t,sol,par);
     }
 }
 
