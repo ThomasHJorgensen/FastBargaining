@@ -163,36 +163,47 @@ namespace couple {
             par, sol
         );
     }
-    
-    void solve_couple_to_couple_Agrid_vfi(int t, int ilw, int ilm, int iP, int iL, double* EVw_next, double* EVm_next,sol_struct* sol, par_struct* par){
+    void solve_couple_to_couple_Agrid_vfi(int t, int ilw, int ilm, int iP, int iL, double* EVw_next, double* EVm_next, sol_struct* sol, par_struct* par) {
         double labor_w = par->grid_l[ilw];
         double labor_m = par->grid_l[ilm];
-        
-        for (int iA=0; iA<par->num_A;iA++){
-            auto idx = index::couple_d(t,ilw,ilm,iP,iL,iA,par);
 
-            double M_resources = resources(labor_w, labor_m, par->grid_A[iA],par); 
+        // Define pointers as placeholders to the correct addresses in sol
+        auto idx_A = index::couple_d(t, ilw, ilm, iP, iL, 0, par);
+
+        double* Cwd_priv = &sol->Cwd_priv_couple_to_couple[idx_A];
+        double* Cmd_priv = &sol->Cmd_priv_couple_to_couple[idx_A];
+        double* hwd = &sol->hwd_couple_to_couple[idx_A];
+        double* hmd = &sol->hmd_couple_to_couple[idx_A];
+        double* Cd_inter = &sol->Cd_inter_couple_to_couple[idx_A];
+        double* Qd = &sol->Qd_couple_to_couple[idx_A];
+        double* Vwd = &sol->Vwd_couple_to_couple[idx_A];
+        double* Vmd = &sol->Vmd_couple_to_couple[idx_A];
+        double* Cd_tot = &sol->Cd_tot_couple_to_couple[idx_A];
+
+        for (int iA = 0; iA < par->num_A; iA++) {
+            auto idx = index::couple_d(t, ilw, ilm, iP, iL, iA, par);
+
+            double M_resources = resources(labor_w, labor_m, par->grid_A[iA], par);
 
             // starting values
             double starting_val = M_resources * 0.8;
-            if (iA>0){ 
-                auto idx_last = index::couple_d(t,ilw,ilm,iP,iL,iA-1,par);
-                starting_val = sol->Cwd_priv_couple_to_couple[idx_last] + sol->Cmd_priv_couple_to_couple[idx_last] + sol->Cd_inter_couple_to_couple[idx_last];
+            if (iA > 0) {
+                auto idx_last = index::couple_d(t, ilw, ilm, iP, iL, iA - 1, par);
+                starting_val = Cwd_priv[iA - 1] + Cmd_priv[iA - 1] + Cd_inter[iA - 1];
             }
 
             // solve unconstrained problem
             solve_couple_to_couple(
-                &sol->Cwd_priv_couple_to_couple[idx], &sol->Cmd_priv_couple_to_couple[idx], 
-                &sol->hwd_couple_to_couple[idx], &sol->hmd_couple_to_couple[idx], 
-                &sol->Cd_inter_couple_to_couple[idx], &sol->Qd_couple_to_couple[idx],
-                &sol->Vwd_couple_to_couple[idx], &sol->Vmd_couple_to_couple[idx],
-                M_resources, t, ilw, ilm, iL, iP, 
+                &Cwd_priv[iA], &Cmd_priv[iA],
+                &hwd[iA], &hmd[iA],
+                &Cd_inter[iA], &Qd[iA],
+                &Vwd[iA], &Vmd[iA],
+                M_resources, t, ilw, ilm, iL, iP,
                 EVw_next, EVm_next, starting_val,
                 sol, par
             );
-            sol->Cd_tot_couple_to_couple[idx] = sol->Cwd_priv_couple_to_couple[idx] + sol->Cmd_priv_couple_to_couple[idx] + sol->Cd_inter_couple_to_couple[idx];
-
-        } // wealth   
+            Cd_tot[iA] = Cwd_priv[iA] + Cmd_priv[iA] + Cd_inter[iA];
+        } // wealth
     }
 
     ////////////////////////////// EGM numerical solution //////////////////////////////
@@ -415,56 +426,62 @@ namespace couple {
             double Q = 0.0;
             double Vw = 0.0;
             double Vm = 0.0;
+            int idx_A_pd = index::couple_pd(t, ilw, ilm, iP, iL, 0, par);
+            int idx_A_pd_next = index::couple_pd(t+1, ilw, ilm, iP, iL, 0, par);
+            double* EmargUd_pd = &sol->EmargUd_pd[idx_A_pd];
+            double* Cd_tot_pd = &sol->Cd_tot_pd[idx_A_pd];
+            double* Cd_tot_pd_next = &sol->Cd_tot_pd[idx_A_pd_next];
+            double* Md_pd = &sol->Md_pd[idx_A_pd];
+            double* Vd_couple_to_couple_pd = &sol->Vd_couple_to_couple_pd[idx_A_pd];
 
-            for (int iA_pd=0; iA_pd<par->num_A_pd;iA_pd++){
+            for (int iA_pd = 0; iA_pd < par->num_A_pd; iA_pd++) {
 
                 // i. Unpack
                 double A_next = par->grid_A_pd[iA_pd]; // assets next period
-                auto idx_pd = index::couple_pd(t,ilw, ilm, iP,iL,iA_pd,par);
-                auto idx_interp = index::index4(ilw, ilm, iP,0, par->num_l, par->num_l, par->num_power,par->num_marg_u);
+                auto idx_interp = index::index4(ilw, ilm, iP, 0, par->num_l, par->num_l, par->num_power, par->num_marg_u);
 
                 // ii. interpolate marginal utility
-                sol->EmargUd_pd[idx_pd] = par->beta * tools::interp_1d(par->grid_A, par->num_A, EmargV_next, A_next);
+                EmargUd_pd[iA_pd] = par->beta * tools::interp_1d(par->grid_A, par->num_A, EmargV_next, A_next);
 
                 // iii. Get total consumption by interpolation of pre-computed inverse marginal utility (coming from Euler)
-                if (strcmp(par->interp_method,"numerical")==0){
-                    
+                if (strcmp(par->interp_method, "numerical") == 0) {
+
                     // starting values
                     double guess_Ctot = 3.0;
-                    double guess_Cw_priv = guess_Ctot/3.0;
-                    double guess_Cm_priv = guess_Ctot/3.0;
-                    if(iA_pd>0){
+                    double guess_Cw_priv = guess_Ctot / 3.0;
+                    double guess_Cm_priv = guess_Ctot / 3.0;
+                    if (iA_pd > 0) {
                         // last found solution
-                        guess_Ctot = sol->Cd_tot_pd[index::couple_pd(t,ilw,ilm,iP,iL,iA_pd-1,par)];
+                        guess_Ctot = Cd_tot_pd[iA_pd - 1];
                         guess_Cw_priv = Cw_priv;
                         guess_Cm_priv = Cm_priv;
 
-                    } else if (t<(par->T-2)) {
-                        guess_Ctot = sol->Cd_tot_pd[index::couple_pd(t+1,ilw,ilm,iP,iL,iA_pd,par)];
+                    } else if (t < (par->T - 2)) {
+                        guess_Ctot = Cd_tot_pd_next[iA_pd]; // if not first period, use next period solution as starting value
                     }
                     // OBS: starting values are not used. Also, there should be starting values for hw, hm, and C_inter as well
-                    sol->Cd_tot_pd[idx_pd] = inv_marg_util_couple(sol->EmargUd_pd[idx_pd],ilw, ilm, iP,par,sol, guess_Ctot, guess_Cw_priv, guess_Cm_priv); // numerical inverse
+                    Cd_tot_pd[iA_pd] = inv_marg_util_couple(EmargUd_pd[iA_pd], ilw, ilm, iP, par, sol, guess_Ctot, guess_Cw_priv, guess_Cm_priv); // numerical inverse
 
                 } else {
-                    if(strcmp(par->interp_method,"linear")==0){
-                        sol->Cd_tot_pd[idx_pd] = tools::interp_1d(&par->grid_marg_u_couple_for_inv[idx_interp],par->num_marg_u,par->grid_inv_marg_u,sol->EmargUd_pd[idx_pd]);
+                    if (strcmp(par->interp_method, "linear") == 0) {
+                        Cd_tot_pd[iA_pd] = tools::interp_1d(&par->grid_marg_u_couple_for_inv[idx_interp], par->num_marg_u, par->grid_inv_marg_u, EmargUd_pd[iA_pd]);
                     }
 
-                    if (par->interp_inverse){
-                        sol->Cd_tot_pd[idx_pd] = 1.0/sol->Cd_tot_pd[idx_pd];
+                    if (par->interp_inverse) {
+                        Cd_tot_pd[iA_pd] = 1.0 / Cd_tot_pd[iA_pd];
                     }
                 }
-                
+
                 // iv. Get endogenous grid points
-                sol->Md_pd[idx_pd] = A_next + sol->Cd_tot_pd[idx_pd];
+                Md_pd[iA_pd] = A_next + Cd_tot_pd[iA_pd];
 
                 // v. Get post-choice value (also updates the intra-period allocation)
-                sol->Vd_couple_to_couple_pd[idx_pd] = value_of_choice_couple_to_couple(
-                        &Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q,
-                        ilw, ilm, sol->Cd_tot_pd[idx_pd], sol->Md_pd[idx_pd], t, iL, iP, 
-                        &Vw, &Vm, EVw_next, EVm_next,
-                        par, sol
-                    );
+                Vd_couple_to_couple_pd[iA_pd] = value_of_choice_couple_to_couple(
+                    &Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q,
+                    ilw, ilm, Cd_tot_pd[iA_pd], Md_pd[iA_pd], t, iL, iP,
+                    &Vw, &Vm, EVw_next, EVm_next,
+                    par, sol
+                );
             }
 
             // 3. Apply upper envelope and interpolate onto common grid
@@ -580,25 +597,35 @@ namespace couple {
         }
     }
 
-    void update_optimal_discrete_solution(int t, int ilw, int ilm, int iP, int iL, int iA, sol_struct* sol, par_struct* par){
+    void update_optimal_discrete_solution_couple_Agrid(int t, int ilw, int ilm, int iP, int iL, sol_struct* sol, par_struct* par){
         
         // get index
-        auto idx_couple = index::couple(t,iP,iL,iA,par);
-        auto idx_couple_d = index::couple_d(t,ilw,ilm,iP,iL,iA,par); 
+        auto idx_couple = index::couple(t,iP,iL,0,par);
+        auto idx_couple_d = index::couple_d(t,ilw,ilm,iP,iL,0,par);
 
-        // get power
+        // get variables
         double power = par->grid_power[iP];
+        double* Vwd_couple_to_couple = &sol->Vwd_couple_to_couple[idx_couple_d];
+        double* Vmd_couple_to_couple = &sol->Vmd_couple_to_couple[idx_couple_d];
+        double* V_couple_to_couple = &sol->V_couple_to_couple[idx_couple];
+        double* Vw_couple_to_couple = &sol->Vw_couple_to_couple[idx_couple];
+        double* Vm_couple_to_couple = &sol->Vm_couple_to_couple[idx_couple];
+        double* lw_couple_to_couple = &sol->lw_couple_to_couple[idx_couple];
+        double* lm_couple_to_couple = &sol->lm_couple_to_couple[idx_couple];
         
         // max V over labor choices
-        double maxV_d = power*sol->Vwd_couple_to_couple[idx_couple_d] + (1.0-power)*sol->Vmd_couple_to_couple[idx_couple_d];
-        if (sol->V_couple_to_couple[idx_couple] < maxV_d) {
-            sol->V_couple_to_couple[idx_couple] = maxV_d;
-            sol->Vw_couple_to_couple[idx_couple] = sol->Vwd_couple_to_couple[idx_couple_d];
-            sol->Vm_couple_to_couple[idx_couple] = sol->Vmd_couple_to_couple[idx_couple_d];
-            sol->lw_couple_to_couple[idx_couple] = par->grid_l[ilw];
-            sol->lm_couple_to_couple[idx_couple] = par->grid_l[ilm];
+        for (int iA=0; iA<par->num_A; iA++){
+            double Vd_now = power*Vwd_couple_to_couple[iA] + (1.0-power)*Vmd_couple_to_couple[iA];
+            if (V_couple_to_couple[iA] < Vd_now) {
+                V_couple_to_couple[iA] = Vd_now;
+                Vw_couple_to_couple[iA] = Vwd_couple_to_couple[iA];
+                Vm_couple_to_couple[iA] = Vmd_couple_to_couple[iA];
+                lw_couple_to_couple[iA] = par->grid_l[ilw];
+                lm_couple_to_couple[iA] = par->grid_l[ilm];
+            }
         }
     }
+    
 
     void solve_choice_specific_couple(int t, int ilw, int ilm, sol_struct *sol,par_struct *par){
         
@@ -629,10 +656,7 @@ namespace couple {
 
                     }
 
-                    for (int iA=0; iA<par->num_A;iA++){
-                        // update optimal discrete solution (for next iteration)
-                        update_optimal_discrete_solution(t, ilw, ilm, iP, iL, iA, sol, par);
-                    } // assets
+                    update_optimal_discrete_solution_couple_Agrid(t,ilw,ilm,iP,iL,sol,par);
                 } // love
             } // power
         } // omp
@@ -690,37 +714,6 @@ namespace couple {
         //--- Return optimal labor choice ---
         *ilw_out = labor_index_w;
         *ilm_out = labor_index_m;
-    }
-
-    void find_unconditional_couple_solution(int t, sol_struct* sol, par_struct* par){
-                
-        for (int iP=0; iP<par->num_power; iP++){
-            double power = par->grid_power[iP];
-            for (int iL=0; iL<par->num_love; iL++){
-                for (int iA=0; iA<par->num_A;iA++){
-                    // get index
-                    auto idx_couple = index::couple(t,iP,iL,iA,par);
-                    
-                    // loop over labor choices
-                    for (int ilw = 0; ilw < par->num_l; ilw++) {
-                        for (int ilm = 0; ilm < par->num_l; ilm++) {
-                            // get index for choice specific value
-                            auto idx_couple_d = index::couple_d(t,ilw,ilm,iP,iL,iA,par); 
-
-                            // max V over labor choices
-                            double maxV_d = power*sol->Vwd_couple_to_couple[idx_couple_d] + (1.0-power)*sol->Vmd_couple_to_couple[idx_couple_d];
-                            if (sol->V_couple_to_couple[idx_couple] < maxV_d) {
-                                sol->V_couple_to_couple[idx_couple] = maxV_d;
-                                sol->Vw_couple_to_couple[idx_couple] = sol->Vwd_couple_to_couple[idx_couple_d];
-                                sol->Vm_couple_to_couple[idx_couple] = sol->Vmd_couple_to_couple[idx_couple_d];
-                                sol->lw_couple_to_couple[idx_couple] = par->grid_l[ilw];
-                                sol->lm_couple_to_couple[idx_couple] = par->grid_l[ilm];
-                            }
-                        }
-                    }
-                } // iA
-            } // iL
-        } // iP
     }
 
     void solve_start_as_couple(int t, sol_struct *sol,par_struct *par){
@@ -841,34 +834,32 @@ namespace couple {
 
 
     void solve_single_to_couple(int t, sol_struct *sol, par_struct *par){
+
         #pragma omp parallel num_threads(par->threads)
         {
             #pragma omp for
 
             for (int iP=0; iP<par->num_power; iP++){
                 for (int iL=0; iL< par->num_love; iL++){
+
+                    // get index
+                    auto idx_A = index::couple(t,iP,iL,0,par);
+
+                    // get variables
+                    double* Vw_single_to_couple = &sol->Vw_single_to_couple[idx_A];
+                    double* Vm_single_to_couple = &sol->Vm_single_to_couple[idx_A];
+                    double* Vw_couple_to_couple = &sol->Vw_couple_to_couple[idx_A];
+                    double* Vm_couple_to_couple = &sol->Vm_couple_to_couple[idx_A];
+                    double* lw_single_to_couple = &sol->lw_single_to_couple[idx_A];
+                    double* lm_single_to_couple = &sol->lm_single_to_couple[idx_A];
+                    double* lw_couple_to_couple = &sol->lw_couple_to_couple[idx_A];
+                    double* lm_couple_to_couple = &sol->lm_couple_to_couple[idx_A];
+
                     for (int iA=0; iA<par->num_A;iA++){
-                        auto idx = index::couple(t,iP,iL,iA,par);
-
-                        sol->Vw_single_to_couple[idx] = sol->Vw_couple_to_couple[idx];
-                        sol->Vm_single_to_couple[idx] = sol->Vm_couple_to_couple[idx];
-                        sol->lw_single_to_couple[idx] = sol->lw_couple_to_couple[idx];
-                        sol->lm_single_to_couple[idx] = sol->lm_couple_to_couple[idx];
-
-                        //--- Find labor indices for woman and man ---
-                        int ilw = tools::binary_search(0, par->num_l, par->grid_l, sol->lw_single_to_couple[idx]);
-                        int ilm = tools::binary_search(0, par->num_l, par->grid_l, sol->lm_single_to_couple[idx]);
-                        auto idx_d = index::couple_d(t, ilw, ilm, iP, iL, iA, par);
-
-                        sol->Cw_priv_single_to_couple[idx] = sol->Cwd_priv_couple_to_couple[idx_d];
-                        sol->Cm_priv_single_to_couple[idx] = sol->Cmd_priv_couple_to_couple[idx_d];
-                        sol->hw_single_to_couple[idx] = sol->hwd_couple_to_couple[idx_d];
-                        sol->hm_single_to_couple[idx] = sol->hmd_couple_to_couple[idx_d];
-                        sol->C_inter_single_to_couple[idx] = sol->Cd_inter_couple_to_couple[idx_d];  
-                        sol->Q_single_to_couple[idx] = sol->Qd_couple_to_couple[idx_d];  
-
-                        sol->Cw_tot_single_to_couple[idx] = sol->Cw_priv_single_to_couple[idx] + sol->C_inter_single_to_couple[idx];
-                        sol->Cm_tot_single_to_couple[idx] = sol->Cm_priv_single_to_couple[idx] + sol->C_inter_single_to_couple[idx];
+                        Vw_single_to_couple[iA] = Vw_couple_to_couple[iA];
+                        Vm_single_to_couple[iA] = Vm_couple_to_couple[iA];
+                        lw_single_to_couple[iA] = lw_couple_to_couple[iA];
+                        lm_single_to_couple[iA] = lm_couple_to_couple[iA];
                     } // wealth
                 } // love
             } // power
