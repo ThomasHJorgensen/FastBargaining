@@ -6,16 +6,18 @@
 namespace single {
     typedef struct {
         int t;
-        int il;             
+        int il;     
+                
         double M;             
-        double *V_next;      
-        int gender;          
+        double *EV_next;      
+        int gender;
+
         par_struct *par;      
         sol_struct *sol;      
 
     } solver_single_struct;
 
-    double resources(double labor, double A,int gender,par_struct* par) {
+    double resources_single(double labor, double A,int gender,par_struct* par) {
         if (labor == 0.0) {
             // no labor income, just resources from assets
             return par->R*A + 1.0e-4; // add a small amount to avoid errors with zero
@@ -83,10 +85,105 @@ namespace single {
             il,
             M,
             gender,
-            solver_data->V_next,
+            solver_data->EV_next,
             par,
             sol
         );
+    }
+
+    void solve_single_to_single_step(
+        double* Cd_priv, double* hd, double* Cd_inter, double* Qd, double* Vd,
+        double M_resources, int t, int il, 
+        double* EV_next,
+        double starting_val, int gender, sol_struct *sol,par_struct *par
+    ){
+        double Cd_tot = M_resources;
+
+        if (t < (par->T-1)){
+
+            // 1. allocate objects for solver
+            solver_single_struct* solver_data = new solver_single_struct;
+            
+            int const dim = 1;
+            double lb[dim],ub[dim],x[dim];
+            
+            auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim); // NLOPT_LD_MMA NLOPT_LD_LBFGS NLOPT_GN_ORIG_DIRECT
+            double minf=0.0;
+
+            // search over optimal total consumption, C
+            // WOMEN
+            // settings
+            solver_data->t = t;
+            solver_data->il = il;
+            solver_data->M = M_resources;
+            solver_data->EV_next = EV_next; // sol->EVw_start_single;
+            solver_data->gender = gender;
+            solver_data->par = par;
+            solver_data->sol = sol;
+            nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data); 
+
+            // bounds
+            lb[0] = 1.0e-8;
+            ub[0] = solver_data->M;
+            nlopt_set_lower_bounds(opt, lb);
+            nlopt_set_upper_bounds(opt, ub);
+
+            // optimize
+            x[0] = starting_val;  // start_value
+            nlopt_optimize(opt, x, &minf); 
+            nlopt_destroy(opt);
+
+            // unpack results
+            Cd_tot = x[0];
+            // Vd[iA] = -minf;
+
+            delete solver_data;
+        }
+
+        // implied consumption allocation (re-calculation)
+        *Vd = value_of_choice_single_to_single(Cd_priv, hd, Cd_inter, Qd, Cd_tot, t, il, M_resources, gender, EV_next, par, sol);
+    }
+
+    void solve_single_to_single_Agrid_vfi(int t, int il, double* EV_next, int gender,sol_struct* sol, par_struct* par){
+        double love = 0.0; // no love for singles 
+        double labor = par->grid_l[il];
+
+        // get index
+        auto idx_d_A = index::single_d(t,il,0,par);
+        auto idx_A_next = index::single(t+1,0,par);
+
+
+        // get variables
+        double* Cd_tot = &sol->Cwd_tot_single_to_single[idx_d_A];
+        double* Cd_priv = &sol->Cwd_priv_single_to_single[idx_d_A];
+        double* hd = &sol->hwd_single_to_single[idx_d_A];
+        double* Cd_inter = &sol->Cwd_inter_single_to_single[idx_d_A];
+        double* Qd = &sol->Qwd_single_to_single[idx_d_A];
+        double* Vd = &sol->Vwd_single_to_single[idx_d_A];
+        double* grid_A = par->grid_Aw;
+        if (gender == man) {
+            Cd_tot = &sol->Cmd_tot_single_to_single[idx_d_A];
+            Cd_priv = &sol->Cmd_priv_single_to_single[idx_d_A];
+            hd = &sol->hmd_single_to_single[idx_d_A];
+            Cd_inter = &sol->Cmd_inter_single_to_single[idx_d_A];
+            Qd = &sol->Qmd_single_to_single[idx_d_A];
+            Vd = &sol->Vmd_single_to_single[idx_d_A];
+            grid_A = par->grid_Am;
+        }
+
+        for (int iA=0; iA<par->num_A;iA++){
+            double M_resources = resources_single(labor, grid_A[iA], gender, par);
+
+            // starting values
+            double starting_val = M_resources * 0.5;
+            // if (iA>0){
+            //     starting_val = Cd_tot[iA-1];
+            // }
+
+            solve_single_to_single_step(&Cd_priv[iA], &hd[iA], &Cd_inter[iA], &Qd[iA], &Vd[iA], M_resources, t, il, EV_next, starting_val, gender, sol, par);
+            Cd_tot[iA] = Cd_priv[iA] + Cd_inter[iA];
+        } // iA
+
     }
 
     //////////////////// EGM ////////////////////////
@@ -209,7 +306,7 @@ namespace single {
             grid_A = par->grid_Am;
         }
         for (int iA = 0; iA < par->num_A; iA++){
-            double M_now = resources(labor, grid_A[iA],gender,par);
+            double M_now = resources_single(labor, grid_A[iA],gender,par);
 
             if (M_now < m_vec[0]){
 
@@ -257,7 +354,7 @@ namespace single {
             for (int iA = 0; iA<par->num_A; iA++){
 
                 // i. Check if resources from common grid are in current interval of endogenous grid
-                double M_now = resources(labor, grid_A[iA], gender, par);
+                double M_now = resources_single(labor, grid_A[iA], gender, par);
                 bool interp = ((M_now >= m_low) & (M_now <= m_high));
                 bool extrap_above = ((iA_pd == par->num_A_pd-2) & (M_now > m_vec[par->num_A_pd-1])); // extrapolate above last point in endogenous grid
 
@@ -282,7 +379,7 @@ namespace single {
     }
 
 
-    void EGM_single_to_single(int t, int il, int gender, sol_struct* sol, par_struct* par){
+    void solve_single_to_single_Agrid_egm(int t, int il, int gender, sol_struct* sol, par_struct* par){
         // 1. Setup
         /// a. unpack
         double* const &grid_inv_marg_u {par->grid_inv_marg_u};
@@ -472,125 +569,29 @@ namespace single {
         }
     }
 
-    void solve_single_to_single_step(
-        double* Cd_priv, double* hd, double* Cd_inter, double* Qd, double* Vd,
-        double M_resources, int t, int il, 
-        double* EV_next,
-        double starting_val, int gender, sol_struct *sol,par_struct *par
-    ){
-        double Cd_tot = M_resources;
 
-        if (t < (par->T-1)){
+    
 
-            // 1. allocate objects for solver
-            solver_single_struct* solver_data = new solver_single_struct;
-            
-            int const dim = 1;
-            double lb[dim],ub[dim],x[dim];
-            
-            auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim); // NLOPT_LD_MMA NLOPT_LD_LBFGS NLOPT_GN_ORIG_DIRECT
-            double minf=0.0;
+    void solve_choice_specific_single_to_single(int t, int il, int gender, sol_struct *sol, par_struct *par) {
 
-            // search over optimal total consumption, C
-            // WOMEN
-            // settings
-            solver_data->t = t;
-            solver_data->il = il;
-            solver_data->M = M_resources;
-            solver_data->V_next = EV_next; // sol->EVw_start_single;
-            solver_data->gender = gender;
-            solver_data->par = par;
-            solver_data->sol = sol;
-            nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data); 
-
-            // bounds
-            lb[0] = 1.0e-8;
-            ub[0] = solver_data->M;
-            nlopt_set_lower_bounds(opt, lb);
-            nlopt_set_upper_bounds(opt, ub);
-
-            // optimize
-            x[0] = starting_val;  // start_value
-            nlopt_optimize(opt, x, &minf); 
-            nlopt_destroy(opt);
-
-            // unpack results
-            Cd_tot = x[0];
-            // Vd[iA] = -minf;
-
-            delete solver_data;
-        }
-
-        // implied consumption allocation (re-calculation)
-        *Vd = value_of_choice_single_to_single(Cd_priv, hd, Cd_inter, Qd, Cd_tot, t, il, M_resources, gender, EV_next, par, sol);
-    }
-
-    void solve_single_to_single_Agrid_vfi(int t, int il, double* EV_next, int gender,sol_struct* sol, par_struct* par){
-        double love = 0.0; // no love for singles 
-        double labor = par->grid_l[il];
-
-        // get index
-        auto idx_d_A = index::single_d(t,il,0,par);
-        auto idx_A_next = index::single(t+1,0,par);
-
-
-        // get variables
-        double* Cd_tot = &sol->Cwd_tot_single_to_single[idx_d_A];
-        double* Cd_priv = &sol->Cwd_priv_single_to_single[idx_d_A];
-        double* hd = &sol->hwd_single_to_single[idx_d_A];
-        double* Cd_inter = &sol->Cwd_inter_single_to_single[idx_d_A];
-        double* Qd = &sol->Qwd_single_to_single[idx_d_A];
-        double* Vd = &sol->Vwd_single_to_single[idx_d_A];
-        double* grid_A = par->grid_Aw;
-        if (gender == man) {
-            Cd_tot = &sol->Cmd_tot_single_to_single[idx_d_A];
-            Cd_priv = &sol->Cmd_priv_single_to_single[idx_d_A];
-            hd = &sol->hmd_single_to_single[idx_d_A];
-            Cd_inter = &sol->Cmd_inter_single_to_single[idx_d_A];
-            Qd = &sol->Qmd_single_to_single[idx_d_A];
-            Vd = &sol->Vmd_single_to_single[idx_d_A];
-            grid_A = par->grid_Am;
-        }
-
-        for (int iA=0; iA<par->num_A;iA++){
-            double M_resources = resources(labor, grid_A[iA], gender, par);
-
-            // starting values
-            double starting_val = M_resources * 0.5;
-            // if (iA>0){
-            //     starting_val = Cd_tot[iA-1];
-            // }
-
-            solve_single_to_single_step(&Cd_priv[iA], &hd[iA], &Cd_inter[iA], &Qd[iA], &Vd[iA], M_resources, t, il, EV_next, starting_val, gender, sol, par);
-            Cd_tot[iA] = Cd_priv[iA] + Cd_inter[iA];
-        } // iA
-
-    }
-
-    void solve_choice_specific_single_to_single(int t, int il, int gender, sol_struct *sol,par_struct *par){
-        
-        double* EV_next = nullptr;
-
-        // terminal period
-        if (t == (par->T-1)){
-            EV_next = nullptr;
-            solve_single_to_single_Agrid_vfi(t, il, EV_next, gender, sol, par);
+        // Terminal period: no continuation value
+        if (t == (par->T - 1)) {
+            solve_single_to_single_Agrid_vfi(t, il, nullptr, gender, sol, par);
         } else {
-            auto idx_next = index::single(t+1,0,par);
-            EV_next = &sol->EVw_start_as_single[idx_next];
-            if (gender == man) {
-                EV_next = &sol->EVm_start_as_single[idx_next];
-            }
+            // Set pointer to next period's expected value
+            auto idx_next = index::single(t+1, 0, par);
+            double* EV_next = (gender == man) ? &sol->EVm_start_as_single[idx_next] : &sol->EVw_start_as_single[idx_next];
+
+            // Choose EGM or VFI method
             if (par->do_egm) {
-                EGM_single_to_single(t, il, gender, sol, par);
-            }
-            else {
+                solve_single_to_single_Agrid_egm(t, il, gender, sol, par);
+            } else {
                 solve_single_to_single_Agrid_vfi(t, il, EV_next, gender, sol, par);
-            } // VFI /EGM
-        }   // t
-        // 5. calculate marginal value function
+            }
+        }
+
+        // Update solution with optimal discrete labor choice
         update_optimal_discrete_solution_single_Agrid(t, il, gender, sol, par);
-        
     }
 
 
@@ -599,34 +600,6 @@ namespace single {
         for (int il=0; il<par->num_l;il++){
             solve_choice_specific_single_to_single(t, il, woman, sol, par);
             solve_choice_specific_single_to_single(t, il, man,   sol, par);
-        }
-    }
-
-
-    void solve_couple_to_single(int t, sol_struct *sol, par_struct *par) {
-        // get index
-        auto idx_A = index::single(t,0,par);
-
-        // get variables
-        double *Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
-        double *Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
-        double *Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
-        double *Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
-        double *lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
-        double *lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
-        double *lw_single_to_single = &sol->lw_single_to_single[idx_A];
-        double *lm_single_to_single = &sol->lm_single_to_single[idx_A];
-
-        #pragma omp parallel num_threads(par->threads)
-        {
-            #pragma omp for
-            for (int iA=0; iA<par->num_A;iA++){
-                //--- Indices and value update ---
-                Vw_couple_to_single[iA] = Vw_single_to_single[iA] - par->div_cost;
-                Vm_couple_to_single[iA] = Vm_single_to_single[iA] - par->div_cost;
-                lw_couple_to_single[iA] = lw_single_to_single[iA];
-                lm_couple_to_single[iA] = lm_single_to_single[iA];
-            }
         }
     }
 
@@ -791,36 +764,6 @@ namespace single {
     }
 
 
-    int find_interpolated_labor_index_single(int t, double A, int gender, sol_struct* sol, par_struct* par){
-
-        //--- Set variables based on gender ---
-        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
-        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
-
-        //--- Find asset index ---
-        int iA = tools::binary_search(0, par->num_A, grid_A, A);
-
-        //--- Initialize variables ---
-        double maxV = -std::numeric_limits<double>::infinity();
-        int labor_index = 0;
-
-        //--- Loop over labor choices ---
-        for (int il = 0; il < par->num_l; il++) {
-            auto idx_interp = index::single_d(t, il, 0, par);
-            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_interp], A, iA);
-
-            //--- Update maximum value and labor choice ---
-            if (maxV < V_now) {
-                maxV = V_now;
-                labor_index = il;
-            }
-        }
-
-        //--- Return optimal labor choice ---
-        return labor_index;
-    }
-
-
     void expected_value_start_single(int t, sol_struct* sol,par_struct* par){
 
         // get index
@@ -862,5 +805,60 @@ namespace single {
         }
     }
 
+    void solve_couple_to_single(int t, sol_struct *sol, par_struct *par) {
+        // get index
+        auto idx_A = index::single(t,0,par);
+
+        // get variables
+        double *Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
+        double *Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
+        double *Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
+        double *Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
+        double *lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
+        double *lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
+        double *lw_single_to_single = &sol->lw_single_to_single[idx_A];
+        double *lm_single_to_single = &sol->lm_single_to_single[idx_A];
+
+        #pragma omp parallel num_threads(par->threads)
+        {
+            #pragma omp for
+            for (int iA=0; iA<par->num_A;iA++){
+                //--- Indices and value update ---
+                Vw_couple_to_single[iA] = Vw_single_to_single[iA] - par->div_cost;
+                Vm_couple_to_single[iA] = Vm_single_to_single[iA] - par->div_cost;
+                lw_couple_to_single[iA] = lw_single_to_single[iA];
+                lm_couple_to_single[iA] = lm_single_to_single[iA];
+            }
+        }
+    }
+
+    int find_interpolated_labor_index_single(int t, double A, int gender, sol_struct* sol, par_struct* par){
+
+        //--- Set variables based on gender ---
+        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
+        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
+
+        //--- Find asset index ---
+        int iA = tools::binary_search(0, par->num_A, grid_A, A);
+
+        //--- Initialize variables ---
+        double maxV = -std::numeric_limits<double>::infinity();
+        int labor_index = 0;
+
+        //--- Loop over labor choices ---
+        for (int il = 0; il < par->num_l; il++) {
+            auto idx_interp = index::single_d(t, il, 0, par);
+            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_interp], A, iA);
+
+            //--- Update maximum value and labor choice ---
+            if (maxV < V_now) {
+                maxV = V_now;
+                labor_index = il;
+            }
+        }
+
+        //--- Return optimal labor choice ---
+        return labor_index;
+    }
 
 }

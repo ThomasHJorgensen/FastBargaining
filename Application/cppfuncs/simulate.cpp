@@ -248,7 +248,7 @@ namespace sim {
                         auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0, par);
                         double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->Cd_tot_couple_to_couple[idx_sol],power,love,A_lag);
 
-                        double M_resources = couple::resources(labor_w,labor_m,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double M_resources = couple::resources_couple(labor_w,labor_m,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
                             C_tot = M_resources;
                         }
@@ -300,8 +300,8 @@ namespace sim {
                         // total consumption
                         double Cw_tot = tools::interp_1d(par->grid_Aw,par->num_A,sol_single_w,Aw_lag);
                         double Cm_tot = tools::interp_1d(par->grid_Am,par->num_A,sol_single_m,Am_lag);
-                        double Mw = single::resources(labor_w, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                        double Mm = single::resources(labor_m, Am_lag, man, par);
+                        double Mw = single::resources_single(labor_w, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double Mm = single::resources_single(labor_m, Am_lag, man, par);
                         if (Cw_tot > Mw){
                             Cw_tot = Mw;
                         }
