@@ -175,10 +175,10 @@ namespace single {
             double M_resources = resources_single(labor, grid_A[iA], gender, par);
 
             // starting values
-            double starting_val = M_resources * 0.5;
-            // if (iA>0){
-            //     starting_val = Cd_tot[iA-1];
-            // }
+            double starting_val = M_resources * 0.8;
+            if (iA>0){
+                starting_val = Cd_tot[iA-1];
+            }
 
             solve_single_to_single_step(&Cd_priv[iA], &hd[iA], &Cd_inter[iA], &Qd[iA], &Vd[iA], M_resources, t, il, EV_next, starting_val, gender, sol, par);
             Cd_tot[iA] = Cd_priv[iA] + Cd_inter[iA];
@@ -297,81 +297,66 @@ namespace single {
 
 
     /////// iEGM //////
-    void handle_liquidity_constraint_single_to_single(int t, int il, int gender, double* m_vec, double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V, double* EV_next, sol_struct* sol, par_struct* par){
-        // 1. Check if liquidity constraint binds
-        // constraint: binding if common m is smaller than smallest m in endogenous grid
+    void interpolate_to_exogenous_grid_single(
+        int t, int il, int gender,
+        double* m_vec, double* c_vec, double* v_vec,
+        double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V,
+        double* EV_next, sol_struct* sol, par_struct* par
+    ) {
+        // Select asset and endogenous asset grids based on gender
         double labor = par->grid_l[il];
-        double* grid_A = par->grid_Aw;
-        if (gender == man) {
-            grid_A = par->grid_Am;
-        }
-        for (int iA = 0; iA < par->num_A; iA++){
-            double M_now = resources_single(labor, grid_A[iA],gender,par);
+        double* grid_A = (gender == man) ? par->grid_Am : par->grid_Aw;
+        double* grid_A_pd = (gender == man) ? par->grid_Am_pd : par->grid_Aw_pd;
 
-            if (M_now < m_vec[0]){
+        // Loop over the common (exogenous) asset grid
+        for (int iA = 0; iA < par->num_A; iA++) {
+            double M_now = resources_single(labor, grid_A[iA], gender, par);
 
-                // a. Set total consumption equal to resources (consume all)
+            // If liquidity constraint binds, consume all resources
+            if (M_now < m_vec[0]) {
                 C_tot[iA] = M_now;
-
-                // c. Calculate value
-                V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], t, il, M_now, gender, EV_next, par, sol);
-
+                V[iA] = value_of_choice_single_to_single(
+                    &C_priv[iA], &h[iA], &C_inter[iA], &Q[iA],
+                    C_tot[iA], t, il, M_now, gender, EV_next, par, sol
+                );
+                continue;
             }
-        }
-    }
 
-    void do_upper_envelope_single_to_single(int t, int il, int gender, double* m_vec, double* c_vec, double* v_vec, double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V, double* EV_next, sol_struct* sol, par_struct* par){
-        // Unpack
-        double labor = par->grid_l[il];
-        double* grid_A = par->grid_Aw;
-        double* grid_A_pd = {par->grid_Aw_pd};
-        if (gender == man){
-            grid_A = par->grid_Am;
-            grid_A_pd = par->grid_Am_pd;
-        }
+            // Otherwise, search for the correct interval in the endogenous grid
+            for (int iA_pd = 0; iA_pd < par->num_A_pd - 1; iA_pd++) {
+                double m_low = m_vec[iA_pd];
+                double m_high = m_vec[iA_pd + 1];
 
-        // Loop through unsorted endogenous grid
-        for (int iA_pd = 0; iA_pd<par->num_A_pd; iA_pd++){
+                bool in_interval = (M_now >= m_low && M_now <= m_high);
+                bool extrapolate_above = (iA_pd == par->num_A_pd - 2 && M_now > m_vec[par->num_A_pd - 1]);
 
-            // 1. Unpack intervals
-            double A_low = grid_A_pd[iA_pd];
-            double A_high = grid_A_pd[iA_pd+1];
-            
-            double V_low = v_vec[iA_pd];
-            double V_high = v_vec[iA_pd+1];
+                if (in_interval || extrapolate_above) {
+                    // Endogenous asset grid points
+                    double A_low = grid_A_pd[iA_pd];
+                    double A_high = grid_A_pd[iA_pd + 1];
 
-            double m_low = m_vec[iA_pd];
-            double m_high = m_vec[iA_pd+1];
+                    // Value and consumption at interval endpoints
+                    double V_low = v_vec[iA_pd];
+                    double V_high = v_vec[iA_pd + 1];
+                    double c_low = c_vec[iA_pd];
+                    double c_high = c_vec[iA_pd + 1];
 
-            double c_low = c_vec[iA_pd];
-            double c_high = c_vec[iA_pd+1];
+                    // Slopes for interpolation
+                    double v_slope = (V_high - V_low) / (A_high - A_low);
+                    double c_slope = (c_high - c_low) / (m_high - m_low);
 
-            // 2. Calculate slopes
-            double v_slope = (V_high - V_low)/(A_high - A_low);
-            double c_slope = (c_high - c_low)/(A_high - A_low);
-
-            // 3. Loop through common grid
-            for (int iA = 0; iA<par->num_A; iA++){
-
-                // i. Check if resources from common grid are in current interval of endogenous grid
-                double M_now = resources_single(labor, grid_A[iA], gender, par);
-                bool interp = ((M_now >= m_low) & (M_now <= m_high));
-                bool extrap_above = ((iA_pd == par->num_A_pd-2) & (M_now > m_vec[par->num_A_pd-1])); // extrapolate above last point in endogenous grid
-
-                if (interp | extrap_above){
-
-                    // ii. Interpolate consumption and value
-                    double c_guess = c_low + c_slope*(M_now - m_low);
+                    // Interpolate consumption and assets
+                    double c_guess = c_low + c_slope * (M_now - m_low);
                     double a_guess = M_now - c_guess;
-                    double V_guess = V_low + v_slope*(a_guess - A_low);
+                    double V_guess = V_low + v_slope * (a_guess - A_low);
 
-                    // iii. Update sol if v is higher than previous guess (upper envelope)
-                    if (V_guess > V[iA]){
-                        // o. Update total consumption
+                    // Upper envelope: keep the highest value
+                    if (V_guess > V[iA]) {
                         C_tot[iA] = c_guess;
-
-                        // ooo. Update  intra-period allocation and value
-                        V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], t, il, M_now, gender, EV_next, par, sol);
+                        V[iA] = value_of_choice_single_to_single(
+                            &C_priv[iA], &h[iA], &C_inter[iA], &Q[iA],
+                            C_tot[iA], t, il, M_now, gender, EV_next, par, sol
+                        );
                     }
                 }
             }
@@ -471,11 +456,8 @@ namespace single {
             V_pd[iA_pd] = value_of_choice_single_to_single(&C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], C_tot_pd[iA_pd], t, il, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
         }
 
-        // 3. liquidity constraint
-        handle_liquidity_constraint_single_to_single(t, il, gender, M_pd, &C_tot[idx], &C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], &V[idx], &EV[idx_next], sol, par);
-
-        // 4. upper envelope
-        do_upper_envelope_single_to_single(t, il, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx], &C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], &V[idx], &EV[idx_next], sol, par);
+        // 3. Apply liquidity constraint and upper envelope while interpolating onto common grid
+        interpolate_to_exogenous_grid_single(t, il, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx], &C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], &V[idx], &EV[idx_next], sol, par);
 
 
         // 4. clean up

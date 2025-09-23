@@ -321,91 +321,80 @@ namespace couple {
 
     //////////////////
     // EGM solution //
+    void interpolate_to_exogenous_grid_couple(
+        int t, int ilw, int ilm, int iP, int iL,
+        double* m_vec, double* c_vec, double* v_vec, double* EmargUd_pd,
+        double* C_tot, double* Cw_priv, double* Cm_priv, double* hw, double* hm,
+        double* C_inter, double* Q, double* Vw, double* Vm,
+        double* EVw_next, double* EVm_next, double* V,
+        sol_struct* sol, par_struct* par)
+    {
+        // Loop over exogenous asset grid
+        for (int iA = 0; iA < par->num_A; iA++) {
+            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_A[iA], par);
 
-    void handle_liquidity_constraint_couple_to_couple(int t, int ilw, int ilm, int iP, int iL, double* m_vec, double* EmargUd_pd, double* C_tot, double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q, double* Vw,double* Vm, double* EVw_next, double* EVm_next, double* V, sol_struct* sol, par_struct* par){
-        // 1. Check if liquidity constraint binds
-        // constraint: binding if common m is smaller than smallest m in endogenous grid 
-        for (int iA=0; iA < par->num_A; iA++){
-            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_A[iA],par);
-
-            if (M_now < m_vec[0]){
-
-                // a. Set total consumption equal to resources (consume all)
+            // If liquidity constraint binds, consume all resources
+            if (M_now < m_vec[0]) {
                 C_tot[iA] = M_now;
 
-                // b. Calculate intra-period allocation
-                double _ = value_of_choice_couple_to_couple(
+                // Compute intra-period allocation and value
+                value_of_choice_couple_to_couple(
                     &Cw_priv[iA], &Cm_priv[iA], &hw[iA], &hm[iA], &C_inter[iA], &Q[iA],
-                    ilw, ilm, C_tot[iA], 
-                    M_now, t,iL, iP, 
-                    &Vw[iA], &Vm[iA], EVw_next, EVm_next,
-                    par, sol
+                    ilw, ilm, C_tot[iA], M_now, t, iL, iP,
+                    &Vw[iA], &Vm[iA], EVw_next, EVm_next, par, sol
                 );
 
-                // c. Calculate value
                 double power = par->grid_power[iP];
-                V[iA] = power*Vw[iA] + (1-power)*Vm[iA];
+                V[iA] = power * Vw[iA] + (1.0 - power) * Vm[iA];
+                continue;
             }
-        }
-    }
 
-    void do_upper_envelope_couple_to_couple(int t, int ilw, int ilm, int iP, int iL, double* m_vec, double* c_vec, double* v_vec, double* EmargUd_pd, double* C_tot, double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q, double* Vw,double* Vm, double* EVw_next, double* EVm_next, double* V, sol_struct* sol, par_struct* par){
+            // Otherwise, search for the correct interval in the endogenous grid
+            for (int iA_pd = 0; iA_pd < par->num_A_pd - 1; iA_pd++) {
+                double m_low = m_vec[iA_pd];
+                double m_high = m_vec[iA_pd + 1];
 
-        // Loop through unsorted endogenous grid
-        for (int iA_pd = 0; iA_pd<par->num_A_pd-1;iA_pd++){
+                bool in_interval = (M_now >= m_low) && (M_now <= m_high);
+                bool extrap_above = (iA_pd == par->num_A_pd - 2) && (M_now > m_vec[par->num_A_pd - 1]);
 
-            // 1. Unpack intervals
-            double A_low = par->grid_A_pd[iA_pd];
-            double A_high = par->grid_A_pd[iA_pd+1];
+                if (in_interval || extrap_above) {
+                    // Endogenous grid points
+                    double A_low = par->grid_A_pd[iA_pd];
+                    double A_high = par->grid_A_pd[iA_pd + 1];
 
-            double V_low = v_vec[iA_pd];
-            double V_high = v_vec[iA_pd+1];
+                    double V_low = v_vec[iA_pd];
+                    double V_high = v_vec[iA_pd + 1];
 
-            double m_low = m_vec[iA_pd];
-            double m_high = m_vec[iA_pd+1];
+                    double c_low = c_vec[iA_pd];
+                    double c_high = c_vec[iA_pd + 1];
 
-            double c_low = c_vec[iA_pd];
-            double c_high = c_vec[iA_pd+1];
+                    // Linear interpolation slopes
+                    double v_slope = (V_high - V_low) / (A_high - A_low);
+                    double c_slope = (c_high - c_low) / (m_high - m_low);
 
-            // 2. Calculate slopes
-            double v_slope = (V_high - V_low)/(A_high - A_low);
-            double c_slope = (c_high - c_low)/(m_high - m_low);
-
-            // 3. Loop through common grid
-            for (int iA = 0; iA<par->num_A; iA++){
-
-                // i. Check if resources from common grid are in current interval of endogenous grid
-                double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_A[iA],par);
-                bool interp = (M_now >= m_low) && (M_now <= m_high); 
-                bool extrap_above = (iA_pd == par->num_A_pd-2) && (M_now>m_vec[par->num_A_pd-1]); // extrapolate above last point in endogenous grid
-                if (interp || extrap_above){
-
-                    // ii. Interpolate consumption and value
-                    double c_guess = c_low + c_slope*(M_now - m_low);
+                    // Interpolated guesses
+                    double c_guess = c_low + c_slope * (M_now - m_low);
                     double a_guess = M_now - c_guess;
-                    double V_guess = V_low + v_slope*(a_guess - A_low);
+                    double V_guess = V_low + v_slope * (a_guess - A_low);
 
-                    // iii. Update sol if V is higher than previous guess (upper envelope)
-                    if (V_guess > V[iA]){
-
-                        // o. Update total consumption
+                    // Upper envelope: only update if value is higher
+                    if (V_guess > V[iA]) {
                         C_tot[iA] = c_guess;
-                        
-                        // oo. Update intra-period allocation
-                        double _ = value_of_choice_couple_to_couple(
+
+                        value_of_choice_couple_to_couple(
                             &Cw_priv[iA], &Cm_priv[iA], &hw[iA], &hm[iA], &C_inter[iA], &Q[iA],
-                            ilw, ilm, C_tot[iA], 
-                            M_now, t,iL, iP, 
-                            &Vw[iA], &Vm[iA], EVw_next, EVm_next,
-                            par, sol
+                            ilw, ilm, C_tot[iA], M_now, t, iL, iP,
+                            &Vw[iA], &Vm[iA], EVw_next, EVm_next, par, sol
                         );
-                        // ooo. Update value
-                        V[iA] = par->grid_power[iP]*Vw[iA] + (1-par->grid_power[iP])*Vm[iA];
+
+                        double power = par->grid_power[iP];
+                        V[iA] = power * Vw[iA] + (1.0 - power) * Vm[iA];
                     }
                 }
             }
         }
     }
+
 
     void solve_couple_to_couple_Agrid_egm(int t, int ilw, int ilm, int iP, int iL, double* EVw_next, double* EVm_next, double* EmargV_next,sol_struct* sol, par_struct* par){
         
@@ -482,26 +471,21 @@ namespace couple {
                 );
             }
 
-            // 3. Apply upper envelope and interpolate onto common grid
+            // 3. Apply liquidity constraint and upper envelope while interpolating onto common grid
             auto idx_interp_pd = index::couple_pd(t,ilw,ilm,iP,iL,0,par);
             auto idx_interp = index::couple_d(t,ilw,ilm,iP,iL,0,par);
 
-            handle_liquidity_constraint_couple_to_couple(t, ilw, ilm, iP, iL, &sol->Md_pd[idx_interp_pd], &sol->EmargUd_pd[idx_interp_pd], 
-                                                         &sol->Cd_tot_couple_to_couple[idx_interp], 
-                                                         &sol->Cwd_priv_couple_to_couple[idx_interp], &sol->Cmd_priv_couple_to_couple[idx_interp], 
-                                                         &sol->hwd_couple_to_couple[idx_interp], &sol->hmd_couple_to_couple[idx_interp], 
-                                                         &sol->Cd_inter_couple_to_couple[idx_interp], &sol->Qd_couple_to_couple[idx_interp],
-                                                         &sol->Vwd_couple_to_couple[idx_interp], &sol->Vmd_couple_to_couple[idx_interp], 
-                                                         EVw_next, EVm_next, &sol->Vd_couple_to_couple[idx_interp], sol, par);
-            do_upper_envelope_couple_to_couple( t, ilw, ilm, iP, iL, 
-                                                &sol->Md_pd[idx_interp_pd], &sol->Cd_tot_pd[idx_interp_pd], &sol->Vd_couple_to_couple_pd[idx_interp_pd], 
-                                                &sol->EmargUd_pd[idx_interp_pd], &sol->Cd_tot_couple_to_couple[idx_interp], 
-                                                &sol->Cwd_priv_couple_to_couple[idx_interp] ,&sol->Cmd_priv_couple_to_couple[idx_interp],
-                                                &sol->hwd_couple_to_couple[idx_interp], &sol->hmd_couple_to_couple[idx_interp], 
-                                                &sol->Cd_inter_couple_to_couple[idx_interp], &sol->Qd_couple_to_couple[idx_interp],
-                                                &sol->Vwd_couple_to_couple[idx_interp], &sol->Vmd_couple_to_couple[idx_interp], 
-                                                EVw_next, EVm_next, &sol->Vd_couple_to_couple[idx_interp], 
-                                                sol, par);
+            interpolate_to_exogenous_grid_couple( 
+                t, ilw, ilm, iP, iL, 
+                &sol->Md_pd[idx_interp_pd], &sol->Cd_tot_pd[idx_interp_pd], &sol->Vd_couple_to_couple_pd[idx_interp_pd], 
+                &sol->EmargUd_pd[idx_interp_pd], &sol->Cd_tot_couple_to_couple[idx_interp], 
+                &sol->Cwd_priv_couple_to_couple[idx_interp] ,&sol->Cmd_priv_couple_to_couple[idx_interp],
+                &sol->hwd_couple_to_couple[idx_interp], &sol->hmd_couple_to_couple[idx_interp], 
+                &sol->Cd_inter_couple_to_couple[idx_interp], &sol->Qd_couple_to_couple[idx_interp],
+                &sol->Vwd_couple_to_couple[idx_interp], &sol->Vmd_couple_to_couple[idx_interp], 
+                EVw_next, EVm_next, &sol->Vd_couple_to_couple[idx_interp], 
+                sol, par
+            );
 
         } // period check        
     }
