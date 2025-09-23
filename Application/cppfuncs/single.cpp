@@ -442,110 +442,94 @@ namespace single {
         }
     }
 
-    void update_optimal_discrete_solution_single_Agrid(int t, int il, sol_struct* sol, par_struct* par){
+    void update_optimal_discrete_solution_single_Agrid(int t, int il, int gender, sol_struct* sol, par_struct* par){
 
         // get index
         auto idx_A = index::single(t,0,par);
         auto idx_A_d = index::single_d(t,il,0,par);
 
         // get variables
-        double *Vw = &sol->Vw_single_to_single[idx_A];
-        double *Vm = &sol->Vm_single_to_single[idx_A];
-        double *Vwd = &sol->Vwd_single_to_single[idx_A_d];
-        double *Vmd = &sol->Vmd_single_to_single[idx_A_d];
-        double* lw = &sol->lw_single_to_single[idx_A];
-        double* lm = &sol->lm_single_to_single[idx_A];
+        double* V = &sol->Vw_single_to_single[idx_A];
+        double* Vd = &sol->Vwd_single_to_single[idx_A_d];
+        double* labor = &sol->lw_single_to_single[idx_A];
+        if (gender == man) {
+            V = &sol->Vm_single_to_single[idx_A];
+            Vd = &sol->Vmd_single_to_single[idx_A_d];
+            labor = &sol->lm_single_to_single[idx_A];
+        }
 
         // Find maximum value over all labor choices
         for (int iA=0; iA<par->num_A; iA++){
-            if (Vw[iA] < Vwd[iA]) {
-                Vw[iA] = Vwd[iA];
-                lw[iA] = par->grid_l[il];
-            }
-            if (Vm[iA] < Vmd[iA]) {
-                Vm[iA] = Vmd[iA];
-                lm[iA] = par->grid_l[il];
+            if (V[iA] < Vd[iA]) {
+                V[iA] = Vd[iA];
+                labor[iA] = par->grid_l[il];
             }
         }
     }
 
-
-    void solve_choice_specific_single_to_single(int t, int il, sol_struct *sol,par_struct *par){
+    void solve_choice_specific_single_to_single(int t, int il, int gender, sol_struct *sol,par_struct *par){
         double love = 0.0; // no love for singles 
         double labor = par->grid_l[il];
+
+        // get index
+        auto idx_d_A = index::single_d(t,il,0,par);
+        auto idx_A_next = index::single(t+1,0,par);
+
+
+        // get variables
+        double* Cd_tot = &sol->Cwd_tot_single_to_single[idx_d_A];
+        double* Cd_priv = &sol->Cwd_priv_single_to_single[idx_d_A];
+        double* hd = &sol->hwd_single_to_single[idx_d_A];
+        double* Cd_inter = &sol->Cwd_inter_single_to_single[idx_d_A];
+        double* Qd = &sol->Qwd_single_to_single[idx_d_A];
+        double* Vd = &sol->Vwd_single_to_single[idx_d_A];
+        double* EV_next = &sol->EVw_start_as_single[idx_A_next];
+        double* grid_A = par->grid_Aw;
+        if (gender == man) {
+            Cd_tot = &sol->Cmd_tot_single_to_single[idx_d_A];
+            Cd_priv = &sol->Cmd_priv_single_to_single[idx_d_A];
+            hd = &sol->hmd_single_to_single[idx_d_A];
+            Cd_inter = &sol->Cmd_inter_single_to_single[idx_d_A];
+            Qd = &sol->Qmd_single_to_single[idx_d_A];
+            Vd = &sol->Vmd_single_to_single[idx_d_A];
+            EV_next = &sol->EVm_start_as_single[idx_A_next];
+            grid_A = par->grid_Am;
+        }
+
         
         // terminal period
         if (t == (par->T-1)){
             for (int iA=0; iA<par->num_A;iA++){
-                auto idx_d_A = index::single_d(t,il,0,par);
-
-                double* Cwd_tot = &sol->Cwd_tot_single_to_single[idx_d_A];
-                double* Cwd_priv = &sol->Cwd_priv_single_to_single[idx_d_A];
-                double* hwd = &sol->hwd_single_to_single[idx_d_A];
-                double* Cwd_inter = &sol->Cwd_inter_single_to_single[idx_d_A];
-                double* Qwd = &sol->Qwd_single_to_single[idx_d_A];
-                double* Vwd = &sol->Vwd_single_to_single[idx_d_A];
-                double* Cmd_tot = &sol->Cmd_tot_single_to_single[idx_d_A];
-                double* Cmd_priv = &sol->Cmd_priv_single_to_single[idx_d_A];
-                double* hmd = &sol->hmd_single_to_single[idx_d_A];
-                double* Cmd_inter = &sol->Cmd_inter_single_to_single[idx_d_A];
-                double* Qmd = &sol->Qmd_single_to_single[idx_d_A];
-                double* Vmd = &sol->Vmd_single_to_single[idx_d_A];
-
-                double Aw = par->grid_Aw[iA];
-                double Am = par->grid_Am[iA];
-
-                *Cwd_tot = resources(labor, Aw, woman, par); 
-                *Cmd_tot = resources(labor, Am, man, par); 
+                double A = grid_A[iA];
+                Cd_tot[iA] = resources(labor, A, woman, par); 
 
                 // intraperiod allocation
                 precompute::intraperiod_allocation_single(
-                    &Cwd_priv[iA],
-                    &hwd[iA],
-                    &Cwd_inter[iA],
-                    &Qwd[iA],
-                    *Cwd_tot,
+                    &Cd_priv[iA],
+                    &hd[iA],
+                    &Cd_inter[iA],
+                    &Qd[iA],
+                    Cd_tot[iA],
                     il,
-                    woman,
-                    par,
-                    sol,
-                    par->precompute_intratemporal
-                );
-
-                precompute::intraperiod_allocation_single(
-                    &Cmd_priv[iA],
-                    &hmd[iA],
-                    &Cmd_inter[iA],
-                    &Qmd[iA],
-                    *Cmd_tot,
-                    il,
-                    man,
+                    gender,
                     par,
                     sol,
                     par->precompute_intratemporal
                 );
 
                 // Calculate value
-                Vwd[iA] = utils::util(
-                    Cwd_priv[iA], 
-                    hmd[iA] + par->grid_l[il], 
-                    Qwd[iA],
-                    woman, 
+                Vd[iA] = utils::util(
+                    Cd_priv[iA], 
+                    hd[iA] + par->grid_l[il], 
+                    Qd[iA],
+                    gender, 
                     par, 
-                    love);
-
-                Vmd[iA] = utils::util(
-                    Cmd_priv[iA], 
-                    hmd[iA] + par->grid_l[il], 
-                    Qmd[iA],
-                    man, 
-                    par, 
-                    love);
+                    love
+                );
             } // iA
         } else {
             if (par->do_egm) {
-                EGM_single_to_single(t, il, woman, sol, par);
-                EGM_single_to_single(t, il, man, sol, par);
+                EGM_single_to_single(t, il, gender, sol, par);
             }
             else {
                 #pragma omp parallel num_threads(par->threads)
@@ -562,24 +546,18 @@ namespace single {
 
                     // 2. loop over assets
                     #pragma omp for
-                    for (int iA=0; iA<par->num_A;iA++){
-                        auto idx = index::single_d(t,il,iA,par);
-                        auto idx_interp = index::single(t+1,0,par);
-                        
+                    for (int iA=0; iA<par->num_A;iA++){                        
                         // resources
-                        double Aw = par->grid_Aw[iA];
-                        double Am = par->grid_Am[iA];
-                        
-                        double Mw = resources(labor, Aw,woman,par); 
-                        double Mm = resources(labor, Am,man,par); 
-                        
+                        double A = grid_A[iA];
+                        double M = resources(labor, A, gender, par);
+
                         // search over optimal total consumption, C
                         // WOMEN
                         // settings
                         solver_data->il = il;
-                        solver_data->M = Mw;
-                        solver_data->V_next = &sol->EVw_start_as_single[idx_interp]; // sol->EVw_start_single;
-                        solver_data->gender = woman;
+                        solver_data->M = M;
+                        solver_data->V_next = EV_next; // sol->EVw_start_single;
+                        solver_data->gender = gender;
                         solver_data->par = par;
                         solver_data->sol = sol;
                         nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data); 
@@ -595,59 +573,20 @@ namespace single {
                         nlopt_optimize(opt, x, &minf); 
 
                         // unpack results
-                        sol->Cwd_tot_single_to_single[idx] = x[0];
-                        sol->Vwd_single_to_single[idx] = -minf;
+                        Cd_tot[iA] = x[0];
+                        Vd[iA] = -minf;
                         precompute::intraperiod_allocation_single(
-                            &sol->Cwd_priv_single_to_single[idx],
-                            &sol->hwd_single_to_single[idx],
-                            &sol->Cwd_inter_single_to_single[idx],
-                            &sol->Qwd_single_to_single[idx],
-                            sol->Cwd_tot_single_to_single[idx],
+                            &Cd_priv[iA],
+                            &hd[iA],
+                            &Cd_inter[iA],
+                            &Qd[iA],
+                            Cd_tot[iA],
                             il,
-                            woman,
+                            gender,
                             par,
                             sol,
                             par->precompute_intratemporal
                         );
-
-                        // MEN
-                        // settings
-                        solver_data->il = il;
-                        solver_data->M = Mm;
-                        solver_data->V_next = &sol->EVm_start_as_single[idx_interp]; // sol->EVm_start_singl;
-                        solver_data->gender = man;
-                        solver_data->par = par;
-                        solver_data->sol = sol;
-                        nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data);
-                            
-                        // bounds
-                        lb[0] = 1.0e-8;
-                        ub[0] = solver_data->M;
-                        nlopt_set_lower_bounds(opt, lb);
-                        nlopt_set_upper_bounds(opt, ub);
-
-                        // optimize
-                        x[0] = solver_data->M/2.0; // start_value
-                        nlopt_optimize(opt, x, &minf);
-
-                        // unpack results
-                        sol->Cmd_tot_single_to_single[idx] = x[0];
-                        sol->Vmd_single_to_single[idx] = -minf;       
-                        
-                        // intraperiod allocation
-                        precompute::intraperiod_allocation_single(
-                            &sol->Cmd_priv_single_to_single[idx],
-                            &sol->hmd_single_to_single[idx],
-                            &sol->Cmd_inter_single_to_single[idx],
-                            &sol->Qmd_single_to_single[idx],
-                            sol->Cmd_tot_single_to_single[idx],
-                            il,
-                            man,
-                            par,
-                            sol,
-                            par->precompute_intratemporal
-                        );
-                        
                     } // iA
 
                     // 4. destroy optimizer
@@ -658,7 +597,7 @@ namespace single {
             } // VFI /EGM
         }   // t
         // 5. calculate marginal value function
-        update_optimal_discrete_solution_single_Agrid(t, il, sol, par);
+        update_optimal_discrete_solution_single_Agrid(t, il, gender, sol, par);
         
     }
 
@@ -666,7 +605,8 @@ namespace single {
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
         for (int il=0; il<par->num_l;il++){
-            solve_choice_specific_single_to_single(t, il, sol, par);
+            solve_choice_specific_single_to_single(t, il, woman, sol, par);
+            solve_choice_specific_single_to_single(t, il, man,   sol, par);
         }
     }
 
