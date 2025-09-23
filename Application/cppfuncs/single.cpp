@@ -5,7 +5,7 @@
 
 namespace single {
     typedef struct {
-        
+        int t;
         int il;             
         double M;             
         double *V_next;      
@@ -30,7 +30,7 @@ namespace single {
         return par->R*A + w*labor;
     }
 
-    double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q, double C_tot, int il, double M, int gender, double* V_next, par_struct* par, sol_struct* sol){
+    double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q, double C_tot, int t, int il, double M, int gender, double* V_next, par_struct* par, sol_struct* sol){
         double love = 0.0; // no love for singles
         double labor = par->grid_l[il];
 
@@ -40,18 +40,21 @@ namespace single {
         // current utility from consumption allocation
         double lh = *h + labor;
         double Util = utils::util(*C_priv, lh, *Q, gender, par, love);
+        double V_next_value = 0.0;
 
-        // continuation value
-        double *grid_A = par->grid_Aw; 
-        if (gender==man){
-            grid_A = par->grid_Am;
+        if (t < (par->T-1)) {
+            // continuation value
+            double *grid_A = par->grid_Aw; 
+            if (gender==man){
+                grid_A = par->grid_Am;
+            }
+            double A = M - C_tot;
+
+            V_next_value = tools::interp_1d(grid_A,par->num_A,V_next,A);
         }
-        double A = M - C_tot;
-
-        double Vnext = tools::interp_1d(grid_A,par->num_A,V_next,A);
         
         // return discounted sum
-        return Util + par->beta*Vnext;
+        return Util + par->beta*V_next_value;
     }
 
     double objfunc_single_to_single(unsigned n, const double *x, double *grad, void *solver_data_in){
@@ -61,6 +64,7 @@ namespace single {
         solver_single_struct *solver_data = (solver_single_struct *) solver_data_in;  
         
         double C_tot = x[0];
+        int t = solver_data->t;
         int il = solver_data->il;
         int gender = solver_data->gender;
         double M = solver_data->M;
@@ -75,6 +79,7 @@ namespace single {
             &C_inter,
             &Q,
             C_tot,
+            t,
             il,
             M,
             gender,
@@ -212,7 +217,7 @@ namespace single {
                 C_tot[iA] = M_now;
 
                 // c. Calculate value
-                V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], il, M_now, gender, EV_next, par, sol);
+                V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], t, il, M_now, gender, EV_next, par, sol);
 
             }
         }
@@ -269,7 +274,7 @@ namespace single {
                         C_tot[iA] = c_guess;
 
                         // ooo. Update  intra-period allocation and value
-                        V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], il, M_now, gender, EV_next, par, sol);
+                        V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA], C_tot[iA], t, il, M_now, gender, EV_next, par, sol);
                     }
                 }
             }
@@ -366,7 +371,7 @@ namespace single {
             M_pd[iA_pd] = C_tot_pd[iA_pd] + A_next;
 
             /// e. value
-            V_pd[iA_pd] = value_of_choice_single_to_single(&C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], C_tot_pd[iA_pd], il, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
+            V_pd[iA_pd] = value_of_choice_single_to_single(&C_priv[idx], &h[idx], &C_inter[idx], &Q[idx], C_tot_pd[iA_pd], t, il, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
         }
 
         // 3. liquidity constraint
@@ -467,7 +472,60 @@ namespace single {
         }
     }
 
-    void solve_choice_specific_single_to_single(int t, int il, int gender, sol_struct *sol,par_struct *par){
+    void solve_single_to_single_step(
+        double* Cd_priv, double* hd, double* Cd_inter, double* Qd, double* Vd,
+        double M_resources, int t, int il, 
+        double* EV_next,
+        double starting_val, int gender, sol_struct *sol,par_struct *par
+    ){
+        double Cd_tot = M_resources;
+
+        if (t < (par->T-1)){
+
+            // 1. allocate objects for solver
+            solver_single_struct* solver_data = new solver_single_struct;
+            
+            int const dim = 1;
+            double lb[dim],ub[dim],x[dim];
+            
+            auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim); // NLOPT_LD_MMA NLOPT_LD_LBFGS NLOPT_GN_ORIG_DIRECT
+            double minf=0.0;
+
+            // search over optimal total consumption, C
+            // WOMEN
+            // settings
+            solver_data->t = t;
+            solver_data->il = il;
+            solver_data->M = M_resources;
+            solver_data->V_next = EV_next; // sol->EVw_start_single;
+            solver_data->gender = gender;
+            solver_data->par = par;
+            solver_data->sol = sol;
+            nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data); 
+
+            // bounds
+            lb[0] = 1.0e-8;
+            ub[0] = solver_data->M;
+            nlopt_set_lower_bounds(opt, lb);
+            nlopt_set_upper_bounds(opt, ub);
+
+            // optimize
+            x[0] = starting_val;  // start_value
+            nlopt_optimize(opt, x, &minf); 
+            nlopt_destroy(opt);
+
+            // unpack results
+            Cd_tot = x[0];
+            // Vd[iA] = -minf;
+
+            delete solver_data;
+        }
+
+        // implied consumption allocation (re-calculation)
+        *Vd = value_of_choice_single_to_single(Cd_priv, hd, Cd_inter, Qd, Cd_tot, t, il, M_resources, gender, EV_next, par, sol);
+    }
+
+    void solve_single_to_single_Agrid_vfi(int t, int il, double* EV_next, int gender,sol_struct* sol, par_struct* par){
         double love = 0.0; // no love for singles 
         double labor = par->grid_l[il];
 
@@ -483,7 +541,6 @@ namespace single {
         double* Cd_inter = &sol->Cwd_inter_single_to_single[idx_d_A];
         double* Qd = &sol->Qwd_single_to_single[idx_d_A];
         double* Vd = &sol->Vwd_single_to_single[idx_d_A];
-        double* EV_next = &sol->EVw_start_as_single[idx_A_next];
         double* grid_A = par->grid_Aw;
         if (gender == man) {
             Cd_tot = &sol->Cmd_tot_single_to_single[idx_d_A];
@@ -492,108 +549,43 @@ namespace single {
             Cd_inter = &sol->Cmd_inter_single_to_single[idx_d_A];
             Qd = &sol->Qmd_single_to_single[idx_d_A];
             Vd = &sol->Vmd_single_to_single[idx_d_A];
-            EV_next = &sol->EVm_start_as_single[idx_A_next];
             grid_A = par->grid_Am;
         }
 
+        for (int iA=0; iA<par->num_A;iA++){
+            double M_resources = resources(labor, grid_A[iA], gender, par);
+
+            // starting values
+            double starting_val = M_resources * 0.5;
+            // if (iA>0){
+            //     starting_val = Cd_tot[iA-1];
+            // }
+
+            solve_single_to_single_step(&Cd_priv[iA], &hd[iA], &Cd_inter[iA], &Qd[iA], &Vd[iA], M_resources, t, il, EV_next, starting_val, gender, sol, par);
+            Cd_tot[iA] = Cd_priv[iA] + Cd_inter[iA];
+        } // iA
+
+    }
+
+    void solve_choice_specific_single_to_single(int t, int il, int gender, sol_struct *sol,par_struct *par){
         
+        double* EV_next = nullptr;
+
         // terminal period
         if (t == (par->T-1)){
-            for (int iA=0; iA<par->num_A;iA++){
-                double A = grid_A[iA];
-                Cd_tot[iA] = resources(labor, A, woman, par); 
-
-                // intraperiod allocation
-                precompute::intraperiod_allocation_single(
-                    &Cd_priv[iA],
-                    &hd[iA],
-                    &Cd_inter[iA],
-                    &Qd[iA],
-                    Cd_tot[iA],
-                    il,
-                    gender,
-                    par,
-                    sol,
-                    par->precompute_intratemporal
-                );
-
-                // Calculate value
-                Vd[iA] = utils::util(
-                    Cd_priv[iA], 
-                    hd[iA] + par->grid_l[il], 
-                    Qd[iA],
-                    gender, 
-                    par, 
-                    love
-                );
-            } // iA
+            EV_next = nullptr;
+            solve_single_to_single_Agrid_vfi(t, il, EV_next, gender, sol, par);
         } else {
+            auto idx_next = index::single(t+1,0,par);
+            EV_next = &sol->EVw_start_as_single[idx_next];
+            if (gender == man) {
+                EV_next = &sol->EVm_start_as_single[idx_next];
+            }
             if (par->do_egm) {
                 EGM_single_to_single(t, il, gender, sol, par);
             }
             else {
-                #pragma omp parallel num_threads(par->threads)
-                {
-
-                    // 1. allocate objects for solver
-                    solver_single_struct* solver_data = new solver_single_struct;
-                    
-                    int const dim = 1;
-                    double lb[dim],ub[dim],x[dim];
-                    
-                    auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim); // NLOPT_LD_MMA NLOPT_LD_LBFGS NLOPT_GN_ORIG_DIRECT
-                    double minf=0.0;
-
-                    // 2. loop over assets
-                    #pragma omp for
-                    for (int iA=0; iA<par->num_A;iA++){                        
-                        // resources
-                        double A = grid_A[iA];
-                        double M = resources(labor, A, gender, par);
-
-                        // search over optimal total consumption, C
-                        // WOMEN
-                        // settings
-                        solver_data->il = il;
-                        solver_data->M = M;
-                        solver_data->V_next = EV_next; // sol->EVw_start_single;
-                        solver_data->gender = gender;
-                        solver_data->par = par;
-                        solver_data->sol = sol;
-                        nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data); 
-
-                        // bounds
-                        lb[0] = 1.0e-8;
-                        ub[0] = solver_data->M;
-                        nlopt_set_lower_bounds(opt, lb);
-                        nlopt_set_upper_bounds(opt, ub);
-
-                        // optimize
-                        x[0] = solver_data->M/2.0;  // start_value
-                        nlopt_optimize(opt, x, &minf); 
-
-                        // unpack results
-                        Cd_tot[iA] = x[0];
-                        Vd[iA] = -minf;
-                        precompute::intraperiod_allocation_single(
-                            &Cd_priv[iA],
-                            &hd[iA],
-                            &Cd_inter[iA],
-                            &Qd[iA],
-                            Cd_tot[iA],
-                            il,
-                            gender,
-                            par,
-                            sol,
-                            par->precompute_intratemporal
-                        );
-                    } // iA
-
-                    // 4. destroy optimizer
-                    nlopt_destroy(opt);
-                    delete solver_data;
-
-                } // pragma
+                solve_single_to_single_Agrid_vfi(t, il, EV_next, gender, sol, par);
             } // VFI /EGM
         }   // t
         // 5. calculate marginal value function

@@ -181,8 +181,6 @@ namespace couple {
         double* Cd_tot = &sol->Cd_tot_couple_to_couple[idx_A];
 
         for (int iA = 0; iA < par->num_A; iA++) {
-            auto idx = index::couple_d(t, ilw, ilm, iP, iL, iA, par);
-
             double M_resources = resources(labor_w, labor_m, par->grid_A[iA], par);
 
             // starting values
