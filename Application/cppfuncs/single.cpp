@@ -470,7 +470,7 @@ namespace single {
     }
 
 
-    void calc_marginal_value_single(int t, int gender, sol_struct* sol, par_struct* par){
+    void calc_marginal_value_single_Agrid(int t, int gender, sol_struct* sol, par_struct* par){
 
         // unpack
         int const &num_A = par->num_A;
@@ -579,9 +579,12 @@ namespace single {
 
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
-        for (int il=0; il<par->num_l;il++){
-            solve_choice_specific_single_to_single(t, il, woman, sol, par);
-            solve_choice_specific_single_to_single(t, il, man,   sol, par);
+        #pragma omp parallel for collapse(2) num_threads(par->threads)
+        for (int sex = 0; sex < 2; sex++) {
+            for (int il=0; il<par->num_l; il++) {
+                int gender = sex == 0 ? woman : man;
+                solve_choice_specific_single_to_single(t, il, gender, sol, par);
+            }
         }
     }
 
@@ -746,44 +749,43 @@ namespace single {
     }
 
 
-    void expected_value_start_single(int t, sol_struct* sol,par_struct* par){
+    void expected_value_start_single_Agrid(int t, int gender, sol_struct* sol,par_struct* par){
 
         // get index
         auto idx_A = index::single(t,0,par);
 
         // get variables
-        double* EVw_start_as_single = &sol->EVw_start_as_single[idx_A];
-        double* EVm_start_as_single = &sol->EVm_start_as_single[idx_A];
-        double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
-        double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
-        double* EVw_cond_meet_partner = &sol->EVw_cond_meet_partner[idx_A];
-        double* EVm_cond_meet_partner = &sol->EVm_cond_meet_partner[idx_A];
-        // a. Loop over states
+        double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
+        double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
+        double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
+
         for (int iA=0; iA<par->num_A;iA++){
             if (par->p_meet == 0.0) {
                 // expected value of starting single is just value of remaining single
-                EVw_start_as_single[iA] = Vw_single_to_single[iA];
-                EVm_start_as_single[iA] = Vm_single_to_single[iA];
-
+                EV_start_as_single[iA] = V_single_to_single[iA];
             } else {
                 // a.1 Value conditional on meeting partner
-                double EVw_cond = expected_value_cond_meet_partner(t,iA,woman,sol,par);
-                double EVm_cond = expected_value_cond_meet_partner(t,iA,man,sol,par);
+                double EV_cond = expected_value_cond_meet_partner(t,iA,gender,sol,par);
 
                 // a.2. expected value of starting single
                 double p_meet = par->prob_repartner[t];
                 auto idx_single = index::single(t,iA,par);
-                EVw_start_as_single[iA] = p_meet*EVw_cond + (1.0-p_meet)*Vw_single_to_single[iA];
-                EVm_start_as_single[iA] = p_meet*EVm_cond + (1.0-p_meet)*Vm_single_to_single[iA];
-
-                EVw_cond_meet_partner[iA] = EVw_cond;
-                EVm_cond_meet_partner[iA] = EVm_cond;
+                EV_start_as_single[iA] = p_meet*EV_cond + (1.0-p_meet)*V_single_to_single[iA];
+                EV_cond_meet_partner[iA] = EV_cond;
             } // if p_meet
         } // iA
 
         if (par->do_egm){
-            calc_marginal_value_single(t, woman, sol, par);
-            calc_marginal_value_single(t, man, sol, par);
+            calc_marginal_value_single_Agrid(t, gender, sol, par);
+        }
+    }
+
+    void expected_value_start_single(int t, sol_struct* sol, par_struct* par){
+
+        #pragma omp parallel for collapse(1) num_threads(par->threads)
+        for (int sex = 0; sex < 2; sex++) {
+            int gender = (sex == 0) ? woman : man;
+            expected_value_start_single_Agrid(t, gender, sol, par);
         }
     }
 
@@ -801,16 +803,13 @@ namespace single {
         double *lw_single_to_single = &sol->lw_single_to_single[idx_A];
         double *lm_single_to_single = &sol->lm_single_to_single[idx_A];
 
-        #pragma omp parallel num_threads(par->threads)
-        {
-            #pragma omp for
-            for (int iA=0; iA<par->num_A;iA++){
-                //--- Indices and value update ---
-                Vw_couple_to_single[iA] = Vw_single_to_single[iA] - par->div_cost;
-                Vm_couple_to_single[iA] = Vm_single_to_single[iA] - par->div_cost;
-                lw_couple_to_single[iA] = lw_single_to_single[iA];
-                lm_couple_to_single[iA] = lm_single_to_single[iA];
-            }
+
+        for (int iA=0; iA<par->num_A;iA++){
+            //--- Indices and value update ---
+            Vw_couple_to_single[iA] = Vw_single_to_single[iA] - par->div_cost;
+            Vm_couple_to_single[iA] = Vm_single_to_single[iA] - par->div_cost;
+            lw_couple_to_single[iA] = lw_single_to_single[iA];
+            lm_couple_to_single[iA] = lm_single_to_single[iA];
         }
     }
 
