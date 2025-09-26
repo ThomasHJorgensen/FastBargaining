@@ -482,7 +482,10 @@ class model_plotter():
             if agg_fct is None:
                 # Set all lines to grey, alpha=0.1, and no markers
                 for line in ax[i].get_lines():
-                    line.set_color('grey')
+                    if 'color' in kwargs and kwargs['color'] is not None:
+                        line.set_color(kwargs['color'])
+                    else:
+                        line.set_color('grey')
                     line.set_linestyle('-')
                     line.set_alpha(0.1)
                     line.set_marker('')

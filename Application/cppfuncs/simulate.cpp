@@ -291,15 +291,6 @@ namespace sim {
                         double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
                         double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 
-                        // pick relevant solution for single, depending on whether just became single
-                        // auto idx_sol_single = index::index2(t,0,par->T,par->num_A);
-                        // double *sol_single_w = &sol->Cw_tot_couple_to_single[idx_sol_single];
-                        // double *sol_single_m = &sol->Cm_tot_couple_to_single[idx_sol_single];
-                        // if (power_lag<0.0){
-                        //     sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single];
-                        //     sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single];
-                        // } 
-
                         // total consumption
                         double Cw_tot = tools::interp_1d(par->grid_Aw,par->num_A,sol_single_w,Aw_lag);
                         double Cm_tot = tools::interp_1d(par->grid_Am,par->num_A,sol_single_m,Am_lag);
