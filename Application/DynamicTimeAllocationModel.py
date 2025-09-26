@@ -279,7 +279,7 @@ class HouseholdModelClass(EconModelClass):
 
         # c. Precomputed intratemporal solution
         # c.1. couple
-        shape_pre = (par.num_l, par.num_l, par.num_Ctot, par.num_power)
+        shape_pre = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
         sol.pre_Cwd_priv_couple = np.ones(shape_pre) + np.nan
         sol.pre_Cmd_priv_couple = np.ones(shape_pre) + np.nan
         sol.pre_Cd_inter_couple = np.ones(shape_pre) + np.nan

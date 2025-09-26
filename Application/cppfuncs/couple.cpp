@@ -49,7 +49,7 @@ namespace couple {
 
         // current utility from consumption allocation
         precompute::intraperiod_allocation_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, 
-            ilw, ilm,C_tot,power, 
+            ilw, ilm, power, C_tot,
             par, sol,
             par->precompute_intratemporal
         );

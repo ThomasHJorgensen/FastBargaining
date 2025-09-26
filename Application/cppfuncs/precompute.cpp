@@ -320,18 +320,19 @@ namespace precompute{
     }
 
     void intraperiod_allocation_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
-        int ilw, int ilm, double C_tot, double power, 
+        int ilw, int ilm, double power, double C_tot, 
         par_struct* par, sol_struct* sol, bool interpolate = true){
         if(interpolate){
             // interpolate pre-computed solution
-            auto idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_Ctot, par->num_power);
-            int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
+            auto idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_power, par->num_Ctot);
             int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
+            int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
 
-            *Cw_priv = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_Cwd_priv_couple[idx], C_tot, power, iC, iP);
-            *Cm_priv = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_Cmd_priv_couple[idx], C_tot, power, iC, iP);
-            *hw = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_hwd_couple[idx], C_tot, power, iC, iP);
-            *hm = tools::_interp_2d(par->grid_Ctot, par->grid_power, par->num_Ctot, par->num_power, &sol->pre_hmd_couple[idx], C_tot, power, iC, iP);
+            *Cw_priv = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_Cwd_priv_couple[idx], power, C_tot, iP, iC);
+            *Cm_priv = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_Cmd_priv_couple[idx], power, C_tot, iP, iC);
+            *hw = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hwd_couple[idx], power, C_tot, iP, iC);
+            *hm = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hmd_couple[idx], power, C_tot, iP, iC);
+
             *C_inter = C_tot - *Cw_priv - *Cm_priv;
             *Q = utils::Q(*C_inter, *hw, *hm, par);
 
@@ -349,8 +350,6 @@ namespace precompute{
             solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power, par, 
                 start_Cw_priv, start_Cm_priv, start_hw, start_hm);
         }
-
-
     }
 
     EXPORT double util_C_couple(double C_tot, int ilw, int ilm, double power, double love, 
@@ -366,7 +365,7 @@ namespace precompute{
         double C_inter = 0.0; // C_tot - Cw_priv - Cm_priv;
         double Q = 0.0; // utils::Q(C_inter, hw, hm, par);
 
-        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q, ilw, ilm, C_tot, power, par, sol, interpolate);
+        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q, ilw, ilm, power, C_tot, par, sol, interpolate);
 
 
         double uw = utils::util(Cw_priv, lw+hw, Q, woman, par, love);
@@ -436,11 +435,11 @@ namespace precompute{
                             double power = par->grid_power[iP];
 
                             if(C_tot<1.0){ // reuse staring values when Ctot is low
-                                start_hw = sol->pre_hwd_couple[index::index4(ilw, ilm, iC+1, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power)];
-                                start_hm = sol->pre_hmd_couple[index::index4(ilw, ilm, iC+1, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power)];
+                                start_hw = sol->pre_hwd_couple[index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot)];
+                                start_hm = sol->pre_hmd_couple[index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot)];
                             }
 
-                            auto idx = index::index4(ilw, ilm, iC, iP, par->num_l, par->num_l, par->num_Ctot, par->num_power);
+                            auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
                             solve_intraperiod_couple(&sol->pre_Cwd_priv_couple[idx], &sol->pre_Cmd_priv_couple[idx], &sol->pre_hwd_couple[idx], &sol->pre_hmd_couple[idx], 
                                 &sol->pre_Cd_inter_couple[idx], &sol->pre_Qd_couple[idx],
                                 C_tot, lw, lm, power, par,
