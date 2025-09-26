@@ -84,7 +84,7 @@ namespace sim {
                 // iv. find marital surplus of partner at this new power allocation
                 int j_power = tools::binary_search(0,par->num_power,par->grid_power,power);
                 double V_power_partner = tools::_interp_3d(par->grid_power,par->grid_love,par->grid_A, par->num_power,par->num_love,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,A_lag,j_power,j_love,j_A);
-                double S_partner = couple::calc_marital_surplus(V_power_partner,V_couple_to_single_partner,par);
+                double S_partner = couple::calc_marital_surplus(V_power_partner,V_couple_to_single_partner);
                 
                 // v. check if partner is happy. If not divorce
                 if(S_partner<0.0){
