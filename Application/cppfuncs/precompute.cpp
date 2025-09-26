@@ -319,44 +319,56 @@ namespace precompute{
         delete solver_data;
     }
 
-    void intraperiod_allocation_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
-        int ilw, int ilm, double power, double C_tot, 
-        par_struct* par, sol_struct* sol, bool interpolate = true){
+    // Helper for couple allocation: handles both power index and value
+    void intraperiod_allocation_couple(
+        double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
+        int ilw, int ilm, int iP, double power, double C_tot,
+        par_struct* par, sol_struct* sol, bool interpolate, bool use_power_index)
+    {
         if(interpolate){
-            // interpolate pre-computed solution
-            auto idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_power, par->num_Ctot);
-            int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
-            int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
+            if(use_power_index) {
+                // Use power index for 1D interpolation
+                auto idx = index::index4(ilw, ilm, iP, 0, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+                int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
 
-            *Cw_priv = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_Cwd_priv_couple[idx], power, C_tot, iP, iC);
-            *Cm_priv = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_Cmd_priv_couple[idx], power, C_tot, iP, iC);
-            *hw = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hwd_couple[idx], power, C_tot, iP, iC);
-            *hm = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hmd_couple[idx], power, C_tot, iP, iC);
+                *Cw_priv = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &sol->pre_Cwd_priv_couple[idx], C_tot, iC);
+                *Cm_priv = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &sol->pre_Cmd_priv_couple[idx], C_tot, iC);
+                *hw = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &sol->pre_hwd_couple[idx], C_tot, iC);
+                *hm = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &sol->pre_hmd_couple[idx], C_tot, iC);
+            } else {
+                // Use power value for 2D interpolation
+                auto idx = index::index4(ilw, ilm, 0, 0, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+                int iP_ = tools::binary_search(0, par->num_power, par->grid_power, power);
+                int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
 
+                *Cw_priv = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_Cwd_priv_couple[idx], power, C_tot, iP_, iC);
+                *Cm_priv = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_Cmd_priv_couple[idx], power, C_tot, iP_, iC);
+                *hw = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hwd_couple[idx], power, C_tot, iP_, iC);
+                *hm = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hmd_couple[idx], power, C_tot, iP_, iC);
+            }
             *C_inter = C_tot - *Cw_priv - *Cm_priv;
             *Q = utils::Q(*C_inter, *hw, *hm, par);
-
         } else {
-
             double lw = par->grid_l[ilw];
             double lm = par->grid_l[ilm];
+            double power_val = use_power_index ? par->grid_power[iP] : power;
 
-            //starting values - can maybe be smarter here if we need to
             double start_Cw_priv = C_tot/3.0;
             double start_Cm_priv = C_tot/3.0;
             double start_hw = (par->Day - (lw-1e-6))/2.0;
             double start_hm = (par->Day - (lm-1e-6))/2.0;
 
-            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power, par, 
+            solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power_val, par,
                 start_Cw_priv, start_Cm_priv, start_hw, start_hm);
         }
     }
 
-    EXPORT double util_C_couple(double C_tot, int ilw, int ilm, double power, double love, 
+    EXPORT double util_C_couple(double C_tot, int ilw, int ilm, int iP, double love, 
         par_struct *par, sol_struct *sol, bool interpolate = true){
 
         double lw = par->grid_l[ilw];
         double lm = par->grid_l[ilm];
+        double power = par->grid_power[iP];
         double Cw_priv = 0.0;
         double Cm_priv = 0.0;
         double hw = 0.0;
@@ -365,7 +377,7 @@ namespace precompute{
         double C_inter = 0.0; // C_tot - Cw_priv - Cm_priv;
         double Q = 0.0; // utils::Q(C_inter, hw, hm, par);
 
-        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q, ilw, ilm, power, C_tot, par, sol, interpolate);
+        intraperiod_allocation_couple(&Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q, ilw, ilm, iP, power, C_tot, par, sol, interpolate, true);
 
 
         double uw = utils::util(Cw_priv, lw+hw, Q, woman, par, love);
@@ -377,8 +389,8 @@ namespace precompute{
     void precompute_cons_interp_couple(int i_marg_u, int iP, int ilw, int ilm, par_struct *par, sol_struct *sol, bool interpolate = true){
 
         double delta = 0.0001;
-        double util = util_C_couple(par->grid_C_for_marg_u[i_marg_u], ilw, ilm, par->grid_power[iP], 0.0, par, sol, interpolate);
-        double util_delta = util_C_couple(par->grid_C_for_marg_u[i_marg_u] + delta, ilw, ilm, par->grid_power[iP], 0.0, par, sol, interpolate);
+        double util = util_C_couple(par->grid_C_for_marg_u[i_marg_u], ilw, ilm, iP, 0.0, par, sol, interpolate);
+        double util_delta = util_C_couple(par->grid_C_for_marg_u[i_marg_u] + delta, ilw, ilm, iP, 0.0, par, sol, interpolate);
 
         auto idx = index::index4(ilw, ilm, iP, i_marg_u, par->num_l, par->num_l, par->num_power, par->num_marg_u);
         par->grid_marg_u_couple[idx] = (util_delta - util)/delta;

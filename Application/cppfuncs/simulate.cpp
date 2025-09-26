@@ -257,7 +257,10 @@ namespace sim {
                         // consumpton allocation
                         double C_inter = 0.0; // placeholder for public consumption
                         double Q = 0.0; // placeholder for public goods
-                        precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, power, C_tot, par, sol); 
+                        precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, -1000, power, C_tot, par, sol, 
+                            true, // interpolate 
+                            false // do not use power index
+                        );
                         sim->Cw_inter[it] = C_inter;
                         sim->Cm_inter[it] = C_inter;
                         sim->Qw[it] = Q;

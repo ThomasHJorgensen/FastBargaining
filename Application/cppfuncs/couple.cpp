@@ -49,9 +49,10 @@ namespace couple {
 
         // current utility from consumption allocation
         precompute::intraperiod_allocation_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, 
-            ilw, ilm, power, C_tot,
+            ilw, ilm, iP, power, C_tot,
             par, sol,
-            par->precompute_intratemporal
+            par->precompute_intratemporal,
+            true // use power index
         );
         // Note Vw and Vm are not a vector, just a pointer to one value
         Vw[0] = utils::util(*Cw_priv, *hw + par->grid_l[ilw], *Q, woman, par, love); 
@@ -208,16 +209,15 @@ namespace couple {
     double marg_util_C_couple(double C_tot, int ilw, int ilm, int iP, par_struct* par, sol_struct* sol, double guess_Cw_priv, double guess_Cm_priv){
         // baseline utility (could be passed as argument to avoid recomputation of utility at C_tot)
 
-        double power = par->grid_power[iP];
         double love = 0.0; // does not matter for the marginal utility
 
         // OBS: Implement start values for Cw_priv and Cm_priv as well as hw, hm (and C_inter?)
 
-        double util = precompute::util_C_couple(C_tot,ilw, ilm, power, love, par, sol, par->precompute_intratemporal);
+        double util = precompute::util_C_couple(C_tot,ilw, ilm, iP, love, par, sol, par->precompute_intratemporal);
 
         // forward difference
         double delta = 0.0001;
-        double util_delta = precompute::util_C_couple(C_tot + delta,ilw, ilm, power, love, par, sol, par->precompute_intratemporal);
+        double util_delta = precompute::util_C_couple(C_tot + delta,ilw, ilm, iP, love, par, sol, par->precompute_intratemporal);
         return (util_delta - util)/delta;
     }
     
