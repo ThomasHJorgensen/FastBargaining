@@ -401,16 +401,17 @@ namespace precompute{
     
     ////////////////////////////// Precomputation //////////////////////////////
     void precompute(sol_struct* sol, par_struct* par){
-        #pragma omp parallel num_threads(par->threads)      
-        {   
+        #pragma omp parallel num_threads(par->threads)
+        {
             // pre-compute optimal allocation for single
             for (int il=0; il<par->num_l; il++){
+                
                 double l = par->grid_l[il];
-
+                
                 double start_hw = (par->Day - (l-1e-6))/2.0;
                 double start_hm = (par->Day - (l-1e-6))/2.0;
-
-                # pragma omp for
+                
+                #pragma omp for collapse(1)
                 for (int iC=par->num_Ctot - 1; iC>=0; iC--){  //solve in descending order to have correct starting values for h in first grid point
                     double C_tot = par->grid_Ctot[iC];
                     auto idx = index::index2(il,iC,par->num_l,par->num_Ctot);
@@ -420,31 +421,31 @@ namespace precompute{
                     solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_C_priv, &start_hm, man, par);
                     solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_C_priv, &start_hw, woman, par);
 
-                    start_hw = sol->pre_hmd_single[idx]; //update starting values for h
-                    start_hm = sol->pre_hmd_single[idx];
+                    // start_hw = sol->pre_hmd_single[idx]; //update starting values for h
+                    // start_hm = sol->pre_hmd_single[idx];
 
-                    } //C_tot
-                } // labor supply
+                } //C_tot
+            } // labor supply
 
             // precompute optimal allocation for couples
             for(int ilw=0; ilw<par->num_l; ilw++){
-                double lw = par->grid_l[ilw];
-
                 for(int ilm=0; ilm<par->num_l; ilm++){
-                    double lm = par->grid_l[ilm];
-
-                    double start_hw = (par->Day - (lw-1e-6))/2.0;
-                    double start_hm = (par->Day - (lm-1e-6))/2.0;
-
-                    #pragma omp for
-                    for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
+                    for(int iP=0; iP<par->num_power; iP++){
                         
-                        double C_tot = par->grid_Ctot[iC];
-                        double start_Cw_priv = C_tot/3.0;
-                        double start_Cm_priv = C_tot/3.0;
+                        double lw = par->grid_l[ilw];
+                        double lm = par->grid_l[ilm];
+                        double power = par->grid_power[iP];
+                        
+                        double start_hw = (par->Day - (lw-1e-6))/2.0;
+                        double start_hm = (par->Day - (lm-1e-6))/2.0;
+                        
+                        #pragma omp for collapse(1)
+                        for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
+                            
+                            double C_tot = par->grid_Ctot[iC];
+                            double start_Cw_priv = C_tot/3.0;
+                            double start_Cm_priv = C_tot/3.0;
 
-                        for(int iP=0; iP<par->num_power; iP++){
-                            double power = par->grid_power[iP];
 
                             if(C_tot<1.0){ // reuse staring values when Ctot is low
                                 start_hw = sol->pre_hwd_couple[index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot)];
@@ -462,12 +463,12 @@ namespace precompute{
                 } //lm
             } //lw
 
-        
+
             // pre-compute marginal utilities and consumption interpolator for EGM
             if(strcmp(par->interp_method,"numerical")!=0){
                 // singles
                 for (int il=0; il<par->num_l; il++){
-                    #pragma omp for
+                    #pragma omp for collapse(1)
                     for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
                         bool interpolate = true;
                         precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
@@ -478,9 +479,9 @@ namespace precompute{
                 // couples
                 for(int ilw=0; ilw<par->num_l; ilw++){
                     for(int ilm=0; ilm<par->num_l; ilm++){
-                        #pragma omp for
-                        for(int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){
-                            for(int iP=0; iP<par->num_power; iP++){
+                        for(int iP=0; iP<par->num_power; iP++){
+                            #pragma omp for collapse(1)
+                            for(int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){
                                 bool interpolate = true; // this is sometimes a bit unstable when resolve numerically
                                 precompute_cons_interp_couple(i_marg_u, iP, ilw, ilm, par, sol, interpolate);
                             } //power
