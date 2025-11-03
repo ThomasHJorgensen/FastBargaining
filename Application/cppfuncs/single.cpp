@@ -370,7 +370,31 @@ namespace single {
         interpolate_to_exogenous_grid_single(t, il, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx_d_A], &C_priv[idx_d_A], &h[idx_d_A], &C_inter[idx_d_A], &Q[idx_d_A], &V[idx_d_A], &EV[idx_A_next], sol, par);
     }
 
+    int find_interpolated_labor_index_single(int t, double A, int gender, sol_struct* sol, par_struct* par){
 
+        //--- Set variables based on gender ---
+        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
+        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
+
+        // find nearest asset index once
+        int iA = tools::binary_search(0, par->num_A, grid_A, A);
+
+        double maxV = -std::numeric_limits<double>::infinity();
+        int labor_index = 0;
+
+        //--- Loop over labor choices ---
+        for (int il = 0; il < par->num_l; il++) {
+            auto idx_d_A = index::single_d(t, il, 0, par);
+            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_d_A], A, iA);
+            if (V_now > maxV) {
+                maxV = V_now;
+                labor_index = il;
+            }
+        }
+
+        return labor_index;
+    }
+    
     void calc_marginal_value_single_Agrid(int t, int gender, sol_struct* sol, par_struct* par){
 
         // unpack
@@ -382,13 +406,14 @@ namespace single {
         // gender specific variables
         double* grid_A = par->grid_Aw;
         double* margV = &sol->EmargVw_start_as_single[idx_A];
-        double* V      = &sol->EVw_start_as_single[idx_A];
+        double* V      = &sol->Vwd_single_to_single[0];
 
         if (gender == man){
             grid_A = par->grid_Am;
             margV = &sol->EmargVm_start_as_single[idx_A];
-            V      = &sol->EVm_start_as_single[idx_A];
+            V      = &sol->Vmd_single_to_single[0];
         }
+
 
         // approximate marginal value by finite differences
         if (par->centered_gradient) {
@@ -396,10 +421,16 @@ namespace single {
                 int iA_plus = iA + 1;
                 int iA_minus = iA - 1;
 
+                // find il
+                int il = find_interpolated_labor_index_single(t, grid_A[iA], gender, sol, par);
+                auto idx_d = index::single_d(t, il, iA, par);
+                auto idx_d_plus = index::single_d(t, il, iA_plus, par);
+                auto idx_d_minus = index::single_d(t, il, iA_minus, par);
+
                 double denom = 1.0 / (grid_A[iA_plus] - grid_A[iA_minus]);
 
                 // Calculate finite difference
-                margV[iA] = V[iA_plus] * denom - V[iA_minus] * denom;
+                margV[iA] = V[idx_d_plus] * denom - V[idx_d_minus] * denom;
             }
              // Extrapolate gradient in end points
             int i=0;
@@ -413,10 +444,23 @@ namespace single {
                 // Setup indices
                 int iA_plus = iA + 1;
 
-                double denom = 1/(grid_A[iA_plus] - grid_A[iA]);
+                // find il
+                int il = find_interpolated_labor_index_single(t, grid_A[iA], gender, sol, par);
+                auto idx_d_A = index::single_d(t, il, 0, par);
+                double* Vd = &V[idx_d_A];
+                auto idx_d = index::single_d(t, il, iA, par);
+                double delta = 1.0e-6;
+
+                double denom = 1/delta;
+
+                // calculate V_now
+                double V_now = Vd[iA];
+
+                // caluclate V_delta by interpolating V at A + delta
+                double V_delta = tools::interp_1d_index(grid_A, par->num_A, Vd, grid_A[iA] + delta, iA);
 
                 // Calculate finite difference
-                margV[iA] = V[iA_plus]*denom - V[iA]* denom; 
+                margV[iA] = V_delta*denom - V_now* denom;
 
                 // Extrapolate gradient in last point
                 if (iA == num_A-2){
@@ -703,31 +747,6 @@ namespace single {
             lw_couple_to_single[iA] = lw_single_to_single[iA];
             lm_couple_to_single[iA] = lm_single_to_single[iA];
         }
-    }
-
-    int find_interpolated_labor_index_single(int t, double A, int gender, sol_struct* sol, par_struct* par){
-
-        //--- Set variables based on gender ---
-        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
-        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
-
-        // find nearest asset index once
-        int iA = tools::binary_search(0, par->num_A, grid_A, A);
-
-        double maxV = -std::numeric_limits<double>::infinity();
-        int labor_index = 0;
-
-        //--- Loop over labor choices ---
-        for (int il = 0; il < par->num_l; il++) {
-            auto idx_d_A = index::single_d(t, il, 0, par);
-            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_d_A], A, iA);
-            if (V_now > maxV) {
-                maxV = V_now;
-                labor_index = il;
-            }
-        }
-
-        return labor_index;
     }
 
 }
