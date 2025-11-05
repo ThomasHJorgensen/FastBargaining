@@ -131,6 +131,7 @@ class HouseholdModelClass(EconModelClass):
 
         # h. misc
         par.threads = 8
+        par.num_multistart = 1
         par.interp_method = 'linear'
         par.centered_gradient = True
 
