@@ -35,11 +35,12 @@ namespace index {
     // long long int single_to_couple(long long int t,long long int iL,long long int iA,par_struct* par){
     //     return index3(t,iL,iA , par->T,par->num_love,par->num_A); 
     // }
-    long long int single(long long int t, long long int iA,par_struct* par){
-        return index2(t,iA, par->T, par->num_A); 
+    // Single-state indexing now uses (t, il, iK, iA)
+    inline long long int single(long long int t, long long int iK, long long int iA, par_struct* par){
+        return index3(t, iK, iA, par->T, par->num_K, par->num_A);
     }
-    long long int single_d(long long int t,long long int il,long long int iA,par_struct* par){
-        return index3(t,il,iA, par->T, par->num_l, par->num_A); 
+    inline long long int single_d(long long int t, long long int il, long long int iK, long long int iA, par_struct* par){
+        return index4(t, il, iK, iA, par->T, par->num_l, par->num_K, par->num_A);
     }
 
     struct index_couple_struct {
@@ -71,9 +72,11 @@ namespace index {
     typedef struct{
             // state levels
             int t;
+            double K;
             double A;
 
             // indices
+            int iK;
             int iA;
 
             // model content

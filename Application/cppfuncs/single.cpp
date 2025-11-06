@@ -64,10 +64,9 @@ namespace single {
         return best_Ctot;
     };
 
-    double resources_single(double labor, double A, int gender, par_struct* par) {
+    double resources_single(double labor, double K, double A, int gender, par_struct* par) {
         if (labor == 0.0) return par->R * A + RESOURCES_EPS;
 
-        const double K = 5.0; // wage calibration constant used by utils::wage
         double w = utils::wage(K, gender, par);
         return par->R * A + w * labor;
     }
@@ -161,11 +160,11 @@ namespace single {
                                             t, il, M_resources, gender, EV_next, par, sol);
     }
 
-    void solve_single_to_single_Agrid_vfi(int t, int il, double* EV_next, int gender, sol_struct* sol, par_struct* par) {
+    void solve_single_to_single_Agrid_vfi(int t, int il, int iK, double* EV_next, int gender, sol_struct* sol, par_struct* par) {
         const double labor = par->grid_l[il];
 
         // get index
-        auto idx_d_A = index::single_d(t, il, 0, par);
+        auto idx_d_A = index::single_d(t, il, iK, 0, par);
 
         // pointers to storage (gender-specific)
         double* Cd_tot = &sol->Cwd_tot_single_to_single[idx_d_A];
@@ -187,7 +186,10 @@ namespace single {
         }
 
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_resources = resources_single(labor, grid_A[iA], gender, par);
+            // resources depend on K and A
+            const double K = par->grid_K[iK];
+            const double A = grid_A[iA];
+            double M_resources = resources_single(labor, K, A, gender, par);
 
             // starting value: previous solution or fraction of resources
             double starting_val = (iA > 0) ? Cd_tot[iA - 1] : (M_resources * 0.8);
@@ -271,7 +273,7 @@ namespace single {
 
         /////// iEGM //////
     void interpolate_to_exogenous_grid_single(
-        int t, int il, int gender,
+        int t, int il, int iK, int gender,
         double* m_vec, double* c_vec, double* v_vec,
         double* C_tot, double* C_priv, double* h, double* C_inter, double* Q, double* V,
         double* EV_next, sol_struct* sol, par_struct* par
@@ -279,10 +281,11 @@ namespace single {
         double labor = par->grid_l[il];
         double* grid_A = (gender == man) ? par->grid_Am : par->grid_Aw;
         double* grid_A_pd = (gender == man) ? par->grid_Am_pd : par->grid_Aw_pd;
+        const double K = par->grid_K[iK];
 
         // Loop over the common (exogenous) asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_now = resources_single(labor, grid_A[iA], gender, par);
+            double M_now = resources_single(labor, K, grid_A[iA], gender, par);
 
             // If liquidity constraint binds, consume all resources
             if (M_now < m_vec[0]) {
@@ -332,7 +335,13 @@ namespace single {
     }
 
 
-    void solve_single_to_single_Agrid_egm(int t, int il, int gender, sol_struct* sol, par_struct* par){
+    void solve_single_to_single_Agrid_egm(int t, int il, int iK, int gender, sol_struct* sol, par_struct* par){
+        // get index
+        auto idx_A_pd = index::single_d(t, il, iK, 0, par);
+        auto idx_d_A = index::single_d(t, il, iK, 0, par);
+        auto idx_A_next = index::single(t + 1, iK, 0, par);
+        auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u);
+        
         // 1. Setup: gender-specific pointers
         double* grid_A = par->grid_Aw;
         double* grid_A_pd = par->grid_Aw_pd;
@@ -345,10 +354,10 @@ namespace single {
         double* h = sol->hwd_single_to_single;
         double* C_inter = sol->Cwd_inter_single_to_single;
         double* Q = sol->Qwd_single_to_single;
-        double* EmargU_pd = sol->EmargUwd_single_to_single_pd;
-        double* C_tot_pd = sol->Cwd_tot_single_to_single_pd;
-        double* M_pd = sol->Mwd_single_to_single_pd;
-        double* V_pd = sol->Vwd_single_to_single_pd;
+        double* EmargU_pd = &sol->EmargUwd_single_to_single_pd[idx_A_pd];
+        double* C_tot_pd = &sol->Cwd_tot_single_to_single_pd[idx_A_pd];
+        double* M_pd = &sol->Mwd_single_to_single_pd[idx_A_pd];
+        double* V_pd = &sol->Vwd_single_to_single_pd[idx_A_pd];
 
         if (gender == man) {
             grid_A = par->grid_Am;
@@ -362,10 +371,10 @@ namespace single {
             h = sol->hmd_single_to_single;
             C_inter = sol->Cmd_inter_single_to_single;
             Q = sol->Qmd_single_to_single;
-            EmargU_pd = sol->EmargUmd_single_to_single_pd;
-            C_tot_pd = sol->Cmd_totm_single_to_single_pd;
-            M_pd = sol->Mmd_single_to_single_pd;
-            V_pd = sol->Vmd_single_to_single_pd;
+            EmargU_pd = &sol->EmargUmd_single_to_single_pd[idx_A_pd];
+            C_tot_pd = &sol->Cmd_totm_single_to_single_pd[idx_A_pd];
+            M_pd = &sol->Mmd_single_to_single_pd[idx_A_pd];
+            V_pd = &sol->Vmd_single_to_single_pd[idx_A_pd];
         }
 
         // placeholders 
@@ -376,9 +385,6 @@ namespace single {
 
 
         // 2. EGM step
-        auto idx_d_A = index::single_d(t, il, 0, par);
-        auto idx_A_next = index::single(t + 1, 0, par);
-        auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u);
         int min_point_A = 0;
 
         for (int iA_pd = 0; iA_pd < par->num_A_pd; iA_pd++) {
@@ -408,16 +414,17 @@ namespace single {
         }
 
         // 3. Apply liquidity constraint and upper envelope while interpolating onto common grid
-        interpolate_to_exogenous_grid_single(t, il, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx_d_A], &C_priv[idx_d_A], &h[idx_d_A], &C_inter[idx_d_A], &Q[idx_d_A], &V[idx_d_A], &EV[idx_A_next], sol, par);
+        interpolate_to_exogenous_grid_single(t, il, iK, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx_d_A], &C_priv[idx_d_A], &h[idx_d_A], &C_inter[idx_d_A], &Q[idx_d_A], &V[idx_d_A], &EV[idx_A_next], sol, par);
     }
 
-    int find_interpolated_labor_index_single(int t, double A, int gender, sol_struct* sol, par_struct* par){
+    int find_interpolated_labor_index_single(int t, double K, double A, int gender, sol_struct* sol, par_struct* par){
 
         //--- Set variables based on gender ---
         double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
         double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
 
-        // find nearest asset index once
+        // find nearest index once
+        int iK = tools::binary_search(0, par->num_K, par->grid_K, K);
         int iA = tools::binary_search(0, par->num_A, grid_A, A);
 
         double maxV = -std::numeric_limits<double>::infinity();
@@ -425,8 +432,8 @@ namespace single {
 
         //--- Loop over labor choices ---
         for (int il = 0; il < par->num_l; il++) {
-            auto idx_d_A = index::single_d(t, il, 0, par);
-            double V_now = tools::interp_1d_index(grid_A, par->num_A, &Vd_single_to_single[idx_d_A], A, iA);
+            auto idx_d_A = index::single_d(t, il, 0, 0, par);
+            double V_now = tools::_interp_2d(par->grid_K, grid_A, par->num_K, par->num_A, &Vd_single_to_single[idx_d_A], K, A, iK, iA);
             if (V_now > maxV) {
                 maxV = V_now;
                 labor_index = il;
@@ -436,13 +443,14 @@ namespace single {
         return labor_index;
     }
     
-    void calc_marginal_value_single_Agrid(int t, int gender, sol_struct* sol, par_struct* par){
+    void calc_marginal_value_single_Agrid(int t, int iK, int gender, sol_struct* sol, par_struct* par){
 
         // unpack
         int const &num_A = par->num_A;
+        double K = par->grid_K[iK];
 
         // set index
-        auto idx_A = index::single(t,0,par);
+        auto idx_A = index::single(t,iK,0,par);
 
         // gender specific variables
         double* grid_A = par->grid_Aw;
@@ -463,10 +471,10 @@ namespace single {
                 int iA_minus = iA - 1;
 
                 // find il
-                int il = find_interpolated_labor_index_single(t, grid_A[iA], gender, sol, par);
-                auto idx_d = index::single_d(t, il, iA, par);
-                auto idx_d_plus = index::single_d(t, il, iA_plus, par);
-                auto idx_d_minus = index::single_d(t, il, iA_minus, par);
+                int il = find_interpolated_labor_index_single(t, K, grid_A[iA], gender, sol, par);
+                auto idx_d = index::single_d(t, il, iK, iA, par);
+                auto idx_d_plus = index::single_d(t, il, iK, iA_plus, par);
+                auto idx_d_minus = index::single_d(t, il, iK, iA_minus, par);
 
                 double denom = 1.0 / (grid_A[iA_plus] - grid_A[iA_minus]);
 
@@ -486,10 +494,10 @@ namespace single {
                 int iA_plus = iA + 1;
 
                 // find il
-                int il = find_interpolated_labor_index_single(t, grid_A[iA], gender, sol, par);
-                auto idx_d_A = index::single_d(t, il, 0, par);
+                int il = find_interpolated_labor_index_single(t, K, grid_A[iA], gender, sol, par);
+                auto idx_d_A = index::single_d(t, il, iK, 0, par);
                 double* Vd = &V[idx_d_A];
-                auto idx_d = index::single_d(t, il, iA, par);
+                auto idx_d = index::single_d(t, il, iK, iA, par);
                 double delta = 1.0e-6;
 
                 double denom = 1/delta;
@@ -511,11 +519,11 @@ namespace single {
         }
     }
 
-    void update_optimal_discrete_solution_single_Agrid(int t, int il, int gender, sol_struct* sol, par_struct* par){
+    void update_optimal_discrete_solution_single_Agrid(int t, int il, int iK, int gender, sol_struct* sol, par_struct* par){
 
         // get index
-        auto idx_A = index::single(t,0,par);
-        auto idx_d_A = index::single_d(t,il,0,par);
+        auto idx_A = index::single(t, iK, 0, par);
+        auto idx_d_A = index::single_d(t, il, iK, 0, par);
 
         // get variables
         double* V = &sol->Vw_single_to_single[idx_A];
@@ -539,36 +547,38 @@ namespace single {
 
     
 
-    void solve_choice_specific_single_to_single(int t, int il, int gender, sol_struct *sol, par_struct *par) {
+    void solve_choice_specific_single_to_single(int t, int il, int iK, int gender, sol_struct *sol, par_struct *par) {
 
         // Terminal period: no continuation value
         if (t == (par->T - 1)) {
-            solve_single_to_single_Agrid_vfi(t, il, nullptr, gender, sol, par);
+            solve_single_to_single_Agrid_vfi(t, il, iK, nullptr, gender, sol, par);
         } else {
             // next period expected value (used by VFI)
-            const auto idx_A_next = index::single(t + 1, 0, par);
+            const auto idx_A_next = index::single(t + 1, iK, 0, par);
             double* const EV_next = (gender == man) ? &sol->EVm_start_as_single[idx_A_next] : &sol->EVw_start_as_single[idx_A_next];
 
             // Choose EGM or VFI method
             if (par->do_egm) {
-                solve_single_to_single_Agrid_egm(t, il, gender, sol, par);
+                solve_single_to_single_Agrid_egm(t, il, iK, gender, sol, par);
             } else {
-                solve_single_to_single_Agrid_vfi(t, il, EV_next, gender, sol, par);
+                solve_single_to_single_Agrid_vfi(t, il, iK, EV_next, gender, sol, par);
             }
         }
 
         // Update solution with optimal discrete labor choice
-        update_optimal_discrete_solution_single_Agrid(t, il, gender, sol, par);
+        update_optimal_discrete_solution_single_Agrid(t, il, iK, gender, sol, par);
     }
 
 
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
         #pragma omp parallel for collapse(2) num_threads(par->threads)
-        for (int sex = 0; sex < 2; sex++) {
-            for (int il = 0; il < par->num_l; il++) {
-                const int gender = (sex == 0) ? woman : man;
-                solve_choice_specific_single_to_single(t, il, gender, sol, par);
+        for (int il = 0; il < par->num_l; il++) {
+            for (int iK = 0; iK < par->num_K; iK++) {
+                for (int sex = 0; sex < 2; sex++) {
+                    const int gender = (sex == 0) ? woman : man;
+                    solve_choice_specific_single_to_single(t, il, iK, gender, sol, par);
+                }
             }
         }
     }
@@ -577,6 +587,7 @@ namespace single {
         // unpack index
         int t = state_single->t;
         double A = state_single->A;
+        double K = state_single->K;
         double love = state_couple->love;
         double A_tot = state_couple->A; 
 
@@ -592,7 +603,9 @@ namespace single {
         
         // Get indices
         int iA_single = state_single->iA;
+        int iK_single = state_single->iK;
         int iL_couple = state_couple->iL;
+        // int iK_couple = state_couple->iK;
         int iA_couple = state_couple->iA;
         int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
 
@@ -602,7 +615,7 @@ namespace single {
         if (iA_single == -1) iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
 
         //interpolate V_single_to_single
-        auto idx_interp_single = index::single(t,0,par);
+        auto idx_interp_single = index::single(t,iK_single,0,par);
         double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
 
         // interpolate couple V_single_to_couple  
@@ -616,7 +629,7 @@ namespace single {
         return Vstc - Vsts;
     }
 
-    double calc_initial_bargaining_weight(int t, double love, double Aw, double Am, sol_struct* sol, par_struct* par, int iL_couple=-1){
+    double calc_initial_bargaining_weight(int t, double love, double Kw, double Km, double Aw, double Am, sol_struct* sol, par_struct* par, int iL_couple=-1){
         // state structs
         index::state_couple_struct* state_couple = new index::state_couple_struct();
         index::state_single_struct* state_single_w = new index::state_single_struct();
@@ -632,11 +645,13 @@ namespace single {
 
         // single woman
         state_single_w->t = t;
+        state_single_w->K = Kw;
         state_single_w->A = Aw;
         state_single_w->iA = tools::binary_search(0, par->num_A, par->grid_Aw, Aw);
 
         // single man
         state_single_m->t = t;
+        state_single_m->K = Km;
         state_single_m->A = Am;
         state_single_m->iA = tools::binary_search(0, par->num_A, par->grid_Am, Am);
         // Note: We don't know whether we are on the woman or man asset grid, so we need to search both.
@@ -664,7 +679,7 @@ namespace single {
     }
     
     
-    double expected_value_cond_meet_partner(int t, int iA, int gender, sol_struct* sol, par_struct* par){
+    double expected_value_cond_meet_partner(int t, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
         // unpack
         double* V_single_to_single = sol->Vw_single_to_single;
         double* V_single_to_couple = sol->Vw_single_to_couple;
@@ -677,7 +692,7 @@ namespace single {
             grid_A = par->grid_Am;
         }
         // // value of remaining single
-        auto idx_single = index::single(t, iA, par);
+        auto idx_single = index::single(t, iK, iA, par);
 
         // loop over potential partners conditional on meeting a partner
         double Ev_cond = 0.0;
@@ -704,8 +719,10 @@ namespace single {
 
                     const double Aw = grid_A[iAw];
                     const double Am = grid_A[iAm];
+                    const double Kw = par->grid_K[iK]; // OBS: temporary implementation. Return to this
+                    const double Km = par->grid_K[iK]; // OBS: temporary implementation. Return to this
 
-                    double power = calc_initial_bargaining_weight(t, love, Aw, Am, sol, par, iL);
+                    double power = calc_initial_bargaining_weight(t, love, Kw, Km, Aw, Am, sol, par, iL);
 
                     double val;
                     if (power >= 0.0) {
@@ -726,10 +743,10 @@ namespace single {
     }
 
 
-    void expected_value_start_single_Agrid(int t, int gender, sol_struct* sol,par_struct* par){
+    void expected_value_start_single_Agrid(int t, int iK, int gender, sol_struct* sol,par_struct* par){
 
         // get index
-        auto idx_A = index::single(t,0,par);
+        auto idx_A = index::single(t,iK,0,par);
 
         // get variables
         double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
@@ -747,7 +764,7 @@ namespace single {
             }
 
             // Value conditional on meeting partner
-            double EV_cond = expected_value_cond_meet_partner(t, iA, gender, sol, par);
+            double EV_cond = expected_value_cond_meet_partner(t, iK, iA, gender, sol, par);
 
             // expected value of starting single
             EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
@@ -755,38 +772,45 @@ namespace single {
         }
 
         if (par->do_egm){
-            calc_marginal_value_single_Agrid(t, gender, sol, par);
+            calc_marginal_value_single_Agrid(t, iK, gender, sol, par);
         }
     }
 
     void expected_value_start_single(int t, sol_struct* sol, par_struct* par){
 
         #pragma omp parallel for collapse(1) num_threads(par->threads)
-        for (int sex = 0; sex < 2; sex++) {
-            int gender = (sex == 0) ? woman : man;
-            expected_value_start_single_Agrid(t, gender, sol, par);
+        for (int iK = 0; iK < par->num_K; iK++) {
+            for (int sex = 0; sex < 2; sex++) {
+                int gender = (sex == 0) ? woman : man;
+                expected_value_start_single_Agrid(t, iK, gender, sol, par);
+            }
         }
     }
 
     void solve_couple_to_single(int t, sol_struct *sol, par_struct *par) {
-        // get index
-        auto idx_A = index::single(t,0,par);
-        // get variables
-        double* Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
-        double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
-        double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
-        double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
-        double* lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
-        double* lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
-        double* lw_single_to_single = &sol->lw_single_to_single[idx_A];
-        double* lm_single_to_single = &sol->lm_single_to_single[idx_A];
+        
 
         const double div_cost = par->div_cost;
-        for (int iA = 0; iA < par->num_A; iA++) {
-            Vw_couple_to_single[iA] = Vw_single_to_single[iA] - div_cost;
-            Vm_couple_to_single[iA] = Vm_single_to_single[iA] - div_cost;
-            lw_couple_to_single[iA] = lw_single_to_single[iA];
-            lm_couple_to_single[iA] = lm_single_to_single[iA];
+        for (int iK = 0; iK < par->num_K; iK++) {
+            // get index
+            auto idx_A = index::single(t, iK, 0,par);
+            
+            // get variables
+            double* Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
+            double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
+            double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
+            double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
+            double* lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
+            double* lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
+            double* lw_single_to_single = &sol->lw_single_to_single[idx_A];
+            double* lm_single_to_single = &sol->lm_single_to_single[idx_A];
+
+            for (int iA = 0; iA < par->num_A; iA++) {
+                Vw_couple_to_single[iA] = Vw_single_to_single[iA] - div_cost;
+                Vm_couple_to_single[iA] = Vm_single_to_single[iA] - div_cost;
+                lw_couple_to_single[iA] = lw_single_to_single[iA];
+                lm_couple_to_single[iA] = lm_single_to_single[iA];
+            }
         }
     }
 

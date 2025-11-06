@@ -27,6 +27,7 @@ class model_plotter():
             # Default grid names if not provided
             self.grid_names = {
                 't': 'grid_t', 
+                'iK': 'grid_K',
                 'iP': 'grid_power', 
                 'iL': 'grid_love', 
                 'iA': 'grid_A',

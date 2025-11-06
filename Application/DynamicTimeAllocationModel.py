@@ -145,9 +145,8 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T, par.num_A)                        # single states: T, human capital, assets
-        shape_single_d = (par.T, par.num_l, par.num_A)                        # single states: T, human capital, assets
-        # shape_single_d = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single_d = (par.T, par.num_l, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
         sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
@@ -167,15 +166,16 @@ class HouseholdModelClass(EconModelClass):
         sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
 
         ### a.1.1. post-decision grids (EGM)
-        sol.EmargUwd_single_to_single_pd = np.zeros(par.num_A_pd)           # Expected marginal utility post-decision, woman single
-        sol.Cwd_tot_single_to_single_pd = np.zeros(par.num_A_pd)            # C for EGM, woman single 
-        sol.Mwd_single_to_single_pd = np.zeros(par.num_A_pd)                # Endogenous grid, woman single
-        sol.Vwd_single_to_single_pd = np.zeros(par.num_A_pd)                # Value of being single, post-decision
+        shape_single_egm = (par.T, par.num_l, par.num_K, par.num_A_pd)
+        sol.EmargUwd_single_to_single_pd = np.zeros(shape_single_egm)           # Expected marginal utility post-decision, woman single
+        sol.Cwd_tot_single_to_single_pd = np.zeros(shape_single_egm)            # C for EGM, woman single 
+        sol.Mwd_single_to_single_pd = np.zeros(shape_single_egm)                # Endogenous grid, woman single
+        sol.Vwd_single_to_single_pd = np.zeros(shape_single_egm)                # Value of being single, post-decision
 
-        sol.EmargUmd_single_to_single_pd = np.zeros(par.num_A_pd)          # Expected marginal utility post-decision, man single
-        sol.Cmd_totm_single_to_single_pd = np.zeros(par.num_A_pd)           # C for EGM, man single
-        sol.Mmd_single_to_single_pd = np.zeros(par.num_A_pd)               # Endogenous grid, man single
-        sol.Vmd_single_to_single_pd = np.zeros(par.num_A_pd)               # Value of being single, post-decision
+        sol.EmargUmd_single_to_single_pd = np.zeros(shape_single_egm)          # Expected marginal utility post-decision, man single
+        sol.Cmd_totm_single_to_single_pd = np.zeros(shape_single_egm)           # C for EGM, man single
+        sol.Mmd_single_to_single_pd = np.zeros(shape_single_egm)               # Endogenous grid, man single
+        sol.Vmd_single_to_single_pd = np.zeros(shape_single_egm)               # Value of being single, post-decision
 
         ## a.2. couple to single
         sol.Vw_couple_to_single = np.nan + np.ones(shape_single)        # Value marriage -> single
@@ -232,11 +232,11 @@ class HouseholdModelClass(EconModelClass):
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
-        shape_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
-        sol.EmargUd_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
-        sol.Cd_tot_pd = np.zeros(shape_egm)                      # C for EGM
-        sol.Md_pd = np.zeros(shape_egm)                          # Endogenous grid
-        sol.Vd_couple_to_couple_pd = np.zeros(shape_egm)         # Value of being couple, post-decision
+        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
+        sol.EmargUd_pd = np.zeros(shape_couple_egm)                     # Expected marginal utility post-decision
+        sol.Cd_tot_pd = np.zeros(shape_couple_egm)                      # C for EGM
+        sol.Md_pd = np.zeros(shape_couple_egm)                          # Endogenous grid
+        sol.Vd_couple_to_couple_pd = np.zeros(shape_couple_egm)         # Value of being couple, post-decision
 
         ## b.2. single to couple
         sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
@@ -289,7 +289,7 @@ class HouseholdModelClass(EconModelClass):
         sol.pre_hmd_couple = np.ones(shape_pre) + np.nan
 
         # c.2. single
-        shape_pre_single = (par.num_l, par.num_Ctot)
+        shape_pre_single = (par.num_l, par.num_K, par.num_Ctot)
         sol.pre_Cwd_priv_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Cmd_priv_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Cwd_inter_single = np.ones(shape_pre_single) + np.nan
@@ -339,7 +339,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
         sim.init_Aw = sim.init_A * par.div_A_share
         sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple = np.ones(par.simN,dtype=np.bool_)
+        sim.init_couple = np.zeros(par.simN,dtype=np.bool_)
         sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
         sim.init_love = np.zeros(par.simN)
         
@@ -406,8 +406,7 @@ class HouseholdModelClass(EconModelClass):
         par.grid_Am = (1.0 - par.div_A_share) * par.grid_A
 
         # a.2. human capital
-        par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
-        par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
+        par.grid_K = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
 
         # a.3 power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)
