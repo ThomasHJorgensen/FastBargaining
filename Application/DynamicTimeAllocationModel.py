@@ -319,6 +319,8 @@ class HouseholdModelClass(EconModelClass):
         sim.Cm_tot = np.nan + np.ones(shape_sim)
         sim.C_tot = np.nan + np.ones(shape_sim)
         
+        sim.Kw = np.nan + np.ones(shape_sim)
+        sim.Km = np.nan + np.ones(shape_sim)
         sim.A = np.nan + np.ones(shape_sim)
         sim.Aw = np.nan + np.ones(shape_sim)
         sim.Am = np.nan + np.ones(shape_sim)
@@ -339,9 +341,11 @@ class HouseholdModelClass(EconModelClass):
 
         ## d.3. initial distribution
         sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
+        sim.init_Kw = np.linspace(0.0,par.max_K*0.5,par.simN) 
+        sim.init_Km = np.linspace(0.0,par.max_K*0.5,par.simN) 
         sim.init_Aw = sim.init_A * par.div_A_share
         sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple = np.zeros(par.simN,dtype=np.bool_)
+        sim.init_couple = np.ones(par.simN,dtype=np.bool_)
         sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
         sim.init_love = np.zeros(par.simN)
         
@@ -388,6 +392,8 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_love = np.random.normal(size=shape_sim)
         sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
 
+        sim.draw_uniform_partner_Kw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
+        sim.draw_uniform_partner_Km = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
         sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
         sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
 
@@ -482,10 +488,10 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_love = np.append(par.prob_partner_love,0.0) # lost last point in diff
         # par.prob_partner_love = np.ones(par.num_love)/par.num_love # uniform
 
+        par.cdf_partner_Kw = np.cumsum(par.prob_partner_Kw,axis=1) # cumulative distribution to be used in simulation
+        par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
         par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
-
-
 
 
     def solve(self):

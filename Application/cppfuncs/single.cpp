@@ -598,10 +598,14 @@ namespace single {
 
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
-        #pragma omp parallel for collapse(3) num_threads(par->threads)
-        for (int il = 0; il < par->num_l; il++) {
+        #pragma omp parallel for collapse(2) num_threads(par->threads)
+        for (int sex = 0; sex < 2; sex++) {
             for (int iK = 0; iK < par->num_K; iK++) {
-                for (int sex = 0; sex < 2; sex++) {
+                    // Note: important to have discrete choice as inner loop
+                    //       to allow parallelization over outer loops while
+                    //       making the optimal choice of discrete choice
+                    //       thread-safe
+                    for (int il = 0; il < par->num_l; il++) {
                     const int gender = (sex == 0) ? woman : man;
                     solve_choice_specific_single_to_single(t, il, iK, gender, sol, par);
                 }

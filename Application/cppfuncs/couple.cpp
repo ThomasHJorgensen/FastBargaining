@@ -24,17 +24,14 @@ namespace couple {
     static constexpr double MULTISTART_FACTOR = 0.5;
 
 
-    double resources_couple(double labor_w, double labor_m, double A, par_struct* par) {
+    double resources_couple(double labor_w, double labor_m, double Kw, double Km, double A, par_struct* par) {
         // If no labor income, return asset income plus small epsilon to avoid zero
         if ((labor_w == 0.0) && (labor_m == 0.0)) {
             return par->R * A + 1.0e-4;
         }
 
-        const double K_w = 5.0;
-        const double K_m = 5.0;
-
-        double wage_w = utils::wage(K_w, woman, par);
-        double wage_m = utils::wage(K_m, man, par);
+        double wage_w = utils::wage(Kw, woman, par);
+        double wage_m = utils::wage(Km, man, par);
 
         return par->R * A + wage_w * labor_w + wage_m * labor_m;
     }
@@ -188,7 +185,7 @@ namespace couple {
         double* Cd_tot = &sol->Cd_tot_couple_to_couple[idx_d_A];
 
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_resources = resources_couple(labor_w, labor_m, par->grid_A[iA], par);
+            double M_resources = resources_couple(labor_w, labor_m, par->grid_K[iKw], par->grid_K[iKm], par->grid_A[iA], par);
 
             // starting values
             double starting_val = M_resources * 0.8;
@@ -281,7 +278,7 @@ namespace couple {
 
     //////////////////
     // EGM solution
-    void interpolate_to_exogenous_grid_couple(int t, int ilw, int ilm, int iP, int iL,
+    void interpolate_to_exogenous_grid_couple(int t, int ilw, int ilm, int iP, int iL, int iKw, int iKm,
         double* m_vec, double* c_vec, double* v_vec, double* EmargUd_pd,
         double* C_tot, double* Cw_priv, double* Cm_priv, double* hw, double* hm,
         double* C_inter, double* Q, double* Vw, double* Vm,
@@ -290,7 +287,7 @@ namespace couple {
     {
         // Loop over exogenous asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_A[iA], par);
+            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_K[iKw], par->grid_K[iKm], par->grid_A[iA], par);
 
             // If liquidity constraint binds, consume all resources
             if (M_now < m_vec[0]) {
@@ -355,8 +352,8 @@ namespace couple {
     {
         double Cw_priv = 0.0, Cm_priv = 0.0, hw = 0.0, hm = 0.0, C_inter = 0.0, Q = 0.0, Vw = 0.0, Vm = 0.0;
 
-    auto idx_A_pd = index::couple_pd(t, ilw, ilm, iP, iL, iKw, iKm, 0, par);
-    auto idx_A_pd_next = index::couple_pd(t + 1, ilw, ilm, iP, iL, iKw, iKm, 0, par);
+        auto idx_A_pd = index::couple_pd(t, ilw, ilm, iP, iL, iKw, iKm, 0, par);
+        auto idx_A_pd_next = index::couple_pd(t + 1, ilw, ilm, iP, iL, iKw, iKm, 0, par);
 
         double* EmargUd_pd = &sol->EmargUd_pd[idx_A_pd];
         double* Cd_tot_pd = &sol->Cd_tot_pd[idx_A_pd];
@@ -412,7 +409,7 @@ namespace couple {
         // Apply liquidity constraint and upper envelope while interpolating onto common grid
     auto idx_d_A = index::couple_d(t,ilw,ilm,iP,iL,iKw,iKm,0,par);
         interpolate_to_exogenous_grid_couple( 
-            t, ilw, ilm, iP, iL, 
+            t, ilw, ilm, iP, iL, iKw, iKm,
             &sol->Md_pd[idx_A_pd], &sol->Cd_tot_pd[idx_A_pd], &sol->Vd_couple_to_couple_pd[idx_A_pd], 
             &sol->EmargUd_pd[idx_A_pd], &sol->Cd_tot_couple_to_couple[idx_d_A], 
             &sol->Cwd_priv_couple_to_couple[idx_d_A] ,&sol->Cmd_priv_couple_to_couple[idx_d_A],
@@ -505,6 +502,10 @@ namespace couple {
             for (int iL = 0; iL < par->num_love; ++iL) {
                 for (int iKw = 0; iKw < par->num_K; ++iKw) {
                     for (int iKm = 0; iKm < par->num_K; ++iKm) {
+                        // Note: important to have discrete choice as inner loop
+                        //       to allow parallelization over outer loops while
+                        //       making the optimal choice of discrete choice
+                        //       thread-safe
                         for (int ilw = 0; ilw < par->num_l; ++ilw) {
                             for (int ilm = 0; ilm < par->num_l; ++ilm) {
                                 solve_choice_specific_couple_to_couple(t, iP, iL, iKw, iKm, ilw, ilm, sol, par);
