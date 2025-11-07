@@ -102,6 +102,8 @@ class HouseholdModelClass(EconModelClass):
 
         # d. re-partnering
         par.p_meet = 0.0
+        par.prob_partner_Kw = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
+        par.prob_partner_Km = np.array([[np.nan]])
         par.prob_partner_A_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
         par.prob_partner_A_m = np.array([[np.nan]])
 
@@ -458,7 +460,13 @@ class HouseholdModelClass(EconModelClass):
 
         # re-partering probabilities
         par.prob_repartner = par.p_meet*np.ones(par.T) # likelihood of meeting a partner
-
+        
+        if np.isnan(par.prob_partner_Kw[0,0]):
+            par.prob_partner_Kw = np.eye(par.num_K)
+    
+        if np.isnan(par.prob_partner_Km[0,0]):
+            par.prob_partner_Km = np.eye(par.num_K)
+       
         if np.isnan(par.prob_partner_A_w[0,0]):
             par.prob_partner_A_w = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
     

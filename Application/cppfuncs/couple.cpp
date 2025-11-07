@@ -424,7 +424,7 @@ namespace couple {
         );     
     }
 
-    void calc_marginal_value_couple_Agrid(double power, double* Vw, double* Vm, double* margV, sol_struct* /*sol*/, par_struct* par)
+    void calc_marginal_value_couple_Agrid(double power, double* Vw, double* Vm, double* margV, sol_struct* sol, par_struct* par)
     {
         if (par->centered_gradient) {
             for (int iA = 1; iA <= par->num_A - 2; ++iA) {

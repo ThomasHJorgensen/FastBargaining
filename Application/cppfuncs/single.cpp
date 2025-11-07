@@ -442,8 +442,34 @@ namespace single {
 
         return labor_index;
     }
+
+    void calc_marginal_value_single_Agrid(double* V, double* margV, int gender, sol_struct* sol, par_struct* par)
+    {
+        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
+
+        if (par->centered_gradient) {
+            for (int iA = 1; iA <= par->num_A - 2; ++iA) {
+                int iA_plus = iA + 1;
+                int iA_minus = iA - 1;
+                double denom = 1.0 / (grid_A[iA_plus] - grid_A[iA_minus]);
+                margV[iA] = V[iA_plus] * denom - V[iA_minus] * denom;
+                if (iA == par->num_A - 2) margV[iA_plus] = margV[iA];
+            }
+
+            margV[0] = (margV[2] - margV[1]) / (grid_A[2] - grid_A[1]) * (grid_A[0] - grid_A[1]) + margV[1];
+            int i = par->num_A - 1;
+            margV[i] = (margV[i - 2] - margV[i - 1]) / (grid_A[i - 2] - grid_A[i - 1]) * (grid_A[i] - grid_A[i - 1]) + margV[i - 1];
+        } else {
+            for (int iA = 0; iA <= par->num_A - 2; ++iA) {
+                int iA_plus = iA + 1;
+                double denom = 1.0 / (grid_A[iA_plus] - grid_A[iA]);
+                margV[iA] = V[iA_plus] * denom - V[iA] * denom;
+                if (iA == par->num_A - 2) margV[iA_plus] = margV[iA];
+            }
+        }
+    }
     
-    void calc_marginal_value_single_Agrid(int t, int iK, int gender, sol_struct* sol, par_struct* par){
+    void calc_marginal_value_single_Agrid_old(int t, int iK, int gender, sol_struct* sol, par_struct* par){
 
         // unpack
         int const &num_A = par->num_A;
@@ -693,11 +719,13 @@ namespace single {
         double* V_single_to_single = sol->Vw_single_to_single;
         double* V_single_to_couple = sol->Vw_single_to_couple;
         double* prob_partner_A = par->prob_partner_A_w;
+        double* prob_partner_K = par->prob_partner_Kw;
         double* grid_A = par->grid_Aw;
         if (gender == man){
             V_single_to_single = sol->Vm_single_to_single;
             V_single_to_couple = sol->Vm_single_to_couple;
             prob_partner_A = par->prob_partner_A_m;
+            prob_partner_K = par->prob_partner_Km;
             grid_A = par->grid_Am;
         }
         // // value of remaining single
@@ -709,45 +737,54 @@ namespace single {
             const double prob_love = par->prob_partner_love[iL];
             if (prob_love <= 0.0) continue;
 
-            const double love = par->grid_love[iL];
-            for (int iAp = 0; iAp < par->num_A; iAp++) { // partner's wealth
-                auto idx_Agrid = index::index2(iA, iAp, par->num_A, par->num_A);
-                const double prob_A = prob_partner_A[idx_Agrid];
-                if (prob_A <= 0.0) continue;
+            for (int iKp = 0; iKp < par->num_K; iKp++) { // partner's capital
+                auto idx_Kgrid = index::index2(iK, iKp, par->num_K, par->num_K);
+                const double prob_K = prob_partner_K[idx_Kgrid];
+                if (prob_K <= 0.0) continue;
 
-                const double prob = prob_A * prob_love;
+                const double love = par->grid_love[iL];
+                for (int iAp = 0; iAp < par->num_A; iAp++) { // partner's wealth
+                    auto idx_Agrid = index::index2(iA, iAp, par->num_A, par->num_A);
+                    const double prob_A = prob_partner_A[idx_Agrid];
+                    if (prob_A <= 0.0) continue;
 
-                // only calculate if match has positive probability of happening
-                if (prob>0.0) {
-                    int iAw = iA;
-                    int iAm = iAp;
-                    if (gender == man) {
-                        iAw = iAp;
-                        iAm = iA;
-                    }
+                    const double prob = prob_A * prob_K * prob_love;
 
-                    const double Aw = grid_A[iAw];
-                    const double Am = grid_A[iAm];
-                    const double Kw = par->grid_K[iK]; // OBS: temporary implementation. Return to this
-                    const double Km = par->grid_K[iK]; // OBS: temporary implementation. Return to this
-                    const double K = par->grid_K[iK]; // OBS: temporary implementation. Return to this
+                    // only calculate if match has positive probability of happening
+                    if (prob>0.0) {
+                        int iAw = iA;
+                        int iAm = iAp;
+                        int iKw = iK;
+                        int iKm = iKp;
+                        if (gender == man) {
+                            iAw = iAp;
+                            iAm = iA;
+                            iKw = iKp;
+                            iKm = iK;
+                        }
 
-                    double power = calc_initial_bargaining_weight(t, love, Kw, Km, Aw, Am, sol, par, iL);
+                        const double Aw = grid_A[iAw];
+                        const double Am = grid_A[iAm];
+                        const double Kw = par->grid_K[iKw]; 
+                        const double Km = par->grid_K[iKm];
 
-                    double val;
-                    if (power >= 0.0) {
-                        double A_tot = Aw + Am;
-                        auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
-                        val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
-                                            par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                                            &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
-                    } else {
-                        val = V_single_to_single[idx_single];
-                    }
+                        double power = calc_initial_bargaining_weight(t, love, Kw, Km, Aw, Am, sol, par, iL);
 
-                    Ev_cond += prob * val;
-                } // if prob>0
-            } // iAp
+                        double val;
+                        if (power >= 0.0) {
+                            double A_tot = Aw + Am;
+                            auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
+                            val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+                                                par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                                                &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
+                        } else {
+                            val = V_single_to_single[idx_single];
+                        }
+
+                        Ev_cond += prob * val;
+                    } // if prob>0
+                } // iAp
+            } // iKp
         } // iL
         return Ev_cond;
     }
@@ -762,6 +799,7 @@ namespace single {
         double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
         double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
         double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
+        double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
 
         const double p_meet = par->prob_repartner[t];
         const bool no_meet = (par->p_meet == 0.0);
@@ -782,7 +820,9 @@ namespace single {
         }
 
         if (par->do_egm){
-            calc_marginal_value_single_Agrid(t, iK, gender, sol, par);
+            // calc_marginal_value_single_Agrid_old(t, iK, gender, sol, par);
+            calc_marginal_value_single_Agrid(EV_start_as_single, EmargV_start_as_single, gender, sol, par);
+
         }
     }
 
