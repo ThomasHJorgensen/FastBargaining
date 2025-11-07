@@ -572,7 +572,7 @@ namespace single {
 
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
-        #pragma omp parallel for collapse(2) num_threads(par->threads)
+        #pragma omp parallel for collapse(3) num_threads(par->threads)
         for (int il = 0; il < par->num_l; il++) {
             for (int iK = 0; iK < par->num_K; iK++) {
                 for (int sex = 0; sex < 2; sex++) {
@@ -589,6 +589,8 @@ namespace single {
         double A = state_single->A;
         double K = state_single->K;
         double love = state_couple->love;
+        double Kw = state_couple->Kw;
+        double Km = state_couple->Km;
         double A_tot = state_couple->A; 
 
         // gender specific
@@ -605,12 +607,15 @@ namespace single {
         int iA_single = state_single->iA;
         int iK_single = state_single->iK;
         int iL_couple = state_couple->iL;
-        // int iK_couple = state_couple->iK;
+        int iKw_couple = state_couple->iKw;
+        int iKm_couple = state_couple->iKm;
         int iA_couple = state_couple->iA;
         int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
 
         // compute missing indices lazily
         if (iL_couple == -1) iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
+        if (iKw_couple == -1) iKw_couple = tools::binary_search(0, par->num_K, par->grid_K, Kw);
+        if (iKm_couple == -1) iKm_couple = tools::binary_search(0, par->num_K, par->grid_K, Km);
         if (iA_couple == -1) iA_couple = tools::binary_search(0, par->num_A, par->grid_A, A_tot);
         if (iA_single == -1) iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
 
@@ -618,12 +623,12 @@ namespace single {
         auto idx_interp_single = index::single(t,iK_single,0,par);
         double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
 
-        // interpolate couple V_single_to_couple  
-        auto idx_interp_couple = index::couple(t,0,0,0,par);
-        double Vstc = tools::_interp_3d(par->grid_power, par->grid_love, par->grid_A,
-                        par->num_power, par->num_love, par->num_A,
-                        &V_single_to_couple[idx_interp_couple], power, love, A_tot,
-                        iP, iL_couple, iA_couple);
+        // interpolate couple V_single_to_couple
+    auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
+        double Vstc = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+                        par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                        &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot,
+                        iP, iL_couple, iKw_couple, iKm_couple, iA_couple);
 
         // surplus
         return Vstc - Vsts;
@@ -638,7 +643,11 @@ namespace single {
         // couple
         state_couple->t = t;
         state_couple->love = love;
+        state_couple->Kw = Kw;
+        state_couple->Km = Km;
         state_couple->A = Aw + Am;
+        state_couple->iKw = tools::binary_search(0, par->num_K, par->grid_K, Kw);
+        state_couple->iKm = tools::binary_search(0, par->num_K, par->grid_K, Km);
         state_couple->iA = tools::binary_search(0, par->num_A, par->grid_A, Aw + Am);
         if (iL_couple == -1) iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
         state_couple->iL = iL_couple;
@@ -721,16 +730,17 @@ namespace single {
                     const double Am = grid_A[iAm];
                     const double Kw = par->grid_K[iK]; // OBS: temporary implementation. Return to this
                     const double Km = par->grid_K[iK]; // OBS: temporary implementation. Return to this
+                    const double K = par->grid_K[iK]; // OBS: temporary implementation. Return to this
 
                     double power = calc_initial_bargaining_weight(t, love, Kw, Km, Aw, Am, sol, par, iL);
 
                     double val;
                     if (power >= 0.0) {
                         double A_tot = Aw + Am;
-                        auto idx_interp_couple = index::couple(t, 0, 0, 0, par);
-                        val = tools::interp_3d(par->grid_power, par->grid_love, par->grid_A,
-                                            par->num_power, par->num_love, par->num_A,
-                                            &V_single_to_couple[idx_interp_couple], power, love, A_tot);
+                        auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
+                        val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+                                            par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                                            &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
                     } else {
                         val = V_single_to_single[idx_single];
                     }
@@ -778,7 +788,7 @@ namespace single {
 
     void expected_value_start_single(int t, sol_struct* sol, par_struct* par){
 
-        #pragma omp parallel for collapse(1) num_threads(par->threads)
+        #pragma omp parallel for collapse(2) num_threads(par->threads)
         for (int iK = 0; iK < par->num_K; iK++) {
             for (int sex = 0; sex < 2; sex++) {
                 int gender = (sex == 0) ? woman : man;

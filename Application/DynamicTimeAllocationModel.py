@@ -205,8 +205,8 @@ class HouseholdModelClass(EconModelClass):
 
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
-        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_A)
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
         # shape_couple_d = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
@@ -232,7 +232,7 @@ class HouseholdModelClass(EconModelClass):
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
-        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
+        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
         sol.EmargUd_pd = np.zeros(shape_couple_egm)                     # Expected marginal utility post-decision
         sol.Cd_tot_pd = np.zeros(shape_couple_egm)                      # C for EGM
         sol.Md_pd = np.zeros(shape_couple_egm)                          # Endogenous grid
