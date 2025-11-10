@@ -50,6 +50,9 @@ namespace index {
     inline long long int single_d(long long int t, long long int il, long long int iK, long long int iA, par_struct* par){
         return index4(t, il, iK, iA, par->T, par->num_l, par->num_K, par->num_A);
     }
+    inline long long int single_pd(long long int t, long long int il, long long int iK, long long int iA_pd, par_struct* par){
+        return index4(t, il, iK, iA_pd, par->T, par->num_l, par->num_K, par->num_A_pd);
+    }
 
     struct index_couple_struct {
         int t;

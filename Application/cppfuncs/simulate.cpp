@@ -216,22 +216,22 @@ namespace sim {
                     double power_lag = 0.0;
                     double love = 0.0;
                     if (t==0){
+                        Kw_lag = sim->init_Kw[i];
+                        Km_lag = sim->init_Km[i];
                         A_lag = sim->init_A[i];
                         Aw_lag = sim->init_Aw[i];
                         Am_lag = sim->init_Am[i];
-                        Aw_lag = sim->init_Kw[i];
-                        Am_lag = sim->init_Km[i];
                         couple_lag = sim->init_couple[i];
                         power_lag = par->grid_power[sim->init_power_idx[i]];
                         love = sim->init_love[i];
                         sim->love[it] = love;
                     } else {
                         int it_1 = index::index2(i,t-1,par->simN,par->simT);
+                        Kw_lag = sim->Kw[it_1];
+                        Km_lag = sim->Km[it_1];
                         A_lag = sim->A[it_1];
                         Aw_lag = sim->Aw[it_1];
                         Am_lag = sim->Am[it_1];
-                        Kw_lag = sim->Kw[it_1];
-                        Km_lag = sim->Km[it_1];
                         couple_lag = sim->couple[it_1];
                         power_lag = sim->power[it_1];
                         love = sim->love[it];
@@ -316,8 +316,8 @@ namespace sim {
                         sim->Qm[it] = Q;
 
                         // update end-of-period states
-                        sim->Kw[it] = Kw_lag;
-                        sim->Km[it] = Km_lag;
+                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par);
+                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par);
                         sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
                         sim->Aw[it] = par->div_A_share * sim->A[it];
                         sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
@@ -361,8 +361,8 @@ namespace sim {
                         precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
 
                         // update end-of-period states  
-                        sim->Kw[it] = Kw_lag;
-                        sim->Km[it] = Km_lag;
+                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par);
+                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par);
                         sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
                         sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
                         sim->power[it] = -1.0;

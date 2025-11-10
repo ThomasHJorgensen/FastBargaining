@@ -55,7 +55,8 @@ class HouseholdModelClass(EconModelClass):
         par.gamma_m = 0.1           # return to human capital   
 
         # a.1. human capital
-        par.delta = 0.05                   # depreciation
+        par.delta = 0.05   
+        par.phi_k = 1.0 # depreciation
         par.sigma_epsilon_w = 0.08         # std of shock to human capital
         par.sigma_epsilon_m = 0.08         # std of shock to human capital
 

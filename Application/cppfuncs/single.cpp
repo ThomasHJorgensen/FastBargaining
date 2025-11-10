@@ -9,6 +9,7 @@ namespace single {
     struct SolverSingleData {
         int t;
         int il;
+        double K;
         double M;
         double* EV_next;
         int gender;
@@ -72,7 +73,7 @@ namespace single {
     }
 
     double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q,
-                                            double C_tot, int t, int il, double M, int gender,
+                                            double C_tot, int t, int il, double K, double M, int gender,
                                             double* V_next, par_struct* par, sol_struct* sol) {
         const double labor = par->grid_l[il];
 
@@ -86,8 +87,9 @@ namespace single {
         double continuation = 0.0;
         if (t < (par->T - 1)) {
             double* grid_A = (gender == man) ? par->grid_Am : par->grid_Aw;
-            double A = M - C_tot;
-            continuation = tools::interp_1d(grid_A, par->num_A, V_next, A);
+            double A_next = M - C_tot;
+            double K_next = utils::human_capital_transition(K, labor, par);
+            continuation = tools::interp_2d(par->grid_K, grid_A, par->num_K, par->num_A, V_next, K_next, A_next);
         }
 
         return util + par->beta * continuation;
@@ -100,7 +102,9 @@ namespace single {
         int t = data->t;
         int il = data->il;
         int gender = data->gender;
+        double K = data->K;
         double M = data->M;
+        double* EV_next = data->EV_next;
         par_struct* par = data->par;
         sol_struct* sol = data->sol;
 
@@ -114,13 +118,13 @@ namespace single {
 
         // optimizer minimizes -> return negative value
         return -value_of_choice_single_to_single(&C_priv, &h, &C_inter, &Q,
-                                                C_tot, t, il, M, gender,
-                                                data->EV_next, par, sol);
+                                                C_tot, t, il, K, M, gender,
+                                                EV_next, par, sol);
     }
 
     void solve_single_to_single_step(
         double* Cd_priv, double* hd, double* Cd_inter, double* Qd, double* Vd,
-        double M_resources, int t, int il,
+        double M_resources, int t, int il, double K,
         double* EV_next,
         double starting_val, int gender, sol_struct* sol, par_struct* par
     ) {
@@ -128,7 +132,7 @@ namespace single {
 
         if (t < (par->T - 1)) {
             // Setup solver data and optimizer
-            SolverSingleData* solver_data = new SolverSingleData{t, il, M_resources, EV_next, gender, par, sol};
+            SolverSingleData* solver_data = new SolverSingleData{t, il, K, M_resources, EV_next, gender, par, sol};
 
             constexpr int dim = 1;
             double lb[dim], ub[dim];
@@ -157,7 +161,7 @@ namespace single {
 
         // compute implied allocation and value
         *Vd = value_of_choice_single_to_single(Cd_priv, hd, Cd_inter, Qd, Cd_tot,
-                                            t, il, M_resources, gender, EV_next, par, sol);
+                                            t, il, K, M_resources, gender, EV_next, par, sol);
     }
 
     void solve_single_to_single_Agrid_vfi(int t, int il, int iK, double* EV_next, int gender, sol_struct* sol, par_struct* par) {
@@ -195,7 +199,7 @@ namespace single {
             double starting_val = (iA > 0) ? Cd_tot[iA - 1] : (M_resources * 0.8);
 
             solve_single_to_single_step(&Cd_priv[iA], &hd[iA], &Cd_inter[iA], &Qd[iA], &Vd[iA],
-                                    M_resources, t, il, EV_next, starting_val, gender, sol, par);
+                                    M_resources, t, il, K, EV_next, starting_val, gender, sol, par);
 
             Cd_tot[iA] = Cd_priv[iA] + Cd_inter[iA];
         } // iA
@@ -291,7 +295,7 @@ namespace single {
             if (M_now < m_vec[0]) {
                 C_tot[iA] = M_now;
                 V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA],
-                                                        C_tot[iA], t, il, M_now, gender, EV_next, par, sol);
+                                                        C_tot[iA], t, il, K, M_now, gender, EV_next, par, sol);
                 continue;
             }
 
@@ -327,7 +331,7 @@ namespace single {
                     if (V_guess > V[iA]) {
                         C_tot[iA] = c_guess;
                         V[iA] = value_of_choice_single_to_single(&C_priv[iA], &h[iA], &C_inter[iA], &Q[iA],
-                                                                C_tot[iA], t, il, M_now, gender, EV_next, par, sol);
+                                                                C_tot[iA], t, il, K, M_now, gender, EV_next, par, sol);
                     } // if upper envelope
                 } // if in_interval
             } // iA_pd
@@ -337,9 +341,10 @@ namespace single {
 
     void solve_single_to_single_Agrid_egm(int t, int il, int iK, int gender, sol_struct* sol, par_struct* par){
         // get index
-        auto idx_A_pd = index::single_d(t, il, iK, 0, par);
+        auto idx_A_pd = index::single_pd(t, il, iK, 0, par);
         auto idx_d_A = index::single_d(t, il, iK, 0, par);
         auto idx_A_next = index::single(t + 1, iK, 0, par);
+        auto idx_next = index::single(t + 1, 0, 0, par);
         auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u);
         
         // 1. Setup: gender-specific pointers
@@ -386,13 +391,16 @@ namespace single {
 
         // 2. EGM step
         int min_point_A = 0;
+        double K = par->grid_K[iK];
+        double K_next = utils::human_capital_transition(K, par->grid_l[il], par);
+        int min_point_K = tools::binary_search(0, par->num_K, par->grid_K, K_next);
 
         for (int iA_pd = 0; iA_pd < par->num_A_pd; iA_pd++) {
             double A_next = grid_A_pd[iA_pd];
 
             // expected marginal utility
             min_point_A = tools::binary_search(min_point_A, par->num_A, grid_A, A_next);
-            EmargU_pd[iA_pd] = par->beta * tools::interp_1d_index(grid_A, par->num_A, &margV[idx_A_next], A_next, min_point_A);
+            EmargU_pd[iA_pd] = par->beta * tools::_interp_2d(par->grid_K, grid_A, par->num_K, par->num_A, &margV[idx_next], K_next, A_next, min_point_K, min_point_A);
 
             // invert marginal utility
             if (strcmp(par->interp_method, "numerical") == 0) {
@@ -410,11 +418,11 @@ namespace single {
             M_pd[iA_pd] = C_tot_pd[iA_pd] + A_next;
 
             // value at endogenous point
-            V_pd[iA_pd] = value_of_choice_single_to_single(&C_priv_ph, &h_ph, &C_inter_ph, &Q_ph, C_tot_pd[iA_pd], t, il, M_pd[iA_pd], gender, &EV[idx_A_next], par, sol);
+            V_pd[iA_pd] = value_of_choice_single_to_single(&C_priv_ph, &h_ph, &C_inter_ph, &Q_ph, C_tot_pd[iA_pd], t, il, K, M_pd[iA_pd], gender, &EV[idx_next], par, sol);
         }
 
         // 3. Apply liquidity constraint and upper envelope while interpolating onto common grid
-        interpolate_to_exogenous_grid_single(t, il, iK, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx_d_A], &C_priv[idx_d_A], &h[idx_d_A], &C_inter[idx_d_A], &Q[idx_d_A], &V[idx_d_A], &EV[idx_A_next], sol, par);
+        interpolate_to_exogenous_grid_single(t, il, iK, gender, M_pd, C_tot_pd, V_pd, &C_tot[idx_d_A], &C_priv[idx_d_A], &h[idx_d_A], &C_inter[idx_d_A], &Q[idx_d_A], &V[idx_d_A], &EV[idx_next], sol, par);
     }
 
     int find_interpolated_labor_index_single(int t, double K, double A, int gender, sol_struct* sol, par_struct* par){
@@ -580,8 +588,8 @@ namespace single {
             solve_single_to_single_Agrid_vfi(t, il, iK, nullptr, gender, sol, par);
         } else {
             // next period expected value (used by VFI)
-            const auto idx_A_next = index::single(t + 1, iK, 0, par);
-            double* const EV_next = (gender == man) ? &sol->EVm_start_as_single[idx_A_next] : &sol->EVw_start_as_single[idx_A_next];
+            const auto idx_next = index::single(t + 1, 0, 0, par);
+            double* const EV_next = (gender == man) ? &sol->EVm_start_as_single[idx_next] : &sol->EVw_start_as_single[idx_next];
 
             // Choose EGM or VFI method
             if (par->do_egm) {
@@ -599,8 +607,8 @@ namespace single {
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
         #pragma omp parallel for collapse(2) num_threads(par->threads)
-        for (int sex = 0; sex < 2; sex++) {
-            for (int iK = 0; iK < par->num_K; iK++) {
+        for (int iK = 0; iK < par->num_K; iK++) {
+            for (int sex = 0; sex < 2; sex++) {
                     // Note: important to have discrete choice as inner loop
                     //       to allow parallelization over outer loops while
                     //       making the optimal choice of discrete choice

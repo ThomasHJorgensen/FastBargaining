@@ -13,6 +13,8 @@ namespace couple {
         int ilm;
         int iL;
         int iP;
+        double Kw;
+        double Km;
         double M;
         double* EVw_next;
         double* EVm_next;
@@ -37,7 +39,7 @@ namespace couple {
     }
 
     double value_of_choice_couple_to_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm,
-        double* C_inter, double* Q, int ilw, int ilm, double C_tot, double M_resources,
+        double* C_inter, double* Q, int ilw, int ilm, double C_tot, double Kw, double Km, double M_resources,
         int t, int iL, int iP, double* Vw, double* Vm, double* EVw_next, double* EVm_next,
         par_struct* par, sol_struct* sol)
     {
@@ -51,9 +53,12 @@ namespace couple {
         Vm[0] = utils::util(*Cm_priv, *hm + par->grid_l[ilm], *Q, man, par, love);
 
         if (t < (par->T - 1)) {
-            double savings = M_resources - C_tot;
-            double EVw_plus = tools::interp_1d(par->grid_A, par->num_A, EVw_next, savings);
-            double EVm_plus = tools::interp_1d(par->grid_A, par->num_A, EVm_next, savings);
+            double A_next = M_resources - C_tot;
+            double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
+            double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
+            // obs: maybe use _interp_3d_2out here
+            double EVw_plus = tools::interp_3d(par->grid_K, par->grid_K, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, Kw_next, Km_next, A_next);
+            double EVm_plus = tools::interp_3d(par->grid_K, par->grid_K, par->grid_A, par->num_K, par->num_K, par->num_A, EVm_next, Kw_next, Km_next, A_next);
             Vw[0] += par->beta * EVw_plus;
             Vm[0] += par->beta * EVm_plus;
         }
@@ -111,12 +116,12 @@ namespace couple {
 
         double Cw_priv, Cm_priv, hw, hm, C_inter, Q, Vw, Vm;
         return -value_of_choice_couple_to_couple(&Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q,
-            d->ilw, d->ilm, C_tot, d->M, d->t, d->iL, d->iP,
+            d->ilw, d->ilm, C_tot, d->Kw, d->Km,d->M, d->t, d->iL, d->iP,
             &Vw, &Vm, d->EVw_next, d->EVm_next, d->par, d->sol);
     }
 
     void solve_couple_to_couple_step(double* Cw_priv, double* Cm_priv, double* hw, double* hm,
-        double* C_inter, double* Q, double* Vw, double* Vm, double M_resources,
+        double* C_inter, double* Q, double* Vw, double* Vm, double Kw, double Km, double M_resources,
         int t, int ilw, int ilm, int iL, int iP, double* EVw_next, double* EVm_next,
         double starting_val, sol_struct* sol, par_struct* par)
     {
@@ -134,6 +139,8 @@ namespace couple {
             data->ilm = ilm;
             data->iL = iL;
             data->iP = iP;
+            data->Kw = Kw;
+            data->Km = Km;
             data->M = M_resources;
             data->EVw_next = EVw_next;
             data->EVm_next = EVm_next;
@@ -163,7 +170,7 @@ namespace couple {
 
         // Recompute implied allocation for chosen C_tot
         double _ = value_of_choice_couple_to_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q,
-            ilw, ilm, C_tot, M_resources, t, iL, iP, Vw, Vm, EVw_next, EVm_next, par, sol);
+            ilw, ilm, C_tot, Kw, Km, M_resources, t, iL, iP, Vw, Vm, EVw_next, EVm_next, par, sol);
     }
 
     void solve_couple_to_couple_Agrid_vfi(int t, int ilw, int ilm, int iP, int iL, int iKw, int iKm,
@@ -171,8 +178,10 @@ namespace couple {
     {
         double labor_w = par->grid_l[ilw];
         double labor_m = par->grid_l[ilm];
+        double Kw = par->grid_K[iKw];
+        double Km = par->grid_K[iKm];
 
-    auto idx_d_A = index::couple_d(t, ilw, ilm, iP, iL, iKw, iKm, 0, par);
+        auto idx_d_A = index::couple_d(t, ilw, ilm, iP, iL, iKw, iKm, 0, par);
 
         double* Cwd_priv = &sol->Cwd_priv_couple_to_couple[idx_d_A];
         double* Cmd_priv = &sol->Cmd_priv_couple_to_couple[idx_d_A];
@@ -194,7 +203,7 @@ namespace couple {
             }
 
                 solve_couple_to_couple_step(&Cwd_priv[iA], &Cmd_priv[iA], &hwd[iA], &hmd[iA], &Cd_inter[iA], &Qd[iA],
-                &Vwd[iA], &Vmd[iA], M_resources, t, ilw, ilm, iL, iP, EVw_next, EVm_next, starting_val, sol, par);
+                &Vwd[iA], &Vmd[iA], Kw, Km, M_resources, t, ilw, ilm, iL, iP, EVw_next, EVm_next, starting_val, sol, par);
 
             Cd_tot[iA] = Cwd_priv[iA] + Cmd_priv[iA] + Cd_inter[iA];
         }
@@ -285,6 +294,10 @@ namespace couple {
         double* EVw_next, double* EVm_next, double* V,
         sol_struct* sol, par_struct* par)
     {
+
+        double Kw = par->grid_K[iKw];
+        double Km = par->grid_K[iKm];
+
         // Loop over exogenous asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
             double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_K[iKw], par->grid_K[iKm], par->grid_A[iA], par);
@@ -293,7 +306,7 @@ namespace couple {
             if (M_now < m_vec[0]) {
                 C_tot[iA] = M_now;
                 value_of_choice_couple_to_couple(&Cw_priv[iA], &Cm_priv[iA], &hw[iA], &hm[iA], &C_inter[iA], &Q[iA],
-                    ilw, ilm, C_tot[iA], M_now, t, iL, iP, &Vw[iA], &Vm[iA], EVw_next, EVm_next, par, sol);
+                    ilw, ilm, C_tot[iA], Kw, Km, M_now, t, iL, iP, &Vw[iA], &Vm[iA], EVw_next, EVm_next, par, sol);
 
                 double power = par->grid_power[iP];
                 V[iA] = power * Vw[iA] + (1.0 - power) * Vm[iA];
@@ -334,7 +347,7 @@ namespace couple {
 
                         value_of_choice_couple_to_couple(
                             &Cw_priv[iA], &Cm_priv[iA], &hw[iA], &hm[iA], &C_inter[iA], &Q[iA],
-                            ilw, ilm, C_tot[iA], M_now, t, iL, iP,
+                            ilw, ilm, C_tot[iA], Kw, Km, M_now, t, iL, iP,
                             &Vw[iA], &Vm[iA], EVw_next, EVm_next, par, sol
                         );
 
@@ -361,10 +374,16 @@ namespace couple {
         double* Md_pd = &sol->Md_pd[idx_A_pd];
         double* Vd_couple_to_couple_pd = &sol->Vd_couple_to_couple_pd[idx_A_pd];
 
+        double Kw = par->grid_K[iKw];
+        double Km = par->grid_K[iKm];
+        double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
+        double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
+
+        // Loop over endogenous asset grid
         for (int iA_pd = 0; iA_pd < par->num_A_pd; ++iA_pd) {
             double A_next = par->grid_A_pd[iA_pd];
 
-            EmargUd_pd[iA_pd] = par->beta * tools::interp_1d(par->grid_A, par->num_A, EmargV_next, A_next);
+            EmargUd_pd[iA_pd] = par->beta * tools::interp_3d(par->grid_K, par->grid_K, par->grid_A, par->num_K, par->num_K, par->num_A, EmargV_next, Kw_next, Km_next, A_next);
 
             if (strcmp(par->interp_method, "numerical") == 0) {
 
@@ -400,7 +419,7 @@ namespace couple {
             // v. Get post-choice value (also updates the intra-period allocation)
             Vd_couple_to_couple_pd[iA_pd] = value_of_choice_couple_to_couple(
                 &Cw_priv, &Cm_priv, &hw, &hm, &C_inter, &Q,
-                ilw, ilm, Cd_tot_pd[iA_pd], Md_pd[iA_pd], t, iL, iP,
+                ilw, ilm, Cd_tot_pd[iA_pd], Kw, Km, Md_pd[iA_pd], t, iL, iP,
                 &Vw, &Vm, EVw_next, EVm_next,
                 par, sol
             );
@@ -480,10 +499,10 @@ namespace couple {
         if (t == (par->T - 1)) {
             solve_couple_to_couple_Agrid_vfi(t, ilw, ilm, iP, iL, iKw, iKm, nullptr, nullptr, sol, par);
         } else {
-            auto idx_A_next = index::couple(t + 1, iP, iL, iKw, iKm, 0, par);
-            double* EVw_next = &sol->EVw_start_as_couple[idx_A_next];
-            double* EVm_next = &sol->EVm_start_as_couple[idx_A_next];
-            double* EmargV_next = &sol->EmargV_start_as_couple[idx_A_next];
+            auto idx_next = index::couple(t + 1, iP, iL, 0, 0, 0, par);
+            double* EVw_next = &sol->EVw_start_as_couple[idx_next];
+            double* EVm_next = &sol->EVm_start_as_couple[idx_next];
+            double* EmargV_next = &sol->EmargV_start_as_couple[idx_next];
 
             if (par->do_egm) {
                 solve_couple_to_couple_Agrid_egm(t, ilw, ilm, iP, iL, iKw, iKm, EVw_next, EVm_next, EmargV_next, sol, par);
