@@ -90,6 +90,10 @@ class HouseholdModelClass(EconModelClass):
         par.num_K = 16
         par.max_K = par.T*1.5
         
+        par.num_shock_K = 5
+        par.sigma_Kw = 0.1
+        par.sigma_Km = 0.1
+        
         # c.3 bargaining power
         par.num_power = 21
 
@@ -408,6 +412,11 @@ class HouseholdModelClass(EconModelClass):
         # a.2. human capital
         par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
+        
+        shocks_w = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
+        par.grid_shock_Kw,par.prob_shock_Kw = shocks_w
+        shocks_m = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
+        par.grid_shock_Km,par.prob_shock_Km = shocks_m
 
         # a.3 power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)
