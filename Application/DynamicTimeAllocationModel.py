@@ -549,9 +549,11 @@ class HouseholdModelClass(EconModelClass):
 
         # wages 
         t_level = 0
-        moms['wage_level_w'] = np.mean(sim.wage_w[t_level,:])
-        moms['wage_level_m'] = np.mean(sim.wage_m[t_level,:])
-        
+        Iw = ~np.isnan(sim.wage_w[t_level,:]) 
+        Im = ~np.isnan(sim.wage_m[t_level,:]) 
+        moms['wage_level_w'] = np.mean(np.log(sim.wage_w[t_level,Iw]))
+        moms['wage_level_m'] = np.mean(np.log(sim.wage_m[t_level,Im]))
+
         for dt in (5,10,15):
             Iw = ~np.isnan(sim.wage_w[t_level+dt,:]) & ~np.isnan(sim.wage_w[t_level+dt-1,:])
             Im = ~np.isnan(sim.wage_m[t_level+dt,:]) & ~np.isnan(sim.wage_m[t_level+dt-1,:])
