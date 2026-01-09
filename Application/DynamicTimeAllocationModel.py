@@ -2,6 +2,7 @@ import numpy as np
 import numba as nb
 import scipy.optimize as optimize
 import polars as pl
+from collections import OrderedDict
 
 
 from EconModel import EconModelClass
@@ -90,6 +91,10 @@ class HouseholdModelClass(EconModelClass):
         # c.2. human capital
         par.num_K = 16
         par.max_K = par.T*1.5
+        
+        par.num_shock_K = 5
+        par.sigma_Kw = 0.1
+        par.sigma_Km = 0.1
         
         # c.3 bargaining power
         par.num_power = 21
@@ -416,6 +421,13 @@ class HouseholdModelClass(EconModelClass):
 
         # a.2. human capital
         par.grid_K = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
+        par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
+        par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
+        
+        shocks_w = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
+        par.grid_shock_Kw,par.prob_shock_Kw = shocks_w
+        shocks_m = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
+        par.grid_shock_Km,par.prob_shock_Km = shocks_m
 
         # a.3 power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)
@@ -522,4 +534,74 @@ class HouseholdModelClass(EconModelClass):
         sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
         
     # Make a function that takes sim and makes it into a polars dataframe
+    
+    # Estimation
+    def obj_func(self,theta,estpar,datamoms):
+        
+        # update parameters, impose bounds and return penalty
+        penalty = self.update_par(theta,estpar)
+        
+        # a. solve model
+        self.solve()
+
+        # b. simulate
+        self.simulate()
+
+        # c. calculate moments
+        moms = self.calc_moments()
+        
+        # d. go through all potential moments and calculate squared difference
+        diff = 0.0
+        for mom_name in datamoms.keys():
+            diff += (moms[mom_name] - datamoms[mom_name])**2
+            
+        return diff + penalty
+
+    def calc_moments(self):
+        # calculate all potential moments and store in ordered dict
+        sim = self.sim
+        
+        moms = OrderedDict()
+
+        # wages 
+        t_level = 0
+        Iw = ~np.isnan(sim.wage_w[t_level,:]) 
+        Im = ~np.isnan(sim.wage_m[t_level,:]) 
+        moms['wage_level_w'] = np.mean(np.log(sim.wage_w[t_level,Iw]))
+        moms['wage_level_m'] = np.mean(np.log(sim.wage_m[t_level,Im]))
+
+        for dt in (5,10,15):
+            Iw = ~np.isnan(sim.wage_w[t_level+dt,:]) & ~np.isnan(sim.wage_w[t_level+dt-1,:])
+            Im = ~np.isnan(sim.wage_m[t_level+dt,:]) & ~np.isnan(sim.wage_m[t_level+dt-1,:])
+            moms[('wage_growth_w',dt)] = np.mean(np.log(sim.wage_w[t_level+dt,Iw])-np.log(sim.wage_w[t_level+dt-1,Iw]))
+            moms[('wage_growth_m',dt)] = np.mean(np.log(sim.wage_m[t_level+dt,Im])-np.log(sim.wage_m[t_level+dt-1,Im]))
+
+        return moms
+
+    def update_par(self,theta,estpar):
+        """ update model parameters """
+
+        if theta is None: return 0
+        
+        names = list(estpar.keys())
+        
+        # a. clip and penalty
+        penalty = 0
+        for i in range(theta.size):
+            
+            # i. clip
+            lower = estpar[names[i]]['lower']
+            upper = estpar[names[i]]['upper']
+            if (lower != None) or (upper != None):
+                theta_clipped = np.clip(theta[i],lower,upper)
+            else:
+                theta_clipped = theta[i]
+
+            # ii. penalty
+            penalty += 10_000.0*(theta[i]-theta_clipped)**2
+
+            ## iii. set clipped value
+            setattr(self.par,names[i],theta_clipped)
+
+        return penalty
     
