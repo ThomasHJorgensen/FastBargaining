@@ -559,7 +559,7 @@ class HouseholdModelClass(EconModelClass):
         
         moms = OrderedDict()
 
-        # wages (should be stored in simulation. Now just use labor supply for illustration)
+        # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
         t_level = 0
         Iw = ~np.isnan(sim.lw[t_level,:]) 
         Im = ~np.isnan(sim.lm[t_level,:]) 
@@ -571,6 +571,18 @@ class HouseholdModelClass(EconModelClass):
             Im = ~np.isnan(sim.lm[t_level+dt,:]) & ~np.isnan(sim.lm[t_level+dt-1,:])
             moms[('wage_growth_w',dt)] = np.mean(np.log(sim.lw[t_level+dt,Iw])-np.log(sim.lw[t_level+dt-1,Iw]))
             moms[('wage_growth_m',dt)] = np.mean(np.log(sim.lm[t_level+dt,Im])-np.log(sim.lm[t_level+dt-1,Im]))
+
+        # Time allocation
+        annual_hours = 4160.0 # assuming 5*16*52=4160 annual hours)
+        moms['time_work_w'] = np.mean(sim.lw.ravel()) * annual_hours
+        moms['time_work_m'] = np.mean(sim.lm.ravel()) * annual_hours
+
+        moms['time_leisure_w'] = np.mean(sim.lw.ravel()) * annual_hours # UPDATE 
+        moms['time_leisure_m'] = np.mean(sim.lm.ravel()) * annual_hours # UPDATE
+        
+        # consumption
+        scale = 1.0 # Think about this because wage process is in same units... so perhaps the entire model should be in some $ unit
+        moms['consumption'] = np.mean(sim.Cw_tot.ravel())  * scale # UPDATE
 
         return moms
     
