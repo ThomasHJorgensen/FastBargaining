@@ -420,7 +420,6 @@ class HouseholdModelClass(EconModelClass):
         par.grid_Am = (1.0 - par.div_A_share) * par.grid_A
 
         # a.2. human capital
-        par.grid_K = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         

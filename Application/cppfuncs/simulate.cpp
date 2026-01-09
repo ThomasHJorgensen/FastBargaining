@@ -15,7 +15,7 @@ namespace sim {
         double Vw_couple_to_couple=0.0;
         double Vm_couple_to_couple=0.0;
         tools::interp_5d_2out(
-            par->grid_power,par->grid_love, par->grid_K, par->grid_K, par->grid_A, 
+            par->grid_power,par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A, 
             par->num_power,par->num_love, par->num_K, par->num_K, par->num_A, 
             &sol->Vw_couple_to_couple[idx_sol],&sol->Vm_couple_to_couple[idx_sol], 
             power_lag, love, Kw_lag, Km_lag, A_lag, 
@@ -23,8 +23,8 @@ namespace sim {
 
         // b. value of transitioning into singlehood
         auto idx_single = index::single(t,0,0,par);
-        double Vw_couple_to_single = tools::interp_2d(par->grid_K,par->grid_Aw,par->num_K,par->num_A,&sol->Vw_couple_to_single[idx_single],Kw_lag,Aw_lag);
-        double Vm_couple_to_single = tools::interp_2d(par->grid_K,par->grid_Am,par->num_K,par->num_A,&sol->Vm_couple_to_single[idx_single],Km_lag,Am_lag);
+        double Vw_couple_to_single = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,&sol->Vw_couple_to_single[idx_single],Kw_lag,Aw_lag);
+        double Vm_couple_to_single = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,&sol->Vm_couple_to_single[idx_single],Km_lag,Am_lag);
         
         // c. check participation constraints
         if ((Vw_couple_to_couple>=Vw_couple_to_single) & (Vm_couple_to_couple>=Vm_couple_to_single)){
@@ -66,8 +66,8 @@ namespace sim {
 
             // ii. find indifference point of unsatisfied partner:
             int j_love = tools::binary_search(0,par->num_love,par->grid_love,love); 
-            int j_Kw = tools::binary_search(0,par->num_K,par->grid_K,Kw_lag); 
-            int j_Km = tools::binary_search(0,par->num_K,par->grid_K,Km_lag); 
+            int j_Kw = tools::binary_search(0,par->num_K,par->grid_Kw,Kw_lag); 
+            int j_Km = tools::binary_search(0,par->num_K,par->grid_Km,Km_lag); 
             int j_A = tools::binary_search(0,par->num_A,par->grid_A,A_lag); 
             for (int iP=0; iP<par->num_power; iP++){ 
                 auto idx = 0;
@@ -76,7 +76,7 @@ namespace sim {
                 } else {
                     idx = index::couple(t,iP,0,0,0,0,par); 
                 }
-                V_power_vec[iP] = tools::_interp_4d_index(par->grid_love,par->grid_K,par->grid_K,par->grid_A,par->num_love,par->num_K,par->num_K,par->num_A,&V_couple_to_couple[idx],love,Kw_lag,Km_lag,A_lag,j_love,j_Kw,j_Km,j_A);
+                V_power_vec[iP] = tools::_interp_4d_index(par->grid_love,par->grid_Kw,par->grid_Km,par->grid_A,par->num_love,par->num_K,par->num_K,par->num_A,&V_couple_to_couple[idx],love,Kw_lag,Km_lag,A_lag,j_love,j_Kw,j_Km,j_A);
             }
             
             // iii. interpolate the power based on the value of single to find indifference-point. (flip the axis)
@@ -90,7 +90,7 @@ namespace sim {
             else{
                 // iv. find marital surplus of partner at this new power allocation
                 int j_power = tools::binary_search(0,par->num_power,par->grid_power,power);
-                double V_power_partner = tools::_interp_5d_index(par->grid_power,par->grid_love,par->grid_K,par->grid_K,par->grid_A, par->num_power,par->num_love,par->num_K,par->num_K,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,Kw_lag,Km_lag,A_lag,j_power,j_love,j_Kw,j_Km,j_A);
+                double V_power_partner = tools::_interp_5d_index(par->grid_power,par->grid_love,par->grid_Kw,par->grid_Km,par->grid_A, par->num_power,par->num_love,par->num_K,par->num_K,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,Kw_lag,Km_lag,A_lag,j_power,j_love,j_Kw,j_Km,j_A);
                 double S_partner = couple::calc_marital_surplus(V_power_partner,V_couple_to_single_partner);
                 
                 // v. check if partner is happy. If not divorce
@@ -171,11 +171,14 @@ namespace sim {
         // unpack
         double* cdf_partner_K = par->cdf_partner_Kw;
         double* uniform_partner_K = sim->draw_uniform_partner_Kw;
+        double* grid_K = par->grid_Kw;
+        double* grid_Kp = par->grid_Km;
         if (gender == man){
             cdf_partner_K = par->cdf_partner_Km;
             uniform_partner_K = sim->draw_uniform_partner_Km;
+            grid_K = par->grid_Km;
+            grid_Kp = par->grid_Kw;
         }
-        double* grid_K = par->grid_K;
 
         // a. random uniform number
         int index_sim = index::index2(i,t,par->simN,par->simT);
@@ -184,14 +187,14 @@ namespace sim {
         // b. find first index in human capital cdf above uniform draw.
         int index_iK = tools::binary_search(0,par->num_K,grid_K,K);
         for (int iKp=0; iKp<par->num_K; iKp++){
-            double cdf_Kp_cond = tools::interp_1d_index_delta(grid_K,par->num_K,cdf_partner_K,K, index_iK,par->num_K, iKp,1,0);
+            double cdf_Kp_cond = tools::interp_1d_index_delta(grid_K,par->num_K,cdf_partner_K,K, index_iK,par->num_K, iKp,1,0); // OBS: Make sure this is correct
             if(cdf_Kp_cond >= random){
-                return grid_K[iKp];
+                return grid_Kp[iKp];
             }
         }
 
         // c. return human capital value
-        return grid_K[par->num_K-1];
+        return grid_Kp[par->num_K-1]; // OBS: Is this right? Returning highest value if not found?
 
     }
 
@@ -292,7 +295,7 @@ namespace sim {
                         // total consumption
                         auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0,0,0, par);
                         double C_tot = tools::_interp_5d(
-                            par->grid_power,par->grid_love,par->grid_K, par->grid_K, par->grid_A,
+                            par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                             par->num_power,par->num_love,par->num_K, par->num_K, par->num_A,
                             &sol->Cd_tot_couple_to_couple[idx_sol],
                             power,love,Kw_lag,Km_lag,A_lag);
@@ -343,8 +346,8 @@ namespace sim {
                         double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 
                         // total consumption
-                        double Cw_tot = tools::interp_2d(par->grid_K,par->grid_Aw,par->num_K,par->num_A,sol_single_w,Kw_lag,Aw_lag);
-                        double Cm_tot = tools::interp_2d(par->grid_K,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
+                        double Cw_tot = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,sol_single_w,Kw_lag,Aw_lag);
+                        double Cm_tot = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
                         double Mw = single::resources_single(labor_w, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         double Mm = single::resources_single(labor_m, Km_lag, Am_lag, man, par);
                         if (Cw_tot > Mw){

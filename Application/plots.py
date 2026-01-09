@@ -27,7 +27,7 @@ class model_plotter():
             # Default grid names if not provided
             self.grid_names = {
                 't': 'grid_t', 
-                'iK': 'grid_K',
+                'iK': 'grid_Kw', # Female grid is used, so plots might be misleading if plotting male human capital on x-axis
                 'iP': 'grid_power', 
                 'iL': 'grid_love', 
                 'iA': 'grid_A',
@@ -227,6 +227,10 @@ class model_plotter():
             ax[i].legend()
             if self.titles:
                 self.add_title(ax[i], var)
+                
+        if grid == 'grid_Kw':
+            print("Warning: plotting over grid_Kw. Can't plot over grid_Km")
+
         
         return ax
     

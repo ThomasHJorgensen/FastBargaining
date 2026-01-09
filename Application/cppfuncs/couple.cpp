@@ -57,8 +57,8 @@ namespace couple {
             double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
             double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
             // obs: maybe use _interp_3d_2out here
-            double EVw_plus = tools::interp_3d(par->grid_K, par->grid_K, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, Kw_next, Km_next, A_next);
-            double EVm_plus = tools::interp_3d(par->grid_K, par->grid_K, par->grid_A, par->num_K, par->num_K, par->num_A, EVm_next, Kw_next, Km_next, A_next);
+            double EVw_plus = tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, Kw_next, Km_next, A_next);
+            double EVm_plus = tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVm_next, Kw_next, Km_next, A_next);
             Vw[0] += par->beta * EVw_plus;
             Vm[0] += par->beta * EVm_plus;
         }
@@ -178,8 +178,8 @@ namespace couple {
     {
         double labor_w = par->grid_l[ilw];
         double labor_m = par->grid_l[ilm];
-        double Kw = par->grid_K[iKw];
-        double Km = par->grid_K[iKm];
+        double Kw = par->grid_Kw[iKw];
+        double Km = par->grid_Km[iKm];
 
         auto idx_d_A = index::couple_d(t, ilw, ilm, iP, iL, iKw, iKm, 0, par);
 
@@ -194,7 +194,7 @@ namespace couple {
         double* Cd_tot = &sol->Cd_tot_couple_to_couple[idx_d_A];
 
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_resources = resources_couple(labor_w, labor_m, par->grid_K[iKw], par->grid_K[iKm], par->grid_A[iA], par);
+            double M_resources = resources_couple(labor_w, labor_m, par->grid_Kw[iKw], par->grid_Km[iKm], par->grid_A[iA], par);
 
             // starting values
             double starting_val = M_resources * 0.8;
@@ -295,12 +295,12 @@ namespace couple {
         sol_struct* sol, par_struct* par)
     {
 
-        double Kw = par->grid_K[iKw];
-        double Km = par->grid_K[iKm];
+        double Kw = par->grid_Kw[iKw];
+        double Km = par->grid_Km[iKm];
 
         // Loop over exogenous asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_K[iKw], par->grid_K[iKm], par->grid_A[iA], par);
+            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_Kw[iKw], par->grid_Km[iKm], par->grid_A[iA], par);
 
             // If liquidity constraint binds, consume all resources
             if (M_now < m_vec[0]) {
@@ -374,8 +374,8 @@ namespace couple {
         double* Md_pd = &sol->Md_pd[idx_A_pd];
         double* Vd_couple_to_couple_pd = &sol->Vd_couple_to_couple_pd[idx_A_pd];
 
-        double Kw = par->grid_K[iKw];
-        double Km = par->grid_K[iKm];
+        double Kw = par->grid_Kw[iKw];
+        double Km = par->grid_Km[iKm];
         double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
         double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
 
@@ -383,7 +383,7 @@ namespace couple {
         for (int iA_pd = 0; iA_pd < par->num_A_pd; ++iA_pd) {
             double A_next = par->grid_A_pd[iA_pd];
 
-            EmargUd_pd[iA_pd] = par->beta * tools::interp_3d(par->grid_K, par->grid_K, par->grid_A, par->num_K, par->num_K, par->num_A, EmargV_next, Kw_next, Km_next, A_next);
+            EmargUd_pd[iA_pd] = par->beta * tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EmargV_next, Kw_next, Km_next, A_next);
 
             if (strcmp(par->interp_method, "numerical") == 0) {
 
@@ -673,8 +673,8 @@ namespace couple {
     {
         int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
         int iL = tools::binary_search(0, par->num_love, par->grid_love, love);
-        int iKw = tools::binary_search(0, par->num_K, par->grid_K, Kw);
-        int iKm = tools::binary_search(0, par->num_K, par->grid_K, Km);
+        int iKw = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
+        int iKm = tools::binary_search(0, par->num_K, par->grid_Km, Km);
         int iA = tools::binary_search(0, par->num_A, par->grid_A, A);
 
         double maxV = -std::numeric_limits<double>::infinity();
@@ -684,9 +684,9 @@ namespace couple {
         for (int ilw = 0; ilw < par->num_l; ++ilw) {
             for (int ilm = 0; ilm < par->num_l; ++ilm) {
                 auto idx_interp = index::couple_d(t, ilw, ilm, 0, 0, 0, 0, 0, par);
-                double Vw_now = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+                double Vw_now = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                     par->num_power, par->num_love, par->num_K, par->num_K, par->num_A, &sol->Vwd_couple_to_couple[idx_interp], power, love, Kw, Km, A, iP, iL, iKw, iKm, iA);
-                double Vm_now = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+                double Vm_now = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                     par->num_power, par->num_love, par->num_K, par->num_K, par->num_A, &sol->Vmd_couple_to_couple[idx_interp], power, love, Kw, Km, A, iP, iL, iKw, iKm, iA);
                 double V_now = power * Vw_now + (1.0 - power) * Vm_now;
                 if (maxV < V_now) {

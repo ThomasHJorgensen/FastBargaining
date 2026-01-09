@@ -87,9 +87,10 @@ namespace single {
         double continuation = 0.0;
         if (t < (par->T - 1)) {
             double* grid_A = (gender == man) ? par->grid_Am : par->grid_Aw;
+            double* grid_K = (gender == man) ? par->grid_Km : par->grid_Kw;
             double A_next = M - C_tot;
             double K_next = utils::human_capital_transition(K, labor, par);
-            continuation = tools::interp_2d(par->grid_K, grid_A, par->num_K, par->num_A, V_next, K_next, A_next);
+            continuation = tools::interp_2d(grid_K, grid_A, par->num_K, par->num_A, V_next, K_next, A_next);
         }
 
         return util + par->beta * continuation;
@@ -178,6 +179,7 @@ namespace single {
         double* Qd = &sol->Qwd_single_to_single[idx_d_A];
         double* Vd = &sol->Vwd_single_to_single[idx_d_A];
         double* grid_A = par->grid_Aw;
+        double* grid_K = par->grid_Kw;
 
         if (gender == man) {
             Cd_tot = &sol->Cmd_tot_single_to_single[idx_d_A];
@@ -187,11 +189,12 @@ namespace single {
             Qd = &sol->Qmd_single_to_single[idx_d_A];
             Vd = &sol->Vmd_single_to_single[idx_d_A];
             grid_A = par->grid_Am;
+            grid_K = par->grid_Km;
         }
 
         for (int iA = 0; iA < par->num_A; iA++) {
             // resources depend on K and A
-            const double K = par->grid_K[iK];
+            const double K = grid_K[iK];
             const double A = grid_A[iA];
             double M_resources = resources_single(labor, K, A, gender, par);
 
@@ -285,7 +288,9 @@ namespace single {
         double labor = par->grid_l[il];
         double* grid_A = (gender == man) ? par->grid_Am : par->grid_Aw;
         double* grid_A_pd = (gender == man) ? par->grid_Am_pd : par->grid_Aw_pd;
-        const double K = par->grid_K[iK];
+        double* grid_K = (gender == man) ? par->grid_Km : par->grid_Kw;
+
+        const double K = grid_K[iK];
 
         // Loop over the common (exogenous) asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
@@ -350,6 +355,7 @@ namespace single {
         // 1. Setup: gender-specific pointers
         double* grid_A = par->grid_Aw;
         double* grid_A_pd = par->grid_Aw_pd;
+        double* grid_K = par->grid_Kw;
         double* grid_marg_u_single_for_inv = par->grid_marg_u_single_w_for_inv;
         double* V = sol->Vwd_single_to_single;
         double* EV = sol->EVw_start_as_single;
@@ -367,6 +373,7 @@ namespace single {
         if (gender == man) {
             grid_A = par->grid_Am;
             grid_A_pd = par->grid_Am_pd;
+            grid_K = par->grid_Km;
             grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
             V = sol->Vmd_single_to_single;
             EV = sol->EVm_start_as_single;
@@ -391,16 +398,16 @@ namespace single {
 
         // 2. EGM step
         int min_point_A = 0;
-        double K = par->grid_K[iK];
+        double K = grid_K[iK];
         double K_next = utils::human_capital_transition(K, par->grid_l[il], par);
-        int min_point_K = tools::binary_search(0, par->num_K, par->grid_K, K_next);
+        int min_point_K = tools::binary_search(0, par->num_K, grid_K, K_next);
 
         for (int iA_pd = 0; iA_pd < par->num_A_pd; iA_pd++) {
             double A_next = grid_A_pd[iA_pd];
 
             // expected marginal utility
             min_point_A = tools::binary_search(min_point_A, par->num_A, grid_A, A_next);
-            EmargU_pd[iA_pd] = par->beta * tools::_interp_2d(par->grid_K, grid_A, par->num_K, par->num_A, &margV[idx_next], K_next, A_next, min_point_K, min_point_A);
+            EmargU_pd[iA_pd] = par->beta * tools::_interp_2d(grid_K, grid_A, par->num_K, par->num_A, &margV[idx_next], K_next, A_next, min_point_K, min_point_A);
 
             // invert marginal utility
             if (strcmp(par->interp_method, "numerical") == 0) {
@@ -429,10 +436,11 @@ namespace single {
 
         //--- Set variables based on gender ---
         double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
+        double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
         double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
 
         // find nearest index once
-        int iK = tools::binary_search(0, par->num_K, par->grid_K, K);
+        int iK = tools::binary_search(0, par->num_K, grid_K, K);
         int iA = tools::binary_search(0, par->num_A, grid_A, A);
 
         double maxV = -std::numeric_limits<double>::infinity();
@@ -441,7 +449,7 @@ namespace single {
         //--- Loop over labor choices ---
         for (int il = 0; il < par->num_l; il++) {
             auto idx_d_A = index::single_d(t, il, 0, 0, par);
-            double V_now = tools::_interp_2d(par->grid_K, grid_A, par->num_K, par->num_A, &Vd_single_to_single[idx_d_A], K, A, iK, iA);
+            double V_now = tools::_interp_2d(grid_K, grid_A, par->num_K, par->num_A, &Vd_single_to_single[idx_d_A], K, A, iK, iA);
             if (V_now > maxV) {
                 maxV = V_now;
                 labor_index = il;
@@ -481,7 +489,8 @@ namespace single {
 
         // unpack
         int const &num_A = par->num_A;
-        double K = par->grid_K[iK];
+        double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
+        double K = grid_K[iK];
 
         // set index
         auto idx_A = index::single(t,iK,0,par);
@@ -635,15 +644,17 @@ namespace single {
         double* V_single_to_single = sol->Vw_single_to_single;
         double* V_single_to_couple = sol->Vw_single_to_couple;
         double* grid_A_single = par->grid_Aw;
+        double* grid_K_single = par->grid_Kw;
         if (gender == man){
             V_single_to_single = sol->Vm_single_to_single;
             V_single_to_couple = sol->Vm_single_to_couple;
             grid_A_single = par->grid_Am;
+            grid_K_single = par->grid_Km;
         }
         
         // Get indices
         int iA_single = state_single->iA;
-        int iK_single = state_single->iK;
+        int iK_single = state_single->iK; // OBS: return to this. Probably need to interpolate over K as well in single interpolation.
         int iL_couple = state_couple->iL;
         int iKw_couple = state_couple->iKw;
         int iKm_couple = state_couple->iKm;
@@ -652,8 +663,8 @@ namespace single {
 
         // compute missing indices lazily
         if (iL_couple == -1) iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
-        if (iKw_couple == -1) iKw_couple = tools::binary_search(0, par->num_K, par->grid_K, Kw);
-        if (iKm_couple == -1) iKm_couple = tools::binary_search(0, par->num_K, par->grid_K, Km);
+        if (iKw_couple == -1) iKw_couple = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
+        if (iKm_couple == -1) iKm_couple = tools::binary_search(0, par->num_K, par->grid_Km, Km);
         if (iA_couple == -1) iA_couple = tools::binary_search(0, par->num_A, par->grid_A, A_tot);
         if (iA_single == -1) iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
 
@@ -663,7 +674,7 @@ namespace single {
 
         // interpolate couple V_single_to_couple
     auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
-        double Vstc = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+        double Vstc = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                         par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
                         &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot,
                         iP, iL_couple, iKw_couple, iKm_couple, iA_couple);
@@ -684,8 +695,8 @@ namespace single {
         state_couple->Kw = Kw;
         state_couple->Km = Km;
         state_couple->A = Aw + Am;
-        state_couple->iKw = tools::binary_search(0, par->num_K, par->grid_K, Kw);
-        state_couple->iKm = tools::binary_search(0, par->num_K, par->grid_K, Km);
+        state_couple->iKw = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
+        state_couple->iKm = tools::binary_search(0, par->num_K, par->grid_Km, Km);
         state_couple->iA = tools::binary_search(0, par->num_A, par->grid_A, Aw + Am);
         if (iL_couple == -1) iL_couple = tools::binary_search(0, par->num_love, par->grid_love, love);
         state_couple->iL = iL_couple;
@@ -733,12 +744,14 @@ namespace single {
         double* prob_partner_A = par->prob_partner_A_w;
         double* prob_partner_K = par->prob_partner_Kw;
         double* grid_A = par->grid_Aw;
+        double* grid_K = par->grid_Kw;
         if (gender == man){
             V_single_to_single = sol->Vm_single_to_single;
             V_single_to_couple = sol->Vm_single_to_couple;
             prob_partner_A = par->prob_partner_A_m;
             prob_partner_K = par->prob_partner_Km;
             grid_A = par->grid_Am;
+            grid_K = par->grid_Km;
         }
         // // value of remaining single
         auto idx_single = index::single(t, iK, iA, par);
@@ -775,10 +788,11 @@ namespace single {
                             iKm = iK;
                         }
 
+                        // meet person with same level of wealth and human capital
                         const double Aw = grid_A[iAw];
                         const double Am = grid_A[iAm];
-                        const double Kw = par->grid_K[iKw]; 
-                        const double Km = par->grid_K[iKm];
+                        const double Kw = grid_K[iKw]; 
+                        const double Km = grid_K[iKm];
 
                         double power = calc_initial_bargaining_weight(t, love, Kw, Km, Aw, Am, sol, par, iL);
 
@@ -786,7 +800,7 @@ namespace single {
                         if (power >= 0.0) {
                             double A_tot = Aw + Am;
                             auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
-                            val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_K, par->grid_K, par->grid_A,
+                            val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                                                 par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
                                                 &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
                         } else {
