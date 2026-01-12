@@ -535,7 +535,7 @@ class HouseholdModelClass(EconModelClass):
     # Make a function that takes sim and makes it into a polars dataframe
     
     # Estimation
-    def obj_func(self,theta,estpar,datamoms):
+    def obj_func(self,theta,estpar,datamoms,do_print=False):
         
         # update parameters, impose bounds and return penalty
         penalty = self.update_par(theta,estpar)
@@ -553,8 +553,20 @@ class HouseholdModelClass(EconModelClass):
         diff = 0.0
         for mom_name in datamoms.keys():
             diff += (moms[mom_name] - datamoms[mom_name])**2
-            
+        
+        if do_print:
+            print('Parameters:')
+            for i in range(theta.size):
+                name = list(estpar.keys())[i]
+                print(f'  {name:<15}: {getattr(self.par,name):.4f} (init: {estpar[name]["guess"]:.4f})') 
+            print('Moments:')
+            for mom_name in datamoms.keys():
+                print(f'  {str(mom_name):<25}: sim: {moms[mom_name]:.4f}, data: {datamoms[mom_name]:.4f}')
+            print(f'Objective function value: {diff + penalty:.4f} (penalty: {penalty:.4f})')
+            print('-------------------------------------')    
+        
         return diff + penalty
+    
 
     def calc_moments(self):
         # calculate all potential moments and store in ordered dict
@@ -562,23 +574,36 @@ class HouseholdModelClass(EconModelClass):
         
         moms = OrderedDict()
 
-        # wages 
+        # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
         t_level = 0
-        Iw = ~np.isnan(sim.wage_w[t_level,:]) 
-        Im = ~np.isnan(sim.wage_m[t_level,:]) 
-        moms['wage_level_w'] = np.mean(np.log(sim.wage_w[t_level,Iw]))
-        moms['wage_level_m'] = np.mean(np.log(sim.wage_m[t_level,Im]))
+        Iw = ~np.isnan(sim.lw[t_level,:]) 
+        Im = ~np.isnan(sim.lm[t_level,:]) 
+        moms['wage_level_w'] = np.mean(np.log(sim.lw[t_level,Iw]))
+        moms['wage_level_m'] = np.mean(np.log(sim.lm[t_level,Im]))
 
         for dt in (5,10,15):
-            Iw = ~np.isnan(sim.wage_w[t_level+dt,:]) & ~np.isnan(sim.wage_w[t_level+dt-1,:])
-            Im = ~np.isnan(sim.wage_m[t_level+dt,:]) & ~np.isnan(sim.wage_m[t_level+dt-1,:])
-            moms[('wage_growth_w',dt)] = np.mean(np.log(sim.wage_w[t_level+dt,Iw])-np.log(sim.wage_w[t_level+dt-1,Iw]))
-            moms[('wage_growth_m',dt)] = np.mean(np.log(sim.wage_m[t_level+dt,Im])-np.log(sim.wage_m[t_level+dt-1,Im]))
+            Iw = ~np.isnan(sim.lw[t_level+dt,:]) & ~np.isnan(sim.lw[t_level+dt-1,:])
+            Im = ~np.isnan(sim.lm[t_level+dt,:]) & ~np.isnan(sim.lm[t_level+dt-1,:])
+            moms[('wage_growth_w',dt)] = np.mean(np.log(sim.lw[t_level+dt,Iw])-np.log(sim.lw[t_level+dt-1,Iw]))
+            moms[('wage_growth_m',dt)] = np.mean(np.log(sim.lm[t_level+dt,Im])-np.log(sim.lm[t_level+dt-1,Im]))
+
+        # Time allocation
+        annual_hours = 4160.0 # assuming 5*16*52=4160 annual hours)
+        moms['time_work_w'] = np.mean(sim.lw.ravel()) * annual_hours
+        moms['time_work_m'] = np.mean(sim.lm.ravel()) * annual_hours
+
+        moms['time_leisure_w'] = np.mean(sim.lw.ravel()) * annual_hours # UPDATE 
+        moms['time_leisure_m'] = np.mean(sim.lm.ravel()) * annual_hours # UPDATE
+        
+        # consumption
+        scale = 1.0 # Think about this because wage process is in same units... so perhaps the entire model should be in some $ unit
+        moms['consumption'] = np.mean(sim.Cw_tot.ravel())  * scale # UPDATE
 
         return moms
+    
 
     def update_par(self,theta,estpar):
-        """ update model parameters """
+        """ update model parameters and impose bounds with penalty """
 
         if theta is None: return 0
         
