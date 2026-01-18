@@ -7,19 +7,24 @@
 
 namespace sim {
 
-    double update_power(int t, double power_lag, double love,double A_lag,double Aw_lag,double Am_lag,sim_struct* sim, sol_struct* sol, par_struct* par){
+    double update_power(int t, double power_lag, double love, double Kw_lag, double Km_lag, double A_lag,double Aw_lag,double Am_lag,sim_struct* sim, sol_struct* sol, par_struct* par){
         
         // a. value of remaining a couple at current power
         double power = 1000.0; // nonsense value
-        auto idx_sol = index::couple(t,0,0,0,par); 
+        auto idx_sol = index::couple(t,0,0,0,0,0,par); 
         double Vw_couple_to_couple=0.0;
         double Vm_couple_to_couple=0.0;
-        tools::interp_3d_2out(par->grid_power,par->grid_love,par->grid_A, par->num_power,par->num_love,par->num_A, &sol->Vw_couple_to_couple[idx_sol],&sol->Vm_couple_to_couple[idx_sol], power_lag,love,A_lag, &Vw_couple_to_couple, &Vm_couple_to_couple);
+        tools::interp_5d_2out(
+            par->grid_power,par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A, 
+            par->num_power,par->num_love, par->num_K, par->num_K, par->num_A, 
+            &sol->Vw_couple_to_couple[idx_sol],&sol->Vm_couple_to_couple[idx_sol], 
+            power_lag, love, Kw_lag, Km_lag, A_lag, 
+            &Vw_couple_to_couple, &Vm_couple_to_couple);
 
         // b. value of transitioning into singlehood
-        auto idx_single = index::single(t,0,par);
-        double Vw_couple_to_single = tools::interp_1d(par->grid_Aw,par->num_A,&sol->Vw_couple_to_single[idx_single],Aw_lag);
-        double Vm_couple_to_single = tools::interp_1d(par->grid_Am,par->num_A,&sol->Vm_couple_to_single[idx_single],Am_lag);
+        auto idx_single = index::single(t,0,0,par);
+        double Vw_couple_to_single = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,&sol->Vw_couple_to_single[idx_single],Kw_lag,Aw_lag);
+        double Vm_couple_to_single = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,&sol->Vm_couple_to_single[idx_single],Km_lag,Am_lag);
         
         // c. check participation constraints
         if ((Vw_couple_to_couple>=Vw_couple_to_single) & (Vm_couple_to_couple>=Vm_couple_to_single)){
@@ -61,15 +66,17 @@ namespace sim {
 
             // ii. find indifference point of unsatisfied partner:
             int j_love = tools::binary_search(0,par->num_love,par->grid_love,love); 
+            int j_Kw = tools::binary_search(0,par->num_K,par->grid_Kw,Kw_lag); 
+            int j_Km = tools::binary_search(0,par->num_K,par->grid_Km,Km_lag); 
             int j_A = tools::binary_search(0,par->num_A,par->grid_A,A_lag); 
             for (int iP=0; iP<par->num_power; iP++){ 
                 auto idx = 0;
                 if(flip){
-                    idx = index::couple(t,par->num_power-1 - iP,0,0, par); // flipped for men
+                    idx = index::couple(t,par->num_power-1 - iP,0,0,0,0,par); // flipped for men
                 } else {
-                    idx = index::couple(t,iP,0,0, par); 
+                    idx = index::couple(t,iP,0,0,0,0,par); 
                 }
-                V_power_vec[iP] = tools::_interp_2d(par->grid_love,par->grid_A,par->num_love,par->num_A,&V_couple_to_couple[idx],love,A_lag,j_love,j_A);
+                V_power_vec[iP] = tools::_interp_4d_index(par->grid_love,par->grid_Kw,par->grid_Km,par->grid_A,par->num_love,par->num_K,par->num_K,par->num_A,&V_couple_to_couple[idx],love,Kw_lag,Km_lag,A_lag,j_love,j_Kw,j_Km,j_A);
             }
             
             // iii. interpolate the power based on the value of single to find indifference-point. (flip the axis)
@@ -83,7 +90,7 @@ namespace sim {
             else{
                 // iv. find marital surplus of partner at this new power allocation
                 int j_power = tools::binary_search(0,par->num_power,par->grid_power,power);
-                double V_power_partner = tools::_interp_3d(par->grid_power,par->grid_love,par->grid_A, par->num_power,par->num_love,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,A_lag,j_power,j_love,j_A);
+                double V_power_partner = tools::_interp_5d_index(par->grid_power,par->grid_love,par->grid_Kw,par->grid_Km,par->grid_A, par->num_power,par->num_love,par->num_K,par->num_K,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,Kw_lag,Km_lag,A_lag,j_power,j_love,j_Kw,j_Km,j_A);
                 double S_partner = couple::calc_marital_surplus(V_power_partner,V_couple_to_single_partner);
                 
                 // v. check if partner is happy. If not divorce
@@ -160,6 +167,38 @@ namespace sim {
 
     }
 
+    double draw_partner_human_capital(double K, int gender, int i, int t, sim_struct *sim, par_struct *par){
+        // unpack
+        double* cdf_partner_K = par->cdf_partner_Kw;
+        double* uniform_partner_K = sim->draw_uniform_partner_Kw;
+        double* grid_K = par->grid_Kw;
+        double* grid_Kp = par->grid_Km;
+        if (gender == man){
+            cdf_partner_K = par->cdf_partner_Km;
+            uniform_partner_K = sim->draw_uniform_partner_Km;
+            grid_K = par->grid_Km;
+            grid_Kp = par->grid_Kw;
+        }
+
+        // a. random uniform number
+        int index_sim = index::index2(i,t,par->simN,par->simT);
+        double random = uniform_partner_K[index_sim];
+
+        // b. find first index in human capital cdf above uniform draw.
+        int index_iK = tools::binary_search(0,par->num_K,grid_K,K);
+        for (int iKp=0; iKp<par->num_K; iKp++){
+            double cdf_Kp_cond = tools::interp_1d_index_delta(grid_K,par->num_K,cdf_partner_K,K, index_iK,par->num_K, iKp,1,0); // OBS: Make sure this is correct
+            if(cdf_Kp_cond >= random){
+                return grid_Kp[iKp];
+            }
+        }
+
+        // c. return human capital value
+        return grid_Kp[par->num_K-1]; // OBS: Is this right? Returning highest value if not found?
+
+    }
+
+
     void model(sim_struct *sim, sol_struct *sol, par_struct *par){
     
         // pre-compute intra-temporal optimalallocation
@@ -174,10 +213,14 @@ namespace sim {
                     double A_lag = 0.0;
                     double Aw_lag = 0.0;
                     double Am_lag = 0.0;
+                    double Kw_lag = 0.0;
+                    double Km_lag = 0.0;
                     bool   couple_lag = false;
                     double power_lag = 0.0;
                     double love = 0.0;
                     if (t==0){
+                        Kw_lag = sim->init_Kw[i];
+                        Km_lag = sim->init_Km[i];
                         A_lag = sim->init_A[i];
                         Aw_lag = sim->init_Aw[i];
                         Am_lag = sim->init_Am[i];
@@ -187,6 +230,8 @@ namespace sim {
                         sim->love[it] = love;
                     } else {
                         int it_1 = index::index2(i,t-1,par->simN,par->simT);
+                        Kw_lag = sim->Kw[it_1];
+                        Km_lag = sim->Km[it_1];
                         A_lag = sim->A[it_1];
                         Aw_lag = sim->Aw[it_1];
                         Am_lag = sim->Am[it_1];
@@ -199,7 +244,7 @@ namespace sim {
                     double power = 1000.0; // nonsense value
                     if (couple_lag) { // if start as couple
 
-                        power = update_power(t,power_lag,love,A_lag,Aw_lag,Am_lag,sim,sol,par);
+                        power = update_power(t,power_lag,love,Kw_lag,Km_lag,A_lag,Aw_lag,Am_lag,sim,sol,par);
         
                         if (power < 0.0) { // divorce is coded as -1
                             sim->couple[it] = false;
@@ -210,16 +255,19 @@ namespace sim {
                     } else { // if start as single - follow woman only
                         bool meet = (sim->draw_meet[it] < par->prob_repartner[t]);
                         if (meet){ // if meet a potential partner
+                            double Kp = draw_partner_human_capital(Kw_lag, woman, i,t, sim, par);
                             double Ap = draw_partner_assets(Aw_lag, woman, i,t, sim, par);
                             love = sim->draw_repartner_love[it]; // note: love draws on grid.
 
-                            power = single::calc_initial_bargaining_weight(t, love, Aw_lag, Ap, sol, par);
+                            power = single::calc_initial_bargaining_weight(t, love, Kw_lag, Kp, Aw_lag, Ap, sol, par);
 
                             if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
                                 sim->couple[it] = true;
 
                                 // set beginning-of-period couple states
                                 A_lag = Aw_lag + Ap;
+                                Kw_lag = Kw_lag;
+                                Km_lag = Kp;
                                 sim->love[it] = love;
                             } else { // if meet but do not agree to couple
                                 power = -1.0;
@@ -238,17 +286,21 @@ namespace sim {
                         // Find labor choice
                         int ilw = -1;
                         int ilm = -1;
-                        couple::find_interpolated_labor_index_couple(t, power, love, A_lag, &ilw, &ilm, sol, par);
+                        couple::find_interpolated_labor_index_couple(t, power, love, Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
                         double labor_w = par->grid_l[ilw];
                         double labor_m = par->grid_l[ilm];
                         sim->lw[it] = labor_w;
                         sim->lm[it] = labor_m;
 
                         // total consumption
-                        auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0, par);
-                        double C_tot = tools::interp_3d(par->grid_power,par->grid_love,par->grid_A,par->num_power,par->num_love,par->num_A ,&sol->Cd_tot_couple_to_couple[idx_sol],power,love,A_lag);
+                        auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0,0,0, par);
+                        double C_tot = tools::_interp_5d(
+                            par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+                            par->num_power,par->num_love,par->num_K, par->num_K, par->num_A,
+                            &sol->Cd_tot_couple_to_couple[idx_sol],
+                            power,love,Kw_lag,Km_lag,A_lag);
 
-                        double M_resources = couple::resources_couple(labor_w,labor_m,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double M_resources = couple::resources_couple(labor_w,labor_m,Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
                             C_tot = M_resources;
                         }
@@ -267,6 +319,8 @@ namespace sim {
                         sim->Qm[it] = Q;
 
                         // update end-of-period states
+                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                         sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
                         sim->Aw[it] = par->div_A_share * sim->A[it];
                         sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
@@ -279,23 +333,23 @@ namespace sim {
 
                     } else { // single
                         // find labor choice
-                        int ilw = single::find_interpolated_labor_index_single(t, Aw_lag, woman, sol, par);
-                        int ilm = single::find_interpolated_labor_index_single(t, Am_lag, man, sol, par);
+                        int ilw = single::find_interpolated_labor_index_single(t, Kw_lag, Aw_lag, woman, sol, par);
+                        int ilm = single::find_interpolated_labor_index_single(t, Km_lag, Am_lag, man, sol, par);
                         double labor_w = par->grid_l[ilw]; 
                         double labor_m = par->grid_l[ilm];
                         sim->lw[it] = labor_w;
                         sim->lm[it] = labor_m; 
 
-                        auto idx_sol_single_w = index::single_d(t,ilw,0,par);
-                        auto idx_sol_single_m = index::single_d(t,ilm,0,par);
+                        auto idx_sol_single_w = index::single_d(t,ilw,0,0,par);
+                        auto idx_sol_single_m = index::single_d(t,ilm,0,0,par);
                         double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
                         double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 
                         // total consumption
-                        double Cw_tot = tools::interp_1d(par->grid_Aw,par->num_A,sol_single_w,Aw_lag);
-                        double Cm_tot = tools::interp_1d(par->grid_Am,par->num_A,sol_single_m,Am_lag);
-                        double Mw = single::resources_single(labor_w, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                        double Mm = single::resources_single(labor_m, Am_lag, man, par);
+                        double Cw_tot = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,sol_single_w,Kw_lag,Aw_lag);
+                        double Cm_tot = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
+                        double Mw = single::resources_single(labor_w, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double Mm = single::resources_single(labor_m, Km_lag, Am_lag, man, par);
                         if (Cw_tot > Mw){
                             Cw_tot = Mw;
                         }
@@ -310,6 +364,8 @@ namespace sim {
                         precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
 
                         // update end-of-period states  
+                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                         sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
                         sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
                         sim->power[it] = -1.0;

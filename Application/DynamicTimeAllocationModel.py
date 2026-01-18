@@ -56,7 +56,8 @@ class HouseholdModelClass(EconModelClass):
         par.gamma_m = 0.1           # return to human capital   
 
         # a.1. human capital
-        par.delta = 0.05                   # depreciation
+        par.delta = 0.05   
+        par.phi_k = 1.0 # depreciation
         par.sigma_epsilon_w = 0.08         # std of shock to human capital
         par.sigma_epsilon_m = 0.08         # std of shock to human capital
 
@@ -107,6 +108,8 @@ class HouseholdModelClass(EconModelClass):
 
         # d. re-partnering
         par.p_meet = 0.0
+        par.prob_partner_Kw = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
+        par.prob_partner_Km = np.array([[np.nan]])
         par.prob_partner_A_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
         par.prob_partner_A_m = np.array([[np.nan]])
 
@@ -150,9 +153,8 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T, par.num_A)                        # single states: T, human capital, assets
-        shape_single_d = (par.T, par.num_l, par.num_A)                        # single states: T, human capital, assets
-        # shape_single_d = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single_d = (par.T, par.num_l, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
         sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
@@ -172,15 +174,16 @@ class HouseholdModelClass(EconModelClass):
         sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
 
         ### a.1.1. post-decision grids (EGM)
-        sol.EmargUwd_single_to_single_pd = np.zeros(par.num_A_pd)           # Expected marginal utility post-decision, woman single
-        sol.Cwd_tot_single_to_single_pd = np.zeros(par.num_A_pd)            # C for EGM, woman single 
-        sol.Mwd_single_to_single_pd = np.zeros(par.num_A_pd)                # Endogenous grid, woman single
-        sol.Vwd_single_to_single_pd = np.zeros(par.num_A_pd)                # Value of being single, post-decision
+        shape_single_egm = (par.T, par.num_l, par.num_K, par.num_A_pd)
+        sol.EmargUwd_single_to_single_pd = np.zeros(shape_single_egm)           # Expected marginal utility post-decision, woman single
+        sol.Cwd_tot_single_to_single_pd = np.zeros(shape_single_egm)            # C for EGM, woman single 
+        sol.Mwd_single_to_single_pd = np.zeros(shape_single_egm)                # Endogenous grid, woman single
+        sol.Vwd_single_to_single_pd = np.zeros(shape_single_egm)                # Value of being single, post-decision
 
-        sol.EmargUmd_single_to_single_pd = np.zeros(par.num_A_pd)          # Expected marginal utility post-decision, man single
-        sol.Cmd_totm_single_to_single_pd = np.zeros(par.num_A_pd)           # C for EGM, man single
-        sol.Mmd_single_to_single_pd = np.zeros(par.num_A_pd)               # Endogenous grid, man single
-        sol.Vmd_single_to_single_pd = np.zeros(par.num_A_pd)               # Value of being single, post-decision
+        sol.EmargUmd_single_to_single_pd = np.zeros(shape_single_egm)          # Expected marginal utility post-decision, man single
+        sol.Cmd_totm_single_to_single_pd = np.zeros(shape_single_egm)           # C for EGM, man single
+        sol.Mmd_single_to_single_pd = np.zeros(shape_single_egm)               # Endogenous grid, man single
+        sol.Vmd_single_to_single_pd = np.zeros(shape_single_egm)               # Value of being single, post-decision
 
         ## a.2. couple to single
         sol.Vw_couple_to_single = np.nan + np.ones(shape_single)        # Value marriage -> single
@@ -207,11 +210,13 @@ class HouseholdModelClass(EconModelClass):
 
         sol.EVw_cond_meet_partner = np.nan + np.ones(shape_single)
         sol.EVm_cond_meet_partner = np.nan + np.ones(shape_single)
+        sol.EVw_uncond_meet_partner = np.nan + np.ones(shape_single)
+        sol.EVm_uncond_meet_partner = np.nan + np.ones(shape_single)
 
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_A)
-        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_A)
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
         # shape_couple_d = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
@@ -237,11 +242,11 @@ class HouseholdModelClass(EconModelClass):
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
-        shape_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love,par.num_A_pd)
-        sol.EmargUd_pd = np.zeros(shape_egm)                     # Expected marginal utility post-decision
-        sol.Cd_tot_pd = np.zeros(shape_egm)                      # C for EGM
-        sol.Md_pd = np.zeros(shape_egm)                          # Endogenous grid
-        sol.Vd_couple_to_couple_pd = np.zeros(shape_egm)         # Value of being couple, post-decision
+        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
+        sol.EmargUd_pd = np.zeros(shape_couple_egm)                     # Expected marginal utility post-decision
+        sol.Cd_tot_pd = np.zeros(shape_couple_egm)                      # C for EGM
+        sol.Md_pd = np.zeros(shape_couple_egm)                          # Endogenous grid
+        sol.Vd_couple_to_couple_pd = np.zeros(shape_couple_egm)         # Value of being couple, post-decision
 
         ## b.2. single to couple
         sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
@@ -294,7 +299,7 @@ class HouseholdModelClass(EconModelClass):
         sol.pre_hmd_couple = np.ones(shape_pre) + np.nan
 
         # c.2. single
-        shape_pre_single = (par.num_l, par.num_Ctot)
+        shape_pre_single = (par.num_l, par.num_K, par.num_Ctot)
         sol.pre_Cwd_priv_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Cmd_priv_single = np.ones(shape_pre_single) + np.nan
         sol.pre_Cwd_inter_single = np.ones(shape_pre_single) + np.nan
@@ -322,6 +327,8 @@ class HouseholdModelClass(EconModelClass):
         sim.Cm_tot = np.nan + np.ones(shape_sim)
         sim.C_tot = np.nan + np.ones(shape_sim)
         
+        sim.Kw = np.nan + np.ones(shape_sim)
+        sim.Km = np.nan + np.ones(shape_sim)
         sim.A = np.nan + np.ones(shape_sim)
         sim.Aw = np.nan + np.ones(shape_sim)
         sim.Am = np.nan + np.ones(shape_sim)
@@ -342,6 +349,8 @@ class HouseholdModelClass(EconModelClass):
 
         ## d.3. initial distribution
         sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
+        sim.init_Kw = np.linspace(0.0,par.max_K*0.5,par.simN) 
+        sim.init_Km = np.linspace(0.0,par.max_K*0.5,par.simN) 
         sim.init_Aw = sim.init_A * par.div_A_share
         sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple = np.ones(par.simN,dtype=np.bool_)
@@ -388,9 +397,14 @@ class HouseholdModelClass(EconModelClass):
         shape_sim = (par.simN,par.simT)
 
         np.random.seed(par.seed)
+        # draw K shocks
+        sim.draw_shock_Kw = np.random.lognormal(size=shape_sim, mean=-0.5*par.sigma_Kw**2, sigma=par.sigma_Kw)
+        sim.draw_shock_Km = np.random.lognormal(size=shape_sim, mean=-0.5*par.sigma_Km**2, sigma=par.sigma_Km)
         sim.draw_love = np.random.normal(size=shape_sim)
         sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
 
+        sim.draw_uniform_partner_Kw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
+        sim.draw_uniform_partner_Km = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
         sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
         sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
 
@@ -414,10 +428,8 @@ class HouseholdModelClass(EconModelClass):
         par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         
-        shocks_w = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
-        par.grid_shock_Kw,par.prob_shock_Kw = shocks_w
-        shocks_m = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
-        par.grid_shock_Km,par.prob_shock_Km = shocks_m
+        par.grid_shock_Kw, par.grid_weight_Kw = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
+        par.grid_shock_Km, par.grid_weight_Km = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
 
         # a.3 power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)
@@ -469,7 +481,13 @@ class HouseholdModelClass(EconModelClass):
 
         # re-partering probabilities
         par.prob_repartner = par.p_meet*np.ones(par.T) # likelihood of meeting a partner
-
+        
+        if np.isnan(par.prob_partner_Kw[0,0]):
+            par.prob_partner_Kw = np.eye(par.num_K)
+    
+        if np.isnan(par.prob_partner_Km[0,0]):
+            par.prob_partner_Km = np.eye(par.num_K)
+       
         if np.isnan(par.prob_partner_A_w[0,0]):
             par.prob_partner_A_w = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
     
@@ -485,10 +503,10 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_love = np.append(par.prob_partner_love,0.0) # lost last point in diff
         # par.prob_partner_love = np.ones(par.num_love)/par.num_love # uniform
 
+        par.cdf_partner_Kw = np.cumsum(par.prob_partner_Kw,axis=1) # cumulative distribution to be used in simulation
+        par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
         par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
-
-
 
 
     def solve(self):

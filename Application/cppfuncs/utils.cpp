@@ -49,6 +49,10 @@ namespace utils {
         return exp(log_wage);
     }
 
+    double human_capital_transition(double K, double labor, par_struct* par) {
+        return ((1-par->delta) * K + par->phi_k * labor);
+    }
+
     // double cons_priv_single(double C_tot,int gender,par_struct *par){
     //     // closed form solution for intra-period problem of single.
     //     double rho = par->rho_w;
