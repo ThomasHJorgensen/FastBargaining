@@ -584,6 +584,8 @@ namespace couple {
     void calc_expected_value_couple(int t, int iP, int iL, int iKw, int iKm, int iA, double* Vw, double* Vm, double* EVw, double* EVm, sol_struct* /*sol*/, par_struct* par)
     {
         double love = par->grid_love[iL];
+        double Kw = par->grid_Kw[iKw];
+        double Km = par->grid_Km[iKm];
         auto idx = index::couple(t, iP, iL, iKw, iKm, iA, par);
         auto delta_love = index::couple(t, iP, 1, iKw, iKm, iA, par) - index::couple(t, iP, 0, iKw, iKm, iA, par);
 
@@ -591,16 +593,40 @@ namespace couple {
         double Eval_m = 0.0;
 
         for (int i_love_shock = 0; i_love_shock < par->num_shock_love; ++i_love_shock) {
-            double love_next = love + par->grid_shock_love[i_love_shock];
-            double weight = par->grid_weight_love[i_love_shock];
-            auto idx_love = tools::binary_search(0, par->num_love, par->grid_love, love_next);
-
-            auto idx_interp = index::couple(t, iP, 0, iKw, iKm, iA, par);
-            double Vw_now = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vw[idx_interp], love_next, idx_love, delta_love);
-            double Vm_now = tools::interp_1d_index_delta(par->grid_love, par->num_love, &Vm[idx_interp], love_next, idx_love, delta_love);
-
-            Eval_w += weight * Vw_now;
-            Eval_m += weight * Vm_now;
+            double love_shock = love + par->grid_shock_love[i_love_shock];
+            double weight_love = par->grid_weight_love[i_love_shock];
+            auto idx_love = tools::binary_search(0, par->num_love, par->grid_love, love_shock);
+            for (int iKw_shock = 0; iKw_shock < par->num_shock_K; ++iKw_shock) {
+                double Kw_shock = par->grid_shock_Kw[iKw_shock] * Kw;
+                double weight_Kw = par->grid_weight_Kw[iKw_shock];
+                auto idx_Kw = tools::binary_search(0, par->num_K, par->grid_Kw, Kw_shock);
+                for (int iKm_shock = 0; iKm_shock < par->num_shock_K; ++iKm_shock) {
+                    double Km_shock = par->grid_shock_Km[iKm_shock] * Km;
+                    double weight_Km = par->grid_weight_Km[iKm_shock];
+                    auto idx_Km = tools::binary_search(0, par->num_K, par->grid_Km, Km_shock);
+                    
+                    
+                    auto idx_interp = index::couple(t, iP, 0, 0, 0, 0, par);
+                    double Vw_now = tools::_interp_4d_index(
+                        par->grid_love, par->grid_Kw,par->grid_Km,par->grid_A,
+                        par->num_love, par->num_K, par->num_K, par->num_A,
+                        &Vw[idx_interp],
+                        love_shock, Kw_shock, Km_shock, par->grid_A[iA],
+                        idx_love, idx_Kw, idx_Km, iA
+                    );
+                    double Vm_now = tools::_interp_4d_index(
+                        par->grid_love, par->grid_Kw,par->grid_Km,par->grid_A,
+                        par->num_love, par->num_K, par->num_K, par->num_A,
+                        &Vm[idx_interp],
+                        love_shock, Kw_shock, Km_shock, par->grid_A[iA],
+                        idx_love, idx_Kw, idx_Km, iA
+                    );
+                    
+                    double weight = weight_love * weight_Kw * weight_Km;
+                    Eval_w += weight * Vw_now;
+                    Eval_m += weight * Vm_now;
+                }
+            }
         }
 
         EVw[idx] = Eval_w;

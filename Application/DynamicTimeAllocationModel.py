@@ -210,6 +210,8 @@ class HouseholdModelClass(EconModelClass):
 
         sol.EVw_cond_meet_partner = np.nan + np.ones(shape_single)
         sol.EVm_cond_meet_partner = np.nan + np.ones(shape_single)
+        sol.EVw_uncond_meet_partner = np.nan + np.ones(shape_single)
+        sol.EVm_uncond_meet_partner = np.nan + np.ones(shape_single)
 
 
         # b. couples
@@ -395,6 +397,9 @@ class HouseholdModelClass(EconModelClass):
         shape_sim = (par.simN,par.simT)
 
         np.random.seed(par.seed)
+        # draw K shocks
+        sim.draw_shock_Kw = np.random.lognormal(size=shape_sim, mean=-0.5*par.sigma_Kw**2, sigma=par.sigma_Kw)
+        sim.draw_shock_Km = np.random.lognormal(size=shape_sim, mean=-0.5*par.sigma_Km**2, sigma=par.sigma_Km)
         sim.draw_love = np.random.normal(size=shape_sim)
         sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
 
@@ -423,10 +428,8 @@ class HouseholdModelClass(EconModelClass):
         par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         
-        shocks_w = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
-        par.grid_shock_Kw,par.prob_shock_Kw = shocks_w
-        shocks_m = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
-        par.grid_shock_Km,par.prob_shock_Km = shocks_m
+        par.grid_shock_Kw, par.grid_weight_Kw = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
+        par.grid_shock_Km, par.grid_weight_Km = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
 
         # a.3 power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)

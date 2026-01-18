@@ -319,8 +319,8 @@ namespace sim {
                         sim->Qm[it] = Q;
 
                         // update end-of-period states
-                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par);
-                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par);
+                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                         sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
                         sim->Aw[it] = par->div_A_share * sim->A[it];
                         sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
@@ -364,8 +364,8 @@ namespace sim {
                         precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
 
                         // update end-of-period states  
-                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par);
-                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par);
+                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                         sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
                         sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
                         sim->power[it] = -1.0;

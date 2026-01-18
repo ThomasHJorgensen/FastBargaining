@@ -737,7 +737,18 @@ namespace single {
     }
     
     
-    double expected_value_cond_meet_partner(int t, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
+    double expected_value_cond_not_meet_partner(int t, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
+        // get index
+        auto idx = index::single(t, iK, iA, par);
+        
+        // get variables
+        double* V_single_to_single = (gender == man) ? sol->Vm_single_to_single : sol->Vw_single_to_single;
+
+        return V_single_to_single[idx];
+    
+    }
+    
+        double expected_value_cond_meet_partner(int t, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
         // unpack
         double* V_single_to_single = sol->Vw_single_to_single;
         double* V_single_to_couple = sol->Vw_single_to_couple;
@@ -803,6 +814,7 @@ namespace single {
                             val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                                                 par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
                                                 &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
+                            // OBS: actually onlu interpolation in power and A_tot is needed here
                         } else {
                             val = V_single_to_single[idx_single];
                         }
@@ -845,21 +857,92 @@ namespace single {
             EV_cond_meet_partner[iA] = EV_cond;
         }
 
-        if (par->do_egm){
-            // calc_marginal_value_single_Agrid_old(t, iK, gender, sol, par);
-            calc_marginal_value_single_Agrid(EV_start_as_single, EmargV_start_as_single, gender, sol, par);
-
-        }
+        
     }
+
+
+    
+    void calc_expected_value_single(int t, int iK, int iA, int gender, double* V, double* EV, sol_struct* /*sol*/, par_struct* par)
+    {
+
+        // get index
+        auto idx = index::single(t, iK, iA, par);
+
+        double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
+        double* grid_shock_K = (gender == woman) ? par->grid_shock_Kw : par->grid_shock_Km;
+        double* grid_weight_K = (gender == woman) ? par->grid_weight_Kw : par->grid_weight_Km;
+
+        double Eval = 0.0;
+        double delta_K = index::single(t, 1, iA, par) - index::single(t, 0, iA, par);
+
+        for (int iK_shock = 0; iK_shock < par->num_shock_K; ++iK_shock) {
+            double K_shock = grid_shock_K[iK_shock] * grid_K[iK];
+            double weight_K = grid_weight_K[iK_shock];
+            auto idx_K = tools::binary_search(0, par->num_K, grid_K, K_shock);
+                
+            auto idx_interp = index::single(t, 0, iA, par);
+            double V_now = tools::interp_1d_index_delta(grid_K, par->num_K, &V[idx_interp], K_shock, idx_K, delta_K);
+            
+            double weight = weight_K;
+            Eval += weight * V_now;
+        }
+
+        EV[idx] = Eval;
+    }
+
 
     void expected_value_start_single(int t, sol_struct* sol, par_struct* par){
 
-        #pragma omp parallel for collapse(2) num_threads(par->threads)
-        for (int iK = 0; iK < par->num_K; iK++) {
-            for (int sex = 0; sex < 2; sex++) {
-                int gender = (sex == 0) ? woman : man;
-                expected_value_start_single_Agrid(t, iK, gender, sol, par);
+        for (int sex = 0; sex < 2; sex++) {
+            int gender = (sex == 0) ? woman : man;
+            
+            // get variables
+            double* EV_start_as_single = (gender == man) ? sol->EVm_start_as_single : sol->EVw_start_as_single;
+            double* EV_cond_meet_partner = (gender == man) ? sol->EVm_cond_meet_partner : sol->EVw_cond_meet_partner;
+            double* EV_uncond_meet_partner = (gender == man) ? sol->EVm_uncond_meet_partner : sol->EVw_uncond_meet_partner;
+            double* V_single_to_single = (gender == man) ? sol->Vm_single_to_single : sol->Vw_single_to_single;
+            double* EmargV_start_as_single = (gender == man) ? sol->EmargVm_start_as_single : sol->EmargVw_start_as_single;
+            
+            const double p_meet = par->prob_repartner[t];
+            const bool repartnering = (par->p_meet > 0.0);
+            double EV_uncondtitional;
+            
+            #pragma omp parallel for collapse(2) num_threads(par->threads)
+            for (int iK = 0; iK < par->num_K; iK++) {
+                for (int iA = 0; iA < par->num_A; iA++) {
+                    auto idx = index::single(t,iK,iA,par);
+
+                    double EV_cond_not_meet = expected_value_cond_not_meet_partner(t, iK, iA, gender, sol, par);
+
+
+                    if (repartnering) {
+                        // Value conditional on meeting partner
+                        double EV_cond_meet = expected_value_cond_meet_partner(t, iK, iA, gender, sol, par);
+                        EV_cond_meet_partner[idx] = EV_cond_meet;
+                        
+                        // expected value of starting single
+                        EV_uncond_meet_partner[idx] = p_meet * EV_cond_meet + (1.0 - p_meet) * EV_cond_not_meet;
+                    } else {
+                        // expected value of starting single without repartnering
+                        EV_uncond_meet_partner[idx] = EV_cond_not_meet;
+                    }
+                }
             }
+            
+            // apply quadrature weights to get EV_start_as_single
+            for (int iK = 0; iK < par->num_K; iK++) {
+                for (int iA = 0; iA < par->num_A; iA++) {
+                    calc_expected_value_single(t, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par);
+                }
+
+                // compute marginal value for egm
+                if (par->do_egm){
+                    auto idx_A = index::single(t,iK,0,par);
+                    // calc_marginal_value_single_Agrid_old(t, iK, gender, sol, par);
+                    calc_marginal_value_single_Agrid(&EV_start_as_single[idx_A], &EmargV_start_as_single[idx_A], gender, sol, par);
+                }
+            }
+
         }
     }
 
