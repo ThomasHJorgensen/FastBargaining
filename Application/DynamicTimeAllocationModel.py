@@ -48,32 +48,32 @@ class HouseholdModelClass(EconModelClass):
         
         # a. income
         # par.inc_w = 1.0
-        par.mu_w = 0.5              # level
-        par.gamma_w = 0.1           # return to human capital
+        par.mu = 0.5              # level
+        par.gamma = 0.1           # return to human capital
 
         # par.inc_m = 1.0
-        par.mu_m = 0.5              # level
-        par.gamma_m = 0.1           # return to human capital   
+        par.mu_mult = 1.0              # level
+        par.gamma_mult = 1.0           # return to human capital   
 
         # a.1. human capital
-        par.delta = 0.05   
-        par.phi_k = 1.0 # depreciation
-        par.sigma_epsilon_w = 0.08         # std of shock to human capital
-        par.sigma_epsilon_m = 0.08         # std of shock to human capital
+        par.delta = 0.05 # depreciation  
+        par.phi_k = 1.0 # accumulation efficiency
+        par.sigma_epsilon = 0.08         # std of shock to human capital (women baseline)
+        par.sigma_epsilon_mult = 1.0
 
 
         # b. utility: gender-specific parameters
-        par.rho_w = 2.0        # CRRA
-        par.rho_m = 2.0        # CRRA
-        
-        par.phi_w = 0.05        # weight on labor supply
-        par.phi_m = 0.05        # weight on labor supply  
+        par.rho = 2.0        # CRRA (women baseline)
+        par.rho_mult = 1.0
 
-        par.eta_w = 0.5         # curvature on labor supply
-        par.eta_m = 0.5         # curvature on labor supply
+        par.phi = 0.05        # weight on labor supply (women baseline)
+        par.phi_mult = 1.0
 
-        par.lambda_w = 0.5      # weight on public good
-        par.lambda_m = 0.5      # weight on public good
+        par.eta = 0.5         # curvature on labor supply (women baseline)
+        par.eta_mult = 1.0
+
+        par.lambda_ = 0.5      # weight on public good (women baseline)
+        par.lambda_mult = 1.0
 
         # c. Home production
         par.alpha = 1.0         # output elasticity of hw relative to hm in housework aggregator
@@ -93,8 +93,8 @@ class HouseholdModelClass(EconModelClass):
         par.max_K = par.T*1.5
         
         par.num_shock_K = 5
-        par.sigma_Kw = 0.1
-        par.sigma_Km = 0.1
+        par.sigma_K = 0.1
+        par.sigma_K_mult = 1.0
         
         # c.3 bargaining power
         par.num_power = 21
@@ -114,7 +114,7 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_A_m = np.array([[np.nan]])
 
         # e. discrete choices
-        par.grid_l = np.array([0.00, 0.5, 0.75])
+        par.grid_l = np.array([0.00, 0.4, 0.6])
         par.num_l = len(par.grid_l)
 
 
@@ -136,18 +136,53 @@ class HouseholdModelClass(EconModelClass):
         par.seed = 9210
         par.simT = par.T
         par.simN = 50
+        par.init_couple_share = 1.0
 
         # h. misc
         par.threads = 8
         par.num_multistart = 1
         par.interp_method = 'linear'
         par.centered_gradient = True
+        
+    def setup_gender_parameters(self):
+        par = self.par
+        
+        # set
+        par.mu_w = par.mu
+        par.mu_m = par.mu * par.mu_mult
+        
+        par.gamma_w = par.gamma
+        par.gamma_m = par.gamma * par.gamma_mult
+        
+        # other scalar gendered parameters derived from baseline + multiplier
+        par.sigma_epsilon_w = par.sigma_epsilon
+        par.sigma_epsilon_m = par.sigma_epsilon * par.sigma_epsilon_mult
+
+        par.rho_w = par.rho
+        par.rho_m = par.rho * par.rho_mult
+
+        par.phi_w = par.phi
+        par.phi_m = par.phi * par.phi_mult
+
+        par.eta_w = par.eta
+        par.eta_m = par.eta * par.eta_mult
+
+        # keep python keyword safe name `lambda_` as baseline, derive `lambda_w`/`lambda_m`
+        par.lambda_w = par.lambda_
+        par.lambda_m = par.lambda_ * par.lambda_mult
+
+        par.sigma_Kw = par.sigma_K
+        par.sigma_Km = par.sigma_K * par.sigma_K_mult
+        
 
         
     def allocate(self):
         par = self.par
         sol = self.sol
         sim = self.sim
+
+        # derive gender-specific parameters
+        self.setup_gender_parameters()
 
         # setup grids
         self.setup_grids()
@@ -336,6 +371,12 @@ class HouseholdModelClass(EconModelClass):
         sim.power = np.nan + np.ones(shape_sim)
         sim.love = np.nan + np.ones(shape_sim)
 
+        # for simulated moments
+        sim.wage_w = np.nan + np.ones(shape_sim)
+        sim.wage_m = np.nan + np.ones(shape_sim)
+        sim.leisure_w = np.nan + np.ones(shape_sim)
+        sim.leisure_m = np.nan + np.ones(shape_sim)
+        
         # lifetime utility
         sim.util = np.nan + np.ones((par.simN, par.simT))
         sim.mean_lifetime_util = np.array([np.nan])
@@ -353,7 +394,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Km = np.linspace(0.0,par.max_K*0.5,par.simN) 
         sim.init_Aw = sim.init_A * par.div_A_share
         sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple = np.ones(par.simN,dtype=np.bool_)
+        sim.init_couple = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
         sim.init_love = np.zeros(par.simN)
         
@@ -573,34 +614,74 @@ class HouseholdModelClass(EconModelClass):
 
     def calc_moments(self):
         # calculate all potential moments and store in ordered dict
-        sim = self.sim
         
+        # a) setup
+        par = self.par
+        sim = self.sim
         moms = OrderedDict()
-
-        # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
-        t_level = 0
-        Iw = ~np.isnan(sim.lw[t_level,:]) 
-        Im = ~np.isnan(sim.lm[t_level,:]) 
-        moms['wage_level_w'] = np.mean(np.log(sim.lw[t_level,Iw]))
-        moms['wage_level_m'] = np.mean(np.log(sim.lm[t_level,Im]))
-
-        for dt in (5,10,15):
-            Iw = ~np.isnan(sim.lw[t_level+dt,:]) & ~np.isnan(sim.lw[t_level+dt-1,:])
-            Im = ~np.isnan(sim.lm[t_level+dt,:]) & ~np.isnan(sim.lm[t_level+dt-1,:])
-            moms[('wage_growth_w',dt)] = np.mean(np.log(sim.lw[t_level+dt,Iw])-np.log(sim.lw[t_level+dt-1,Iw]))
-            moms[('wage_growth_m',dt)] = np.mean(np.log(sim.lm[t_level+dt,Im])-np.log(sim.lm[t_level+dt-1,Im]))
-
-        # Time allocation
         annual_hours = 4160.0 # assuming 5*16*52=4160 annual hours)
-        moms['time_work_w'] = np.mean(sim.lw.ravel()) * annual_hours
-        moms['time_work_m'] = np.mean(sim.lm.ravel()) * annual_hours
+        money_metric = 1
+        
+        # b) samples
+        ## age groups
+        t_array = np.tile(np.arange(par.simT, dtype=int), (par.simN, 1))
+        age_25 = 0
+        age_25_to_34_mask = (t_array >= age_25) & (t_array <= age_25 + 9)
+        age_35_to_44_mask = (t_array >= age_25 + 10) & (t_array <= age_25 + 19)
+        
+        ## full time
+        full_time = par.grid_l[-1]
+        full_time_w_mask = (sim.lw >= full_time)
+        full_time_m_mask = (sim.lm >= full_time)
+        
+        # unemployment
+        unemployed = par.grid_l[0]
+        unemployed_w_mask = (sim.lw <= unemployed)
+        unemployed_m_mask = (sim.lm <= unemployed)
+        
+        ## couple
+        couple_mask = (sim.couple == 1)
+        ever_couple_mask = np.repeat(np.any(sim.couple == 1, axis=1, keepdims=True), par.simT, axis=1)
 
-        moms['time_leisure_w'] = np.mean(sim.lw.ravel()) * annual_hours # UPDATE 
-        moms['time_leisure_m'] = np.mean(sim.lm.ravel()) * annual_hours # UPDATE
+        # c) moments
+        # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
+        moms['wage_level_w_25_34'] = np.nanmean(sim.wage_w[age_25_to_34_mask & couple_mask & full_time_w_mask])
+        moms['wage_level_m_25_34'] = np.nanmean(sim.wage_m[age_25_to_34_mask & couple_mask & full_time_m_mask])
+        moms['wage_level_w_35_44'] = np.nanmean(sim.wage_w[age_35_to_44_mask & couple_mask & full_time_w_mask])
+        moms['wage_level_m_35_44'] = np.nanmean(sim.wage_m[age_35_to_44_mask & couple_mask & full_time_m_mask])
+
+        # employment rates
+        moms['employment_rate_w_35_44'] = np.nanmean(sim.lw[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
+        moms['employment_rate_m_35_44'] = np.nanmean(sim.lm[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
+        moms['work_hours_w'] = np.nanmean(sim.lw[couple_mask & ~unemployed_w_mask]) * annual_hours
+        moms['work_hours_m'] = np.nanmean(sim.lm[couple_mask & ~unemployed_m_mask]) * annual_hours
+        
+        # home production
+        moms['home_prod_w'] = np.nanmean(sim.hw[couple_mask  & ~unemployed_w_mask]) * annual_hours
+        moms['home_prod_m'] = np.nanmean(sim.hm[couple_mask  & ~unemployed_m_mask]) * annual_hours
         
         # consumption
-        scale = 1.0 # Think about this because wage process is in same units... so perhaps the entire model should be in some $ unit
-        moms['consumption'] = np.mean(sim.Cw_tot.ravel())  * scale # UPDATE
+        moms['consumption'] = np.nanmean(sim.C_tot)  * money_metric
+        
+        # marriage
+        moms['marriage_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask]) * 100.0
+        moms['divorce_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask & ever_couple_mask]==0) * 100.0
+        
+        # t_level = 0
+        # for dt in (5,10,15):
+        #     Iw = (~np.isnan(sim.wage_w[:,t_level+dt])) & (~np.isnan(sim.wage_w[:,t_level+dt-1]))
+        #     Im = (~np.isnan(sim.wage_m[:,t_level+dt])) & (~np.isnan(sim.wage_m[:,t_level+dt-1]))
+        #     moms[('wage_growth_w',dt)] = np.mean(np.log(sim.wage_w[Iw,t_level+dt])-np.log(sim.wage_w[Iw,t_level+dt-1]))
+        #     moms[('wage_growth_m',dt)] = np.mean(np.log(sim.wage_m[Im,t_level+dt])-np.log(sim.wage_m[Im,t_level+dt-1]))
+
+        # # Time allocation
+        # moms['time_work_w'] = np.nanmean(sim.lw.ravel()) * annual_hours
+        # moms['time_work_m'] = np.nanmean(sim.lm.ravel()) * annual_hours
+
+        # moms['time_leisure_w'] = np.nanmean(sim.leisure_w.ravel()) * annual_hours 
+        # moms['time_leisure_m'] = np.nanmean(sim.leisure_m.ravel()) * annual_hours
+        
+
 
         return moms
     

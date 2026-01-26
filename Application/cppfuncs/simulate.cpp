@@ -240,7 +240,7 @@ namespace sim {
                         love = sim->love[it];
                     } 
                     
-                    // i) Find transitions in couple/single status and calculate power 
+                    // a) Find transitions in couple/single status and calculate power 
                     double power = 1000.0; // nonsense value
                     if (couple_lag) { // if start as couple
 
@@ -280,7 +280,7 @@ namespace sim {
                         }
                     }
 
-                    // ii) Find choices and update states
+                    // b) Find choices and update states
                     if (sim->couple[it]){
 
                         // Find labor choice
@@ -291,6 +291,7 @@ namespace sim {
                         double labor_m = par->grid_l[ilm];
                         sim->lw[it] = labor_w;
                         sim->lm[it] = labor_m;
+
 
                         // total consumption
                         auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0,0,0, par);
@@ -372,12 +373,20 @@ namespace sim {
 
                     }
 
+                    // c) variables for moment simulation
+                    // i) wages
+                    sim->wage_w[it] = utils::wage(Kw_lag, woman, par);
+                    sim->wage_m[it] = utils::wage(Km_lag, man, par);
+
+                    // ii) leisure
+                    sim->leisure_w[it] = 1 - sim->hw[it] - sim->lw[it];
+                    sim->leisure_m[it] = 1 - sim->hm[it] - sim->lm[it];
+
                     // iii) utility of women
                     double love_now = 0.0;
                     if (sim->couple[it]){
                         love_now = sim->love[it];
                     }
-
                     double lh_w = sim->lw[it] + sim->hw[it];
                     sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
 
