@@ -389,9 +389,12 @@ class HouseholdModelClass(EconModelClass):
         self.allocate_draws()
 
         ## d.3. initial distribution
-        sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
-        sim.init_Kw = np.linspace(0.0,par.max_K*0.5,par.simN) 
-        sim.init_Km = np.linspace(0.0,par.max_K*0.5,par.simN) 
+        # sim.init_A = np.linspace(0.0,par.max_A*0.5,par.simN) 
+        # sim.init_Kw = np.linspace(0.0,par.max_K*0.5,par.simN) 
+        # sim.init_Km = np.linspace(0.0,par.max_K*0.5,par.simN) 
+        sim.init_A = np.zeros(par.simN)
+        sim.init_Kw = np.zeros(par.simN)
+        sim.init_Km = np.zeros(par.simN)
         sim.init_Aw = sim.init_A * par.div_A_share
         sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
@@ -558,8 +561,6 @@ class HouseholdModelClass(EconModelClass):
         # re-allocate to ensure new solution
         # TODO: find alternative to re-allocate every time model is solved
         self.allocate()
-        # self.setup_grids()
-        # self.allocate_draws() # easiest way. Could be faster, but matters less
 
         self.cpp.solve(sol,par)
 
