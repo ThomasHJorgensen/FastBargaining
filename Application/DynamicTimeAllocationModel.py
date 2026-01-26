@@ -558,6 +558,8 @@ class HouseholdModelClass(EconModelClass):
         # re-allocate to ensure new solution
         # TODO: find alternative to re-allocate every time model is solved
         self.allocate()
+        # self.setup_grids()
+        # self.allocate_draws() # easiest way. Could be faster, but matters less
 
         self.cpp.solve(sol,par)
 
@@ -579,7 +581,7 @@ class HouseholdModelClass(EconModelClass):
     # Make a function that takes sim and makes it into a polars dataframe
     
     # Estimation
-    def obj_func(self,theta,estpar,datamoms,do_print=False):
+    def obj_func(self,theta,estpar,datamoms,weights=None,do_print=False):
         
         # update parameters, impose bounds and return penalty
         penalty = self.update_par(theta,estpar)
@@ -594,9 +596,15 @@ class HouseholdModelClass(EconModelClass):
         moms = self.calc_moments()
         
         # d. go through all potential moments and calculate squared difference
-        diff = 0.0
+        sqdiff = 0.0
         for mom_name in datamoms.keys():
-            diff += (moms[mom_name] - datamoms[mom_name])**2
+            diff = moms[mom_name] - datamoms[mom_name]
+            
+            if weights is not None:
+                if mom_name in weights:
+                    diff *= weights[mom_name]
+            
+            sqdiff += diff*diff
         
         if do_print:
             print('Parameters:')
@@ -606,11 +614,11 @@ class HouseholdModelClass(EconModelClass):
             print('Moments:')
             for mom_name in datamoms.keys():
                 print(f'  {str(mom_name):<25}: sim: {moms[mom_name]:.4f}, data: {datamoms[mom_name]:.4f}')
-            print(f'Objective function value: {diff + penalty:.4f} (penalty: {penalty:.4f})')
-            print('-------------------------------------')    
-        
-        return diff + penalty
-    
+            print(f'Objective function value: {sqdiff + penalty:.4f} (penalty: {penalty:.4f})')
+            print('-------------------------------------')
+
+        return sqdiff + penalty
+
 
     def calc_moments(self):
         # calculate all potential moments and store in ordered dict
@@ -628,6 +636,7 @@ class HouseholdModelClass(EconModelClass):
         age_25 = 0
         age_25_to_34_mask = (t_array >= age_25) & (t_array <= age_25 + 9)
         age_35_to_44_mask = (t_array >= age_25 + 10) & (t_array <= age_25 + 19)
+        age_25_to_41_mask = (t_array >= age_25) & (t_array <= age_25 + 16)
         
         ## full time
         full_time = par.grid_l[-1]
@@ -653,12 +662,12 @@ class HouseholdModelClass(EconModelClass):
         # employment rates
         moms['employment_rate_w_35_44'] = np.nanmean(sim.lw[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
         moms['employment_rate_m_35_44'] = np.nanmean(sim.lm[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
-        moms['work_hours_w'] = np.nanmean(sim.lw[couple_mask & ~unemployed_w_mask]) * annual_hours
-        moms['work_hours_m'] = np.nanmean(sim.lm[couple_mask & ~unemployed_m_mask]) * annual_hours
+        moms['work_hours_w'] = np.nanmean(sim.lw[age_25_to_41_mask]) * annual_hours
+        moms['work_hours_m'] = np.nanmean(sim.lm[age_25_to_41_mask]) * annual_hours
         
         # home production
-        moms['home_prod_w'] = np.nanmean(sim.hw[couple_mask  & ~unemployed_w_mask]) * annual_hours
-        moms['home_prod_m'] = np.nanmean(sim.hm[couple_mask  & ~unemployed_m_mask]) * annual_hours
+        moms['home_prod_w'] = np.nanmean(sim.hw[age_25_to_41_mask]) * annual_hours
+        moms['home_prod_m'] = np.nanmean(sim.hm[age_25_to_41_mask]) * annual_hours
         
         # consumption
         moms['consumption'] = np.nanmean(sim.C_tot)  * money_metric
