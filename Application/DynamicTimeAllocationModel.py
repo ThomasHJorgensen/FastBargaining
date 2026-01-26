@@ -48,32 +48,32 @@ class HouseholdModelClass(EconModelClass):
         
         # a. income
         # par.inc_w = 1.0
-        par.mu_w = 0.5              # level
-        par.gamma_w = 0.1           # return to human capital
+        par.mu = 0.5              # level
+        par.gamma = 0.1           # return to human capital
 
         # par.inc_m = 1.0
-        par.mu_m = 0.5              # level
-        par.gamma_m = 0.1           # return to human capital   
+        par.mu_mult = 1.0              # level
+        par.gamma_mult = 1.0           # return to human capital   
 
         # a.1. human capital
         par.delta = 0.05 # depreciation  
         par.phi_k = 1.0 # accumulation efficiency
-        par.sigma_epsilon_w = 0.08         # std of shock to human capital
-        par.sigma_epsilon_m = 0.08         # std of shock to human capital
+        par.sigma_epsilon = 0.08         # std of shock to human capital (women baseline)
+        par.sigma_epsilon_mult = 1.0
 
 
         # b. utility: gender-specific parameters
-        par.rho_w = 2.0        # CRRA
-        par.rho_m = 2.0        # CRRA
-        
-        par.phi_w = 0.05        # weight on labor supply
-        par.phi_m = 0.05        # weight on labor supply  
+        par.rho = 2.0        # CRRA (women baseline)
+        par.rho_mult = 1.0
 
-        par.eta_w = 0.5         # curvature on labor supply
-        par.eta_m = 0.5         # curvature on labor supply
+        par.phi = 0.05        # weight on labor supply (women baseline)
+        par.phi_mult = 1.0
 
-        par.lambda_w = 0.5      # weight on public good
-        par.lambda_m = 0.5      # weight on public good
+        par.eta = 0.5         # curvature on labor supply (women baseline)
+        par.eta_mult = 1.0
+
+        par.lambda_ = 0.5      # weight on public good (women baseline)
+        par.lambda_mult = 1.0
 
         # c. Home production
         par.alpha = 1.0         # output elasticity of hw relative to hm in housework aggregator
@@ -93,8 +93,8 @@ class HouseholdModelClass(EconModelClass):
         par.max_K = par.T*1.5
         
         par.num_shock_K = 5
-        par.sigma_Kw = 0.1
-        par.sigma_Km = 0.1
+        par.sigma_K = 0.1
+        par.sigma_K_mult = 1.0
         
         # c.3 bargaining power
         par.num_power = 21
@@ -143,12 +143,46 @@ class HouseholdModelClass(EconModelClass):
         par.num_multistart = 1
         par.interp_method = 'linear'
         par.centered_gradient = True
+        
+    def setup_gender_parameters(self):
+        par = self.par
+        
+        # set
+        par.mu_w = par.mu
+        par.mu_m = par.mu * par.mu_mult
+        
+        par.gamma_w = par.gamma
+        par.gamma_m = par.gamma * par.gamma_mult
+        
+        # other scalar gendered parameters derived from baseline + multiplier
+        par.sigma_epsilon_w = par.sigma_epsilon
+        par.sigma_epsilon_m = par.sigma_epsilon * par.sigma_epsilon_mult
+
+        par.rho_w = par.rho
+        par.rho_m = par.rho * par.rho_mult
+
+        par.phi_w = par.phi
+        par.phi_m = par.phi * par.phi_mult
+
+        par.eta_w = par.eta
+        par.eta_m = par.eta * par.eta_mult
+
+        # keep python keyword safe name `lambda_` as baseline, derive `lambda_w`/`lambda_m`
+        par.lambda_w = par.lambda_
+        par.lambda_m = par.lambda_ * par.lambda_mult
+
+        par.sigma_Kw = par.sigma_K
+        par.sigma_Km = par.sigma_K * par.sigma_K_mult
+        
 
         
     def allocate(self):
         par = self.par
         sol = self.sol
         sim = self.sim
+
+        # derive gender-specific parameters
+        self.setup_gender_parameters()
 
         # setup grids
         self.setup_grids()
@@ -586,7 +620,7 @@ class HouseholdModelClass(EconModelClass):
         sim = self.sim
         moms = OrderedDict()
         annual_hours = 4160.0 # assuming 5*16*52=4160 annual hours)
-        money_metric = 1_000 # 1000 USD is normalized to 1 unit in the model
+        money_metric = 1
         
         # b) samples
         ## age groups
@@ -617,8 +651,8 @@ class HouseholdModelClass(EconModelClass):
         moms['wage_level_m_35_44'] = np.nanmean(sim.wage_m[age_35_to_44_mask & couple_mask & full_time_m_mask])
 
         # employment rates
-        moms['employment_rate_w_35_44'] = np.nanmean(sim.lw[age_35_to_44_mask & couple_mask] > unemployed)
-        moms['employment_rate_m_35_44'] = np.nanmean(sim.lm[age_35_to_44_mask & couple_mask] > unemployed)
+        moms['employment_rate_w_35_44'] = np.nanmean(sim.lw[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
+        moms['employment_rate_m_35_44'] = np.nanmean(sim.lm[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
         moms['work_hours_w'] = np.nanmean(sim.lw[couple_mask & ~unemployed_w_mask]) * annual_hours
         moms['work_hours_m'] = np.nanmean(sim.lm[couple_mask & ~unemployed_m_mask]) * annual_hours
         
@@ -630,8 +664,8 @@ class HouseholdModelClass(EconModelClass):
         moms['consumption'] = np.nanmean(sim.C_tot)  * money_metric
         
         # marriage
-        moms['marriage_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask])
-        moms['divorce_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask & ever_couple_mask]==0)
+        moms['marriage_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask]) * 100.0
+        moms['divorce_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask & ever_couple_mask]==0) * 100.0
         
         # t_level = 0
         # for dt in (5,10,15):
