@@ -606,6 +606,16 @@ class HouseholdModelClass(EconModelClass):
                     diff *= weights[mom_name]
             
             sqdiff += diff*diff
+            
+        # e. add additional penalty if employment share is too high
+        cutoff = 93.0
+        penalty_moms = 0.0
+        for mom_name in ('employment_rate_w_35_44', 'employment_rate_m_35_44'):
+            if mom_name in moms:
+                if moms[mom_name] > cutoff:
+                    penalty_moms += 10.0 * (moms[mom_name] - cutoff) ** 2
+
+        objective = sqdiff + penalty + penalty_moms
         
         if do_print:
             print('Parameters:')
@@ -615,10 +625,10 @@ class HouseholdModelClass(EconModelClass):
             print('Moments:')
             for mom_name in datamoms.keys():
                 print(f'  {str(mom_name):<25}: sim: {moms[mom_name]:.4f}, data: {datamoms[mom_name]:.4f}')
-            print(f'Objective function value: {sqdiff + penalty:.4f} (penalty: {penalty:.4f})')
+            print(f'Objective function value: {objective:.4f} (penalty: {penalty:.4f}, {penalty_moms:.4f})')
             print('-------------------------------------')
 
-        return sqdiff + penalty
+        return objective
 
 
     def calc_moments(self):
