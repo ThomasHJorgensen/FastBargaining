@@ -41,6 +41,17 @@ namespace utils {
         // return pow(inner, 1.0/sub);
     }
 
+    double Q_single(double C_inter, double h,int gender, par_struct *par){
+        double weight = par->alpha;
+        if (gender == man) {
+            weight = 1.0 - par->alpha;
+        }
+
+        double h_agg = weight * h;
+        
+        return pow(C_inter + 1.0e-4, par->omega) * pow(h_agg, 1.0 - par->omega);
+    }
+
     double wage(double K, int gender, par_struct* par) {
         double log_wage = par->mu_w + par->gamma_w*K;
         if (gender == man) {
