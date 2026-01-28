@@ -37,11 +37,12 @@ namespace precompute{
         double c = C_tot - c_priv;
 
         double Q = 0.0;
-        if(gender==woman){
-            Q = utils::Q(c, h, 0, solver_data->par);
-        } else {
-            Q = utils::Q(c, 0, h, solver_data->par);
-        }
+        // if(gender==woman){
+        //     Q = utils::Q(c, h, 0, solver_data->par);
+        // } else {
+        //     Q = utils::Q(c, 0, h, solver_data->par);
+        // }
+        Q = utils::Q_single(c, h, gender, solver_data->par);
 
         // clip and penalty
         double penalty = 0.0;
@@ -104,12 +105,12 @@ namespace precompute{
         *h = x[1];
         *C_inter = C_tot - *C_priv;
         *Q = 0.0;
-        if(gender==woman){
-            *Q = utils::Q(*C_inter, *h, 0, par);
-        } else {
-            *Q = utils::Q(*C_inter, 0, *h, par);
-        }
-
+        // if(gender==woman){
+        //     *Q = utils::Q(*C_inter, *h, 0, par);
+        // } else {
+        //     *Q = utils::Q(*C_inter, 0, *h, par);
+        // }
+        *Q = utils::Q_single(*C_inter, *h, gender, par);
 
         nlopt_destroy(opt);
         delete solver_data;
@@ -136,12 +137,13 @@ namespace precompute{
             *C_priv = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &C_priv_grid[idx], C_tot, iC);
             *h = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot, iC);
             *C_inter = C_tot - *C_priv;
-            if(gender==man){
-                *Q = utils::Q(*C_inter, *h, 0, par);
-            } 
-            else {
-                *Q = utils::Q(*C_inter, 0, *h, par);
-            }
+            // if(gender==man){
+            //     *Q = utils::Q(*C_inter, *h, 0, par);
+            // } 
+            // else {
+            //     *Q = utils::Q(*C_inter, 0, *h, par);
+            // }
+            *Q = utils::Q_single(*C_inter, *h, gender, par);
         } 
         else { // solve intraperiod problem for single numerically
             double start_c_priv = C_tot/2.0;
@@ -206,7 +208,8 @@ namespace precompute{
 
         // home production
         double C_inter = C_tot - Cw_priv - Cm_priv;
-        double Q = utils::Q(C_inter, hw, hm, par);
+        // double Q = utils::Q(C_inter, hw, hm, par);
+        double Q = utils::Q_couple(C_inter, hw, hm, par);
 
         // clip and penalty
         double penalty = 0.0;
@@ -312,7 +315,8 @@ namespace precompute{
         *hm = x[3];
 
         *C_inter = C_tot - *Cw_priv - *Cm_priv;
-        *Q = utils::Q(*C_inter, *hw, *hm, par);
+        // *Q = utils::Q(*C_inter, *hw, *hm, par);
+        *Q = utils::Q_couple(*C_inter, *hw, *hm, par);
 
         // free memory
         nlopt_destroy(opt);
@@ -347,7 +351,8 @@ namespace precompute{
                 *hm = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hmd_couple[idx], power, C_tot, iP_, iC);
             }
             *C_inter = C_tot - *Cw_priv - *Cm_priv;
-            *Q = utils::Q(*C_inter, *hw, *hm, par);
+            // *Q = utils::Q(*C_inter, *hw, *hm, par);
+            *Q = utils::Q_couple(*C_inter, *hw, *hm, par);
         } else {
             double lw = par->grid_l[ilw];
             double lm = par->grid_l[ilm];

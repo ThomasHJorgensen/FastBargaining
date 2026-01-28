@@ -45,6 +45,7 @@ class HouseholdModelClass(EconModelClass):
         par.div_cost = 0.0
 
         par.Day = 1.0 # time in day
+        par.available_hours = 5.0*16.0 # assuming 5*16*52=4160 annual hours)
         
         # a. income
         # par.inc_w = 1.0
@@ -78,8 +79,8 @@ class HouseholdModelClass(EconModelClass):
         # c. Home production
         par.alpha = 1.0         # output elasticity of hw relative to hm in housework aggregator
         par.zeta = 0.5             # Substitution paremeter between hw and hm in housework aggregator
-        par.omega = 0.5         # weight on market purchased good in home production function      
-        
+        par.omega = 0.5         # substitution between home produced good and market purchased good
+        par.pi = 0.5            # weight on marked purchased goods in home production
 
         # c. state variables
         par.T = 10
@@ -733,3 +734,41 @@ class HouseholdModelClass(EconModelClass):
 
         return penalty
     
+    def global_search(self,estpars, datamoms,weights,num_points,num_guess=1,folder_name='calibrate',draw_method='halton',do_print=False):
+        from calibrate import draw
+        
+        num_params = len(estpars)
+    
+        # draw numbers in [0,1] in all dimensions
+        w = draw.generate_initial(num_params,num_points,method=draw_method)
+        
+        # construct associated parameter values from bounds and unit interval numbers
+        lower = np.array([value['lower'] for value in estpars.values()])
+        upper = np.array([value['upper'] for value in estpars.values()])
+        names = list(estpars.keys())
+        
+        param_guess_mat = w*lower + (1-w)*upper #(num_points,num_params)
+        
+        # setup log-file
+        with open(f'{folder_name}/parameter_search.txt', 'w') as f:
+                pass
+            
+        # loop through all parameter vectors
+        objs = np.nan + np.ones(num_points)
+        obj_min = 1e10
+        i_min = -1
+        for i in range(num_points):
+            theta = param_guess_mat[i,:]
+            objs[i] = self.obj_func(theta,estpars, datamoms,weights, do_print=do_print)
+
+            if objs[i] < obj_min:
+                obj_min = objs[i]   
+                i_min = i
+                
+            with open(f'{folder_name}/parameter_search.txt', 'a+') as f:
+                f.write(f'\nguess {i} of {num_points}\n')
+                for x,name in zip(theta,names): f.write(f' {name:22s} = {x:8.4f}\n')
+                f.write(f' obj. = {objs[i]:.8f} (best :{obj_min:.6f})\n')
+                
+        Imin = np.argsort(objs) 
+        return param_guess_mat[Imin[0:num_guess],:]

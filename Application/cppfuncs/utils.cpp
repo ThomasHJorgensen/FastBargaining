@@ -17,8 +17,9 @@ namespace utils {
             lambda = par->lambda_m;
         }
 
-        // note: the log(Q + 0.00001) is to avoid log(0) in case Q=0
-        return pow(C_priv, 1-rho)/(1-rho) - phi*pow(lh, 1+1/eta)/(1 + 1/eta) + lambda*log(Q + 0.00001) + love;
+        // note: the log(Q + 0.01) is to avoid log(0) in case Q=0
+        double leisure = (1.0 - lh)*par->available_hours;
+        return pow(C_priv, 1-rho)/(1-rho) + phi*pow(leisure, 1-eta)/(1 - eta) + lambda*log(Q + 0.01) + love;
     }
 
     double util_couple(double Cw_priv, double Cm_priv, double lhw, double lhm, double Q, double power, int iL,par_struct* par){
@@ -30,26 +31,38 @@ namespace utils {
         return power*Uw + (1.0-power)*Um;
     }
 
-    double Q(double C_inter, double hw, double hm, par_struct *par){
+    // double Q(double C_inter, double hw, double hm, par_struct *par){
 
-        double h_agg = pow(par->alpha*pow(hw, par->zeta) + pow(hm, par->zeta), 1/par->zeta);
-        return pow(C_inter + 1.0e-4, par->omega) * pow(h_agg, 1.0 - par->omega);
+    //     double h_agg = pow(par->alpha*pow(hw, par->zeta) + pow(hm, par->zeta), 1/par->zeta);
+    //     return pow(C_inter + 1.0e-4, par->omega) * pow(h_agg, 1.0 - par->omega);
 
-        // // alternative formulation - useful for testing, but should remain commented out
-        // double sub = 0.5;
-        // double inner = (pow(h_agg, sub) + pow(C_inter, sub));
-        // return pow(inner, 1.0/sub);
+    //     // // alternative formulation - useful for testing, but should remain commented out
+    //     // double sub = 0.5;
+    //     // double inner = (pow(h_agg, sub) + pow(C_inter, sub));
+    //     // return pow(inner, 1.0/sub);
+    // }
+    double CES(double C, double h_agg, par_struct *par){
+        double agg = par->pi*pow(C , par->omega) + (1.0 - par->pi)*pow(h_agg, par->omega);
+        return pow(agg, 1.0/par->omega);
+    
     }
-
     double Q_single(double C_inter, double h,int gender, par_struct *par){
         double weight = par->alpha;
         if (gender == man) {
-            weight = 1.0 - par->alpha;
+            weight = 2.0 - par->alpha;
         }
 
-        double h_agg = weight * h;
+        double h_agg = weight * h * par->available_hours;
         
-        return pow(C_inter + 1.0e-4, par->omega) * pow(h_agg, 1.0 - par->omega);
+        return CES(C_inter, h_agg, par);
+    }
+
+    double Q_couple(double C_inter, double hw, double hm, par_struct *par){
+        double weight_w = par->alpha;
+        double weight_m = 2.0 - par->alpha;
+        double h_agg = pow(weight_w * pow(hw*par->available_hours, par->zeta) + weight_m * pow(hm*par->available_hours, par->zeta), 1.0/par->zeta);
+        
+        return CES(C_inter, h_agg, par);
     }
 
     double wage(double K, int gender, par_struct* par) {
