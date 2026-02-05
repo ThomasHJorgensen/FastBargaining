@@ -369,7 +369,7 @@ namespace sim {
                         sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                         sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
                         sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
-                        sim->power[it] = -1.0;
+                        // sim->power[it] = -1.0;
 
                     }
 
