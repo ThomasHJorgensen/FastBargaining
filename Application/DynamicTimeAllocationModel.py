@@ -209,8 +209,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Cmd_inter_single_to_single = np.ones(shape_single_d) + np.nan
         sol.Qwd_single_to_single = np.ones(shape_single_d) + np.nan                # home produced good, single
         sol.Qmd_single_to_single = np.ones(shape_single_d) + np.nan
-        sol.lwd_single_to_single = np.ones(shape_single_d, dtype = int) + np.nan   # labor supply, single
-        sol.lmd_single_to_single = np.ones(shape_single_d, dtype = int) + np.nan
+        sol.lwd_single_to_single = np.ones(shape_single_d) + np.nan   # labor supply, single
+        sol.lmd_single_to_single = np.ones(shape_single_d) + np.nan
         sol.hwd_single_to_single = np.ones(shape_single_d) + np.nan                # housework, single
         sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
 
@@ -229,8 +229,8 @@ class HouseholdModelClass(EconModelClass):
         ## a.2. couple to single
         sol.Vw_couple_to_single = np.nan + np.ones(shape_single)        # Value marriage -> single
         sol.Vm_couple_to_single = np.nan + np.ones(shape_single)
-        sol.lw_couple_to_single = np.nan + np.ones(shape_single, dtype = int)   # labor supply marriage -> single
-        sol.lm_couple_to_single = np.nan + np.ones(shape_single, dtype = int)
+        sol.lw_couple_to_single = np.nan + np.ones(shape_single)   # labor supply marriage -> single
+        sol.lm_couple_to_single = np.nan + np.ones(shape_single)
 
         sol.Cw_priv_couple_to_single = np.nan + np.ones(shape_single)   # Private consumption marriage -> single
         sol.Cm_priv_couple_to_single = np.nan + np.ones(shape_single)
@@ -270,8 +270,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Cmd_priv_couple_to_couple = np.ones(shape_couple_d) + np.nan
         sol.Cd_inter_couple_to_couple = np.ones(shape_couple_d) + np.nan             # intermediate good, couple
         sol.Qd_couple_to_couple = np.ones(shape_couple_d) + np.nan                 # home produced good, couple
-        sol.lwd_couple_to_couple = np.ones(shape_couple_d, dtype = int) + np.nan   # labor supply, couple
-        sol.lmd_couple_to_couple = np.ones(shape_couple_d, dtype = int) + np.nan
+        sol.lwd_couple_to_couple = np.ones(shape_couple_d) + np.nan   # labor supply, couple
+        sol.lmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
         sol.hwd_couple_to_couple = np.ones(shape_couple_d) + np.nan                # housework, couple
         sol.hmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
         sol.Cd_tot_couple_to_couple = np.ones(shape_couple_d) + np.nan
@@ -279,7 +279,7 @@ class HouseholdModelClass(EconModelClass):
         sol.Sw = np.ones(par.num_power) + np.nan                                 # surplus of marriage
         sol.Sm = np.ones(par.num_power) + np.nan
 
-        sol.power_idx = np.zeros(shape_couple, dtype = int)                     # index of bargaining weight (approx)
+        sol.power_idx = np.zeros(shape_couple, dtype = np.int_)                     # index of bargaining weight (approx)
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
@@ -293,8 +293,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
         sol.Vm_single_to_couple = np.nan + np.ones(shape_couple)
         sol.V_single_to_couple = -np.inf + np.ones(shape_couple) 
-        sol.lw_single_to_couple = np.nan + np.ones(shape_couple, dtype = int)   # labor supply single -> marriage
-        sol.lm_single_to_couple = np.nan + np.ones(shape_couple, dtype = int)   # labor supply single -> marriage
+        sol.lw_single_to_couple = np.nan + np.ones(shape_couple)   # labor supply single -> marriage
+        sol.lm_single_to_couple = np.nan + np.ones(shape_couple)   # labor supply single -> marriage
 
         sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)
         sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)
@@ -323,8 +323,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Cm_priv_start_as_couple = np.ones(shape_couple) + np.nan
         sol.C_inter_start_as_couple = np.ones(shape_couple) + np.nan              # intermediate good
         sol.Q_start_as_couple = np.ones(shape_couple) + np.nan                  # home produced good
-        sol.lw_start_as_couple = np.ones(shape_couple, dtype = int) + np.nan    # labor supply
-        sol.lm_start_as_couple = np.ones(shape_couple, dtype = int) + np.nan
+        sol.lw_start_as_couple = np.ones(shape_couple) + np.nan    # labor supply
+        sol.lm_start_as_couple = np.ones(shape_couple) + np.nan
         sol.hw_start_as_couple = np.ones(shape_couple) + np.nan                 # housework
         sol.hm_start_as_couple = np.ones(shape_couple) + np.nan
         
@@ -416,8 +416,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Vm_single_to_single = np.ones(shape_single) - np.inf
         sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
         sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
-        sol.lw_single_to_single = np.ones(shape_single, dtype = int) + np.nan
-        sol.lm_single_to_single = np.ones(shape_single, dtype = int) + np.nan
+        sol.lw_single_to_single = np.ones(shape_single) + np.nan
+        sol.lm_single_to_single = np.ones(shape_single) + np.nan
         # sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
         # sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
         # sol.hw_single_to_single = np.ones(shape_single) + np.nan
@@ -432,8 +432,8 @@ class HouseholdModelClass(EconModelClass):
         sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
         sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
         sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.lw_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
-        sol.lm_couple_to_couple = np.ones(shape_couple, dtype = int) + np.nan
+        sol.lw_couple_to_couple = np.ones(shape_couple) + np.nan
+        sol.lm_couple_to_couple = np.ones(shape_couple) + np.nan
         # sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
         # sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
         # sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
