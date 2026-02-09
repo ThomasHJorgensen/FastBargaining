@@ -75,12 +75,19 @@ namespace utils {
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {
+        double K_next = 0;
         if (labor == par->grid_l[0]) {
-            return K + par->delta;
+            K_next = K + par->delta;
         } else if (labor == par->grid_l[1]) {
-            return K + par->phi_k;
+            K_next = K + par->phi_k;
         } else {
-            return K + 1;
+            K_next = K + 1.0;
+        }
+        
+        if (K_next >= 0.0) {
+            return K_next;
+        } else {
+            return 0.0;
         }
         // return ((1-par->delta) * K + par->phi_k * labor);
     }
