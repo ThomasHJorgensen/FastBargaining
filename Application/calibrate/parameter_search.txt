@@ -1,35 +1,25 @@
 
 guess 0 of 5
- eta                    =   2.5500
- eta_mult               =   2.1667
- phi                    =   3.2200
- phi_mult               =   2.6429
- obj. = nan (best :10000000000.000000)
+ available_hours        = 2500.5000
+ full_time_hours        =   0.6700
+ obj. = 156669552566.16714478 (best :10000000000.000000)
 
 guess 1 of 5
- eta                    =   3.2750
- eta_mult               =   1.3333
- phi                    =   2.4400
- phi_mult               =   2.2857
- obj. = 998.16615957 (best :998.166160)
+ available_hours        = 3750.2500
+ full_time_hours        =   0.3400
+ obj. = 352557287182.15844727 (best :10000000000.000000)
 
 guess 2 of 5
- eta                    =   1.8250
- eta_mult               =   2.7222
- phi                    =   1.6600
- phi_mult               =   1.9286
- obj. = 1955.16022918 (best :998.166160)
+ available_hours        = 1250.7500
+ full_time_hours        =   0.8900
+ obj. = 39150461086.15844727 (best :10000000000.000000)
 
 guess 3 of 5
- eta                    =   3.6375
- eta_mult               =   1.8889
- phi                    =   0.8800
- phi_mult               =   1.5714
- obj. = 1360.77288335 (best :998.166160)
+ available_hours        = 4375.1250
+ full_time_hours        =   0.5600
+ obj. = 479889395666.15838623 (best :10000000000.000000)
 
 guess 4 of 5
- eta                    =   2.1875
- eta_mult               =   1.0556
- phi                    =   3.8440
- phi_mult               =   1.2143
- obj. = 596.66799438 (best :596.667994)
+ available_hours        = 1875.6250
+ full_time_hours        =   0.2300
+ obj. = 88113926434.15844727 (best :10000000000.000000)

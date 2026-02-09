@@ -63,7 +63,7 @@ namespace precompute{
         return - val + penalty;
     }
 
-    void solve_intraperiod_single(double* C_priv, double* h, double* C_inter, double* Q, double C_tot, double l, double* start_c_priv, double* start_h, int gender, par_struct *par) {
+    void solve_intraperiod_single(double* C_priv, double* h, double* C_inter, double* Q, double C_tot, double labor, double* start_c_priv, double* start_h, int gender, par_struct *par) {
         // setup numerical solver
         solver_precompute_single_struct* solver_data = new solver_precompute_single_struct;
 
@@ -75,7 +75,7 @@ namespace precompute{
 
         // conditional on total consumption C_tot and labor supply l
         solver_data->C_tot = C_tot;
-        solver_data->l = l;
+        solver_data->l = labor;
         solver_data->par = par;
         solver_data->gender;
         nlopt_set_min_objective(opt, objfunc_precompute_single, solver_data);
@@ -87,7 +87,7 @@ namespace precompute{
         lb[0] = 1.0e-6;
         lb[1] = 1.0e-6;
         ub[0] = solver_data->C_tot;
-        ub[1] = par->Day - l;
+        ub[1] = 1 - labor;
 
         // may adjust bounds if not working properly
         nlopt_set_lower_bounds(opt, lb);
@@ -147,7 +147,7 @@ namespace precompute{
         } 
         else { // solve intraperiod problem for single numerically
             double start_c_priv = C_tot/2.0;
-            double start_h = (par->Day - l)/2.0;
+            double start_h = (1 - l)/2.0;
             solve_intraperiod_single(C_priv, h, C_inter, Q, C_tot, l, &start_c_priv, &start_h, gender, par);
         }
     }
@@ -231,13 +231,13 @@ namespace precompute{
         }
 
         // time constraint
-        if(hlw >= par->Day){
-            penalty += 1000.0*(hlw - par->Day)*(hlw - par->Day);
-            hw = par->Day - lw - 1.0e-6;
+        if(hlw >= 1){
+            penalty += 1000.0*(hlw - 1)*(hlw - 1);
+            hw = 1 - lw - 1.0e-6;
         }
-        if(hlm >= par->Day){
-            penalty += 1000.0*(hlm - par->Day)*(hlm - par->Day);
-            hm = par->Day - lm - 1.0e-6;
+        if(hlm >= 1){
+            penalty += 1000.0*(hlm - 1)*(hlm - 1);
+            hm = 1 - lm - 1.0e-6;
         }
 
         // consumption constraint
@@ -289,10 +289,10 @@ namespace precompute{
         ub[1] = C_tot; 
 
         lb[2] = 1.0e-6; // hw
-        ub[2] = par->Day - lw;
+        ub[2] = 1 - lw;
 
         lb[3] = 1.0e-6; // hm
-        ub[3] = par->Day - lm;
+        ub[3] = 1 - lm;
 
         // may need to adjust in the cases where l = 1
 
@@ -360,8 +360,8 @@ namespace precompute{
 
             double start_Cw_priv = C_tot/3.0;
             double start_Cm_priv = C_tot/3.0;
-            double start_hw = (par->Day - (lw-1e-6))/2.0;
-            double start_hm = (par->Day - (lm-1e-6))/2.0;
+            double start_hw = (1 - (lw-1e-6))/2.0;
+            double start_hm = (1 - (lm-1e-6))/2.0;
 
             solve_intraperiod_couple(Cw_priv, Cm_priv, hw, hm, C_inter, Q, C_tot, lw, lm, power_val, par,
                 start_Cw_priv, start_Cm_priv, start_hw, start_hm);
@@ -413,8 +413,8 @@ namespace precompute{
                 
                 double l = par->grid_l[il];
                 
-                double start_hw = (par->Day - (l-1e-6))/2.0;
-                double start_hm = (par->Day - (l-1e-6))/2.0;
+                double start_hw = (1 - (l-1e-6))/2.0;
+                double start_hm = (1 - (l-1e-6))/2.0;
                 
                 #pragma omp for collapse(1)
                 for (int iC=par->num_Ctot - 1; iC>=0; iC--){  //solve in descending order to have correct starting values for h in first grid point
@@ -441,8 +441,8 @@ namespace precompute{
                         double lm = par->grid_l[ilm];
                         double power = par->grid_power[iP];
                         
-                        double start_hw = (par->Day - (lw-1e-6))/2.0;
-                        double start_hm = (par->Day - (lm-1e-6))/2.0;
+                        double start_hw = (1 - (lw-1e-6))/2.0;
+                        double start_hm = (1 - (lm-1e-6))/2.0;
                         
                         #pragma omp for collapse(1)
                         for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point

@@ -18,8 +18,8 @@ namespace utils {
         }
 
         // note: the log(Q + 0.01) is to avoid log(0) in case Q=0
-        double leisure = (1.0 - lh)*par->available_hours;
-        return pow(C_priv, 1-rho)/(1-rho) + phi*pow(leisure, 1-eta)/(1 - eta) + lambda*log(Q + 0.01) + love;
+        double leisure = (1.0 - lh) * par->available_hours;
+        return pow(C_priv, 1.0-rho)/(1.0-rho) + phi*pow(leisure, 1.0-eta)/(1.0 - eta) + lambda*log(Q + 0.5) + love;
     }
 
     double util_couple(double Cw_priv, double Cm_priv, double lhw, double lhm, double Q, double power, int iL,par_struct* par){
@@ -42,7 +42,7 @@ namespace utils {
     //     // return pow(inner, 1.0/sub);
     // }
     double CES(double C, double h_agg, par_struct *par){
-        double agg = par->pi*pow(C , par->omega) + (1.0 - par->pi)*pow(h_agg, par->omega);
+        double agg = (1.0 - par->pi)*pow(C , par->omega) + par->pi*pow(h_agg, par->omega);
         return pow(agg, 1.0/par->omega);
     
     }
@@ -70,11 +70,19 @@ namespace utils {
         if (gender == man) {
             log_wage = par->mu_m + par->gamma_m*K;
         }
-        return exp(log_wage);
+        double full_time = par->grid_l[par->num_l-1];
+        return exp(log_wage) / full_time; // normalize by full-time
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {
-        return ((1-par->delta) * K + par->phi_k * labor);
+        if (labor == par->grid_l[0]) {
+            return K + par->delta;
+        } else if (labor == par->grid_l[1]) {
+            return K + par->phi_k;
+        } else {
+            return K + 1;
+        }
+        // return ((1-par->delta) * K + par->phi_k * labor);
     }
 
     // double cons_priv_single(double C_tot,int gender,par_struct *par){

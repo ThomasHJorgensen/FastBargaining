@@ -35,7 +35,7 @@ namespace couple {
         double wage_w = utils::wage(Kw, woman, par);
         double wage_m = utils::wage(Km, man, par);
 
-        return par->R * A + wage_w * labor_w + wage_m * labor_m;
+        return par->R * A + wage_w * labor_w * par->available_hours * (1.0 - par->tax_rate) + wage_m * labor_m * par->available_hours * (1.0 - par->tax_rate);
     }
 
     double value_of_choice_couple_to_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm,

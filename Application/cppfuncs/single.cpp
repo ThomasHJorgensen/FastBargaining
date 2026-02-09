@@ -69,7 +69,7 @@ namespace single {
         if (labor == 0.0) return par->R * A + RESOURCES_EPS;
 
         double w = utils::wage(K, gender, par);
-        return par->R * A + w * labor;
+        return par->R * A + w * labor * par->available_hours * (1.0 - par->tax_rate);
     }
 
     double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q,

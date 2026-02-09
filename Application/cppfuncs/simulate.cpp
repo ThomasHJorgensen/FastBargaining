@@ -379,15 +379,15 @@ namespace sim {
                     sim->wage_m[it] = utils::wage(Km_lag, man, par);
 
                     // ii) leisure
-                    sim->leisure_w[it] = 1 - sim->hw[it] - sim->lw[it];
-                    sim->leisure_m[it] = 1 - sim->hm[it] - sim->lm[it];
+                    sim->leisure_w[it] = (1.0 - sim->hw[it] - sim->lw[it]);
+                    sim->leisure_m[it] = (1.0 - sim->hm[it] - sim->lm[it]);
 
                     // iii) utility of women
                     double love_now = 0.0;
                     if (sim->couple[it]){
                         love_now = sim->love[it];
                     }
-                    double lh_w = sim->lw[it] + sim->hw[it];
+                    double lh_w = (sim->lw[it] + sim->hw[it]);
                     sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
 
                 } // t
