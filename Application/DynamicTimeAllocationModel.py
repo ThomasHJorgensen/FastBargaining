@@ -147,6 +147,10 @@ class HouseholdModelClass(EconModelClass):
         par.interp_method = 'linear'
         par.centered_gradient = True
         
+        # types
+        par.num_S = 1 # number of types
+        par.grid_S = np.arange(par.num_S) # type grid
+        
     def setup_gender_parameters(self):
         par = self.par
         
@@ -194,8 +198,8 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T, par.num_K, par.num_A)                        # single states: T, human capital, assets
-        shape_single_d = (par.T, par.num_l, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single = (par.T, par.num_S, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single_d = (par.T, par.num_l, par.num_S, par.num_K, par.num_A)                        # single states: T, human capital, assets
 
         # a.1. single to single
         sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
@@ -215,7 +219,7 @@ class HouseholdModelClass(EconModelClass):
         sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
 
         ### a.1.1. post-decision grids (EGM)
-        shape_single_egm = (par.T, par.num_l, par.num_K, par.num_A_pd)
+        shape_single_egm = (par.T, par.num_l, par.num_S,par.num_K, par.num_A_pd)
         sol.EmargUwd_single_to_single_pd = np.zeros(shape_single_egm)           # Expected marginal utility post-decision, woman single
         sol.Cwd_tot_single_to_single_pd = np.zeros(shape_single_egm)            # C for EGM, woman single 
         sol.Mwd_single_to_single_pd = np.zeros(shape_single_egm)                # Endogenous grid, woman single

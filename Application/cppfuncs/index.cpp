@@ -44,14 +44,14 @@ namespace index {
     }
 
     // Single-state indexing now uses (t, il, iK, iA)
-    inline long long int single(long long int t, long long int iK, long long int iA, par_struct* par){
-        return index3(t, iK, iA, par->T, par->num_K, par->num_A);
+    inline long long int single(long long int t, long long int iS, long long int iK, long long int iA, par_struct* par){
+        return index4(t, iS, iK, iA, par->T, par->num_S, par->num_K, par->num_A);
     }
-    inline long long int single_d(long long int t, long long int il, long long int iK, long long int iA, par_struct* par){
-        return index4(t, il, iK, iA, par->T, par->num_l, par->num_K, par->num_A);
+    inline long long int single_d(long long int t, long long int il, long long int iS, long long int iK, long long int iA, par_struct* par){
+        return index5(t, il, iS, iK, iA, par->T, par->num_l, par->num_S, par->num_K, par->num_A);
     }
-    inline long long int single_pd(long long int t, long long int il, long long int iK, long long int iA_pd, par_struct* par){
-        return index4(t, il, iK, iA_pd, par->T, par->num_l, par->num_K, par->num_A_pd);
+    inline long long int single_pd(long long int t, long long int il, long long int iS, long long int iK, long long int iA_pd, par_struct* par){
+        return index5(t, il, iS, iK, iA_pd, par->T, par->num_l, par->num_S, par->num_K, par->num_A_pd);
     }
 
     struct index_couple_struct {
@@ -89,6 +89,7 @@ namespace index {
     typedef struct{
             // state levels
             int t;
+            int iS;
             double K;
             double A;
 

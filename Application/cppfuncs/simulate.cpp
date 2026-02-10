@@ -7,7 +7,7 @@
 
 namespace sim {
 
-    double update_power(int t, double power_lag, double love, double Kw_lag, double Km_lag, double A_lag,double Aw_lag,double Am_lag,sim_struct* sim, sol_struct* sol, par_struct* par){
+    double update_power(int t, double power_lag, double love, int iSw, int iSm, double Kw_lag, double Km_lag, double A_lag,double Aw_lag,double Am_lag,sim_struct* sim, sol_struct* sol, par_struct* par){
         
         // a. value of remaining a couple at current power
         double power = 1000.0; // nonsense value
@@ -22,9 +22,10 @@ namespace sim {
             &Vw_couple_to_couple, &Vm_couple_to_couple);
 
         // b. value of transitioning into singlehood
-        auto idx_single = index::single(t,0,0,par);
-        double Vw_couple_to_single = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,&sol->Vw_couple_to_single[idx_single],Kw_lag,Aw_lag);
-        double Vm_couple_to_single = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,&sol->Vm_couple_to_single[idx_single],Km_lag,Am_lag);
+        auto idx_single_w = index::single(t, iSw, 0,0,par);
+        auto idx_single_m = index::single(t, iSm, 0,0,par);
+        double Vw_couple_to_single = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,&sol->Vw_couple_to_single[idx_single_w],Kw_lag,Aw_lag);
+        double Vm_couple_to_single = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,&sol->Vm_couple_to_single[idx_single_m],Km_lag,Am_lag);
         
         // c. check participation constraints
         if ((Vw_couple_to_couple>=Vw_couple_to_single) & (Vm_couple_to_couple>=Vm_couple_to_single)){
@@ -218,6 +219,8 @@ namespace sim {
                     bool   couple_lag = false;
                     double power_lag = 0.0;
                     double love = 0.0;
+                    int iSw = 0;
+                    int iSm = 0;
                     if (t==0){
                         Kw_lag = sim->init_Kw[i];
                         Km_lag = sim->init_Km[i];
@@ -244,7 +247,7 @@ namespace sim {
                     double power = 1000.0; // nonsense value
                     if (couple_lag) { // if start as couple
 
-                        power = update_power(t,power_lag,love,Kw_lag,Km_lag,A_lag,Aw_lag,Am_lag,sim,sol,par);
+                        power = update_power(t,power_lag,love, iSw, iSm, Kw_lag,Km_lag,A_lag,Aw_lag,Am_lag,sim,sol,par);
         
                         if (power < 0.0) { // divorce is coded as -1
                             sim->couple[it] = false;
@@ -259,7 +262,7 @@ namespace sim {
                             double Ap = draw_partner_assets(Aw_lag, woman, i,t, sim, par);
                             love = sim->draw_repartner_love[it]; // note: love draws on grid.
 
-                            power = single::calc_initial_bargaining_weight(t, love, Kw_lag, Kp, Aw_lag, Ap, sol, par);
+                            power = single::calc_initial_bargaining_weight(t, love, iSw, iSm, Kw_lag, Kp, Aw_lag, Ap, sol, par); // OBS: use iSp or something I think
 
                             if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
                                 sim->couple[it] = true;
@@ -334,15 +337,15 @@ namespace sim {
 
                     } else { // single
                         // find labor choice
-                        int ilw = single::find_interpolated_labor_index_single(t, Kw_lag, Aw_lag, woman, sol, par);
-                        int ilm = single::find_interpolated_labor_index_single(t, Km_lag, Am_lag, man, sol, par);
+                        int ilw = single::find_interpolated_labor_index_single(t, iSw, Kw_lag, Aw_lag, woman, sol, par);
+                        int ilm = single::find_interpolated_labor_index_single(t, iSm, Km_lag, Am_lag, man, sol, par);
                         double labor_w = par->grid_l[ilw]; 
                         double labor_m = par->grid_l[ilm];
                         sim->lw[it] = labor_w;
                         sim->lm[it] = labor_m; 
 
-                        auto idx_sol_single_w = index::single_d(t,ilw,0,0,par);
-                        auto idx_sol_single_m = index::single_d(t,ilm,0,0,par);
+                        auto idx_sol_single_w = index::single_d(t,ilw,iSw,0,0,par);
+                        auto idx_sol_single_m = index::single_d(t,ilm,iSm,0,0,par);
                         double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
                         double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 

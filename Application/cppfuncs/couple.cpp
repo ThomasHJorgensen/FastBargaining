@@ -552,8 +552,10 @@ namespace couple {
 
         auto* idx_couple_fct = new index::index_couple_struct;
 
-        auto idx_single_w = index::single(t, iKw, iA, par);
-        auto idx_single_m = index::single(t, iKm, iA, par);
+        int iSw = 0;
+        int iSm = 0;
+        auto idx_single_w = index::single(t, iSw, iKw, iA, par);
+        auto idx_single_m = index::single(t, iSm, iKm, iA, par);
         idx_couple_fct->t = t; idx_couple_fct->iL = iL; idx_couple_fct->iKw = iKw; idx_couple_fct->iKm = iKm; idx_couple_fct->iA = iA; idx_couple_fct->par = par;
 
         for (int iP = 0; iP < par->num_power; ++iP) {
