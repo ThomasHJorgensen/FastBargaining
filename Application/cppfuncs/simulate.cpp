@@ -174,7 +174,7 @@ namespace sim {
         }
 
         // c. return asset value
-        return grid_A[par->num_A-1];
+        return grid_A[par->num_A-1]; // OBS: Is this right? Returning highest value if not found?
 
     }
 
@@ -209,6 +209,30 @@ namespace sim {
 
     }
 
+    int draw_partner_type(int iS, int gender, int i, int t, sim_struct *sim, par_struct *par){
+        // unpack
+        double* cdf_partner_S = par->cdf_partner_Sw;
+        double* uniform_partner_S = sim->draw_uniform_partner_Sw;
+        if (gender == man){
+            cdf_partner_S = par->cdf_partner_Sm;
+            uniform_partner_S = sim->draw_uniform_partner_Sm;
+        }
+    
+        // a. random uniform number
+        int index_sim = index::index2(i,t,par->simN,par->simT);
+        double random = uniform_partner_S[index_sim];
+
+        // b. find where in the cdf the random number falls
+        for (int iSp=0; iSp<par->num_S; iSp++){
+            double cdf_Sp_cond = cdf_partner_S[iS*par->num_S + iSp]; // OBS: Make sure this is correct
+            if(cdf_Sp_cond >= random){
+                return iSp;
+            }
+        }
+
+        // c. return type value
+        return par->num_S-1; // OBS: Is this right? Returning highest value if not found?
+    }
 
     void model(sim_struct *sim, sol_struct *sol, par_struct *par){
     
@@ -270,6 +294,7 @@ namespace sim {
                     } else { // if start as single - follow woman only
                         bool meet = (sim->draw_meet[it] < par->prob_repartner[t]);
                         if (meet){ // if meet a potential partner
+                            int iSp = draw_partner_type(iSw,woman, i,t, sim, par);
                             double Kp = draw_partner_human_capital(Kw_lag, woman, i,t, sim, par);
                             double Ap = draw_partner_assets(Aw_lag, woman, i,t, sim, par);
                             love = sim->draw_repartner_love[it]; // note: love draws on grid.
@@ -283,6 +308,8 @@ namespace sim {
                                 A_lag = Aw_lag + Ap;
                                 Kw_lag = Kw_lag;
                                 Km_lag = Kp;
+                                iSw = iSw;
+                                iSm = iSp;
                                 sim->love[it] = love;
                             } else { // if meet but do not agree to couple
                                 power = -1.0;

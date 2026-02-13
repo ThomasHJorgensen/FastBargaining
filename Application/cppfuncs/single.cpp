@@ -643,6 +643,7 @@ namespace single {
         int iS = state_single->iS;
         double A = state_single->A;
         double K = state_single->K;
+
         double love = state_couple->love;
         int iSw = state_couple->iSw;
         int iSm = state_couple->iSm;
@@ -677,11 +678,12 @@ namespace single {
         if (iKm_couple == -1) iKm_couple = tools::binary_search(0, par->num_K, par->grid_Km, Km);
         if (iA_couple == -1) iA_couple = tools::binary_search(0, par->num_A, par->grid_A, A_tot);
         if (iA_single == -1) iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
+        if (iK_single == -1) iK_single = tools::binary_search(0, par->num_K, grid_K_single, K);
 
         //interpolate V_single_to_single
-        auto idx_interp_single = index::single(t, iS, iK_single, 0, par);
-        double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
-
+        auto idx_interp_single = index::single(t, iS, 0, 0, par);
+        // double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
+        double Vsts = tools::_interp_2d(grid_K_single, grid_A_single, par->num_K, par->num_A, &V_single_to_single[idx_interp_single], K, A, iK_single, iA_single);
         // interpolate couple V_single_to_couple
         auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, 0, 0, par); // OBS: can we do something else than interpolating over all dimensions here? Does this even work with S?
         double Sw = par->grid_S[iSw]; // OBS: I didn't mean to include S in the interpolation, but this is a quick fix for now. We can revisit how to handle S in the future.
@@ -764,6 +766,7 @@ namespace single {
         double* V_single_to_couple = sol->Vw_single_to_couple;
         double* prob_partner_A = par->prob_partner_A_w;
         double* prob_partner_K = par->prob_partner_Kw;
+        double* prob_partner_S = par->prob_partner_Sw;
         double* grid_A = par->grid_Aw;
         double* grid_K = par->grid_Kw;
         if (gender == man){
@@ -771,6 +774,7 @@ namespace single {
             V_single_to_couple = sol->Vm_single_to_couple;
             prob_partner_A = par->prob_partner_A_m;
             prob_partner_K = par->prob_partner_Km;
+            prob_partner_S = par->prob_partner_Sm;
             grid_A = par->grid_Am;
             grid_K = par->grid_Km;
         }
@@ -784,7 +788,9 @@ namespace single {
             if (prob_love <= 0.0) continue;
 
             for (int iSp = 0; iSp < par->num_S; iSp++) { // partner's type
-                // OBS: insert things here later
+                auto idx_Sgrid = index::index2(iS, iSp, par->num_S, par->num_S);
+                const double prob_S = prob_partner_S[idx_Sgrid];
+                if (prob_S <= 0.0) continue;
 
                 for (int iKp = 0; iKp < par->num_K; iKp++) { // partner's capital
                     auto idx_Kgrid = index::index2(iK, iKp, par->num_K, par->num_K);

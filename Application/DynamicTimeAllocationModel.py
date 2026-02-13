@@ -115,6 +115,8 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_Km = np.array([[np.nan]])
         par.prob_partner_A_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
         par.prob_partner_A_m = np.array([[np.nan]])
+        par.prob_partner_Sw = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_S) in setup_grids
+        par.prob_partner_Sm = np.array([[np.nan]])
 
         # e. discrete choices
         # par.grid_l = np.array([0.00, 0.4, 0.6])
@@ -459,10 +461,12 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_love = np.random.normal(size=shape_sim)
         sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
 
-        sim.draw_uniform_partner_Kw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
-        sim.draw_uniform_partner_Km = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
+        sim.draw_uniform_partner_Kw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner human capital
+        sim.draw_uniform_partner_Km = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner human capital
         sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
         sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
+        sim.draw_uniform_partner_Sw = np.random.uniform(size=shape_sim) # for discrete draw of partner type
+        sim.draw_uniform_partner_Sm = np.random.uniform(size=shape_sim) # for discrete draw of partner type
 
         sim.draw_repartner_love = par.sigma_love*np.random.normal(0.0,1.0,size=shape_sim) #np.random.choice(par.num_love, p=par.prob_partner_love, size=shape_sim) # Love index when repartnering
 
@@ -558,6 +562,13 @@ class HouseholdModelClass(EconModelClass):
         if np.isnan(par.prob_partner_A_m[0,0]):
             par.prob_partner_A_m = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
        
+        if np.isnan(par.prob_partner_Sw[0,0]):
+            par.prob_partner_Sw = np.eye(par.num_S) #np.ones((par.num_S,par.num_S))/par.num_S # likelihood of meeting a partner with a particular type, conditional on own
+        
+        if np.isnan(par.prob_partner_Sm[0,0]):
+            par.prob_partner_Sm = np.eye(par.num_S) #np.ones((par.num_S,par.num_S))/par.num_S # likelihood of meeting a partner with a particular type, conditional on own
+           
+           
         # Norm distributed initial love - note: Probability mass between points (approximation of continuous distribution)
         if par.sigma_love<=1.0e-6:
             love_cdf = np.where(par.grid_love>=0.0,1.0,0.0)
@@ -571,6 +582,8 @@ class HouseholdModelClass(EconModelClass):
         par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
         par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
+        par.cdf_partner_Sw = np.cumsum(par.prob_partner_Sw,axis=1)
+        par.cdf_partner_Sm = np.cumsum(par.prob_partner_Sm,axis=1)
 
 
     def solve(self):
