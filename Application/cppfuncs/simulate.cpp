@@ -11,7 +11,7 @@ namespace sim {
         
         // a. value of remaining a couple at current power
         double power = 1000.0; // nonsense value
-        auto idx_sol = index::couple(t,0,0,0,0,0,par); 
+        auto idx_sol = index::couple(t,0,0,0,0,0,0,0,par); 
         double Vw_couple_to_couple=0.0;
         double Vm_couple_to_couple=0.0;
         tools::interp_5d_2out(
@@ -66,18 +66,28 @@ namespace sim {
             }
 
             // ii. find indifference point of unsatisfied partner:
+            double Sw = par->grid_S[iSw];
+            double Sm = par->grid_S[iSm];
             int j_love = tools::binary_search(0,par->num_love,par->grid_love,love); 
+            int j_Sw = tools::binary_search(0,par->num_S,par->grid_S,Sw);
+            int j_Sm = tools::binary_search(0,par->num_S,par->grid_S,Sm);
             int j_Kw = tools::binary_search(0,par->num_K,par->grid_Kw,Kw_lag); 
             int j_Km = tools::binary_search(0,par->num_K,par->grid_Km,Km_lag); 
             int j_A = tools::binary_search(0,par->num_A,par->grid_A,A_lag); 
             for (int iP=0; iP<par->num_power; iP++){ 
                 auto idx = 0;
                 if(flip){
-                    idx = index::couple(t,par->num_power-1 - iP,0,0,0,0,par); // flipped for men
+                    idx = index::couple(t,par->num_power-1 - iP,0,0,0,0,0,0,par); // flipped for men
                 } else {
-                    idx = index::couple(t,iP,0,0,0,0,par); 
+                    idx = index::couple(t,iP,0,0,0,0,0,0,par); 
                 }
-                V_power_vec[iP] = tools::_interp_4d_index(par->grid_love,par->grid_Kw,par->grid_Km,par->grid_A,par->num_love,par->num_K,par->num_K,par->num_A,&V_couple_to_couple[idx],love,Kw_lag,Km_lag,A_lag,j_love,j_Kw,j_Km,j_A);
+                V_power_vec[iP] = tools::_interp_6d_index(
+                    par->grid_love,par->grid_S,par->grid_S,par->grid_Kw,par->grid_Km,par->grid_A,
+                    par->num_love,par->num_S,par->num_S,par->num_K,par->num_K,par->num_A,
+                    &V_couple_to_couple[idx],
+                    love,Sw,Sm,Kw_lag,Km_lag,A_lag,
+                    j_love,j_Sw,j_Sm,j_Kw,j_Km,j_A
+                );
             }
             
             // iii. interpolate the power based on the value of single to find indifference-point. (flip the axis)
@@ -91,7 +101,7 @@ namespace sim {
             else{
                 // iv. find marital surplus of partner at this new power allocation
                 int j_power = tools::binary_search(0,par->num_power,par->grid_power,power);
-                double V_power_partner = tools::_interp_5d_index(par->grid_power,par->grid_love,par->grid_Kw,par->grid_Km,par->grid_A, par->num_power,par->num_love,par->num_K,par->num_K,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,Kw_lag,Km_lag,A_lag,j_power,j_love,j_Kw,j_Km,j_A);
+                double V_power_partner = tools::_interp_7d_index(par->grid_power,par->grid_love,par->grid_S,par->grid_S,par->grid_Kw,par->grid_Km,par->grid_A, par->num_power,par->num_love,par->num_S,par->num_S,par->num_K,par->num_K,par->num_A, &V_couple_to_couple_partner[idx_sol], power,love,Sw,Sm,Kw_lag,Km_lag,A_lag,j_power,j_love,j_Sw,j_Sm,j_Kw,j_Km,j_A);
                 double S_partner = couple::calc_marital_surplus(V_power_partner,V_couple_to_single_partner);
                 
                 // v. check if partner is happy. If not divorce
@@ -231,6 +241,8 @@ namespace sim {
                         power_lag = par->grid_power[sim->init_power_idx[i]];
                         love = sim->init_love[i];
                         sim->love[it] = love;
+                        iSw = sim->init_Sw[i];
+                        iSm = sim->init_Sm[i];
                     } else {
                         int it_1 = index::index2(i,t-1,par->simN,par->simT);
                         Kw_lag = sim->Kw[it_1];
@@ -289,7 +301,7 @@ namespace sim {
                         // Find labor choice
                         int ilw = -1;
                         int ilm = -1;
-                        couple::find_interpolated_labor_index_couple(t, power, love, Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
+                        couple::find_interpolated_labor_index_couple(t, power, love, iSw, iSm,Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
                         double labor_w = par->grid_l[ilw];
                         double labor_m = par->grid_l[ilm];
                         sim->lw[it] = labor_w;
@@ -297,14 +309,16 @@ namespace sim {
 
 
                         // total consumption
-                        auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0,0,0, par);
-                        double C_tot = tools::_interp_5d(
-                            par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                            par->num_power,par->num_love,par->num_K, par->num_K, par->num_A,
+                        auto idx_sol = index::couple_d(t,ilw,ilm,0,0,0,0,0,0,0, par);
+                        double Sw = par->grid_S[iSw];
+                        double Sm = par->grid_S[iSm];
+                        double C_tot = tools::_interp_7d(
+                            par->grid_power, par->grid_love, par->grid_S, par->grid_S, par->grid_Kw, par->grid_Km, par->grid_A,
+                            par->num_power,par->num_love,par->num_S, par->num_S, par->num_K, par->num_K, par->num_A,
                             &sol->Cd_tot_couple_to_couple[idx_sol],
-                            power,love,Kw_lag,Km_lag,A_lag);
+                            power,love,Sw,Sm,Kw_lag,Km_lag,A_lag);
 
-                        double M_resources = couple::resources_couple(labor_w,labor_m,Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double M_resources = couple::resources_couple(labor_w,labor_m, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
                             C_tot = M_resources;
                         }

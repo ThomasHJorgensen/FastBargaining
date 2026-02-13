@@ -148,8 +148,8 @@ class HouseholdModelClass(EconModelClass):
         par.centered_gradient = True
         
         # types
-        par.num_S = 1 # number of types
-        par.grid_S = np.arange(par.num_S) # type grid
+        par.num_S = 5 # number of types
+
         
     def setup_gender_parameters(self):
         par = self.par
@@ -200,6 +200,7 @@ class HouseholdModelClass(EconModelClass):
         # a. singles
         shape_single = (par.T, par.num_S, par.num_K, par.num_A)                        # single states: T, human capital, assets
         shape_single_d = (par.T, par.num_l, par.num_S, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single_egm = (par.T, par.num_l, par.num_S, par.num_K, par.num_A_pd)
 
         # a.1. single to single
         sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
@@ -219,7 +220,6 @@ class HouseholdModelClass(EconModelClass):
         sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
 
         ### a.1.1. post-decision grids (EGM)
-        shape_single_egm = (par.T, par.num_l, par.num_S,par.num_K, par.num_A_pd)
         sol.EmargUwd_single_to_single_pd = np.zeros(shape_single_egm)           # Expected marginal utility post-decision, woman single
         sol.Cwd_tot_single_to_single_pd = np.zeros(shape_single_egm)            # C for EGM, woman single 
         sol.Mwd_single_to_single_pd = np.zeros(shape_single_egm)                # Endogenous grid, woman single
@@ -260,8 +260,9 @@ class HouseholdModelClass(EconModelClass):
 
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
-        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_S, par.num_S, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_S, par.num_S, par.num_K, par.num_K, par.num_A)
+        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_S, par.num_S, par.num_K, par.num_K,par.num_A_pd)
         # shape_couple_d = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
@@ -287,7 +288,6 @@ class HouseholdModelClass(EconModelClass):
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
 
         ### b.1.1. post-decision grids (EGM)
-        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
         sol.EmargUd_pd = np.zeros(shape_couple_egm)                     # Expected marginal utility post-decision
         sol.Cd_tot_pd = np.zeros(shape_couple_egm)                      # C for EGM
         sol.Md_pd = np.zeros(shape_couple_egm)                          # Endogenous grid
@@ -410,6 +410,8 @@ class HouseholdModelClass(EconModelClass):
         sim.init_couple = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
         sim.init_love = np.zeros(par.simN)
+        sim.init_Sw = np.random.choice(par.num_S, par.simN, p=par.Sw_share)
+        sim.init_Sm = np.random.choice(par.num_S, par.simN, p=par.Sm_share)
         
         # e. timing
         sol.solution_time = np.array([0.0])
@@ -467,6 +469,11 @@ class HouseholdModelClass(EconModelClass):
         
     def setup_grids(self):
         par = self.par
+        
+        par.grid_S = np.arange(par.num_S, dtype=np.float64) # type grid
+        par.Sw_share = np.ones(par.num_S) / par.num_S # share of each type
+        par.Sm_share = np.ones(par.num_S) / par.num_S
+
         
         par.grid_l = np.array([0.0, 0.75, 1])  * par.full_time_hours # labor supply choices (in hours)
         par.num_l = len(par.grid_l)

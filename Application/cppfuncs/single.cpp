@@ -644,6 +644,8 @@ namespace single {
         double A = state_single->A;
         double K = state_single->K;
         double love = state_couple->love;
+        int iSw = state_couple->iSw;
+        int iSm = state_couple->iSm;
         double Kw = state_couple->Kw;
         double Km = state_couple->Km;
         double A_tot = state_couple->A; 
@@ -663,7 +665,6 @@ namespace single {
         // Get indices
         int iA_single = state_single->iA;
         int iK_single = state_single->iK; // OBS: return to this. Probably need to interpolate over K as well in single interpolation.
-        int iS_single = state_single->iS; // OBS: Same as with K?
         int iL_couple = state_couple->iL;
         int iKw_couple = state_couple->iKw;
         int iKm_couple = state_couple->iKm;
@@ -678,15 +679,19 @@ namespace single {
         if (iA_single == -1) iA_single = tools::binary_search(0, par->num_A, grid_A_single, A);
 
         //interpolate V_single_to_single
-        auto idx_interp_single = index::single(t, iS_single, iK_single, 0, par);
+        auto idx_interp_single = index::single(t, iS, iK_single, 0, par);
         double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
 
         // interpolate couple V_single_to_couple
-    auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
-        double Vstc = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                        par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                        &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot,
-                        iP, iL_couple, iKw_couple, iKm_couple, iA_couple);
+        auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, 0, 0, par); // OBS: can we do something else than interpolating over all dimensions here? Does this even work with S?
+        double Sw = par->grid_S[iSw]; // OBS: I didn't mean to include S in the interpolation, but this is a quick fix for now. We can revisit how to handle S in the future.
+        double Sm = par->grid_S[iSm];
+        auto idx_interp_Sw = tools::binary_search(0, par->num_S, par->grid_S, Sw);
+        auto idx_interp_Sm = tools::binary_search(0, par->num_S, par->grid_S, Sm);
+        double Vstc = tools::_interp_7d_index(par->grid_power, par->grid_love, par->grid_S, par->grid_S, par->grid_Kw, par->grid_Km, par->grid_A,
+            par->num_power, par->num_love, par->num_S, par->num_S, par->num_K, par->num_K, par->num_A,
+            &V_single_to_couple[idx_interp_couple], power, love, Sw, Sm, Kw, Km, A_tot,
+            iP, iL_couple, idx_interp_Sw, idx_interp_Sm, iKw_couple, iKm_couple, iA_couple);
 
         // surplus
         return Vstc - Vsts;
@@ -822,10 +827,12 @@ namespace single {
                             double val;
                             if (power >= 0.0) {
                                 double A_tot = Aw + Am;
-                                auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, par);
-                                val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                                                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                                                    &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
+                                auto idx_interp_couple = index::couple(t, 0, 0, 0, 0, 0, 0, 0, par); // OBS: Does interpolation work with iS?
+                                double Sw = par->grid_S[iSw]; // OBS: I didn't mean to include S in the interpolation, but this is a quick fix for now. We can revisit how to handle S in the future.
+                                double Sm = par->grid_S[iSm];
+                                val = tools::_interp_7d(par->grid_power, par->grid_love, par->grid_S, par->grid_S, par->grid_Kw, par->grid_Km, par->grid_A,
+                                                    par->num_power, par->num_love, par->num_S, par->num_S, par->num_K, par->num_K, par->num_A,
+                                                    &V_single_to_couple[idx_interp_couple], power, love, Sw, Sm, Kw, Km, A_tot);
                                 // OBS: actually onlu interpolation in power and A_tot is needed here
                             } else {
                                 val = V_single_to_single[idx_single];
