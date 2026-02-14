@@ -40,6 +40,13 @@ class UnitaryModelClass(EconModelClass):
         # income
         par.Yw = 1.0 # income level, women
         par.Ym = 1.0 # income level, men
+        
+        par.sigma_w = 0.1
+        par.sigma_m = 0.1
+        
+        par.NYw = 5 # number of points in women's income shock expectaion
+        par.NYm = 5  # number of points in men's income shock expectaion
+
 
         # saving
         par.r = 0.03 # interest rate
@@ -86,6 +93,10 @@ class UnitaryModelClass(EconModelClass):
         par.M_grid = nonlinspace(0.0001,par.max_m,par.num_m,1.1) # always have a bit of resources
         par.a_grid = nonlinspace(0.0001,par.max_A_pd,par.num_m,1.1) # always have a bit of resources
 
+        par.Yw_grid,par.Yw_weight = log_normal_gauss_hermite(par.sigma_w,par.NYw)
+        par.Ym_grid,par.Ym_weight = log_normal_gauss_hermite(par.sigma_m,par.NYm)
+        
+        
         # b. solution arrays
         shape = (par.T,par.num_m)
         sol.C = np.nan + np.zeros(shape)
@@ -191,11 +202,23 @@ class UnitaryModelClass(EconModelClass):
             for ia,assets in enumerate(par.a_grid): # same dimension as m_grid
                 
                 # i. interpoalte consumption
-                m_next = self.trans_m(assets)
-                C_next_interp = interp_1d(m_interp_next,c_interp_next,m_next)
+                # m_next = self.trans_m(assets)
+                # C_next_interp = interp_1d(m_interp_next,c_interp_next,m_next)
                 
                 # ii. discounted marginal value of wealth, W
-                EmargV_next = par.beta*(1.0+par.r)*self.marg_HH_util(C_next_interp)
+                EmargV_next = 0.0
+                for i_Yw,Yw in enumerate(par.Yw_grid):
+                    for i_Ym,Ym in enumerate(par.Ym_grid):
+                        
+                        # interpolate next period value function for this combination of transitory and permanent income shocks
+                        m_next = self.trans_m(assets,Yw,Ym)
+                        C_next_interp = interp_1d(m_interp_next,c_interp_next,m_next)
+                        margV_next_interp = self.marg_HH_util(C_next_interp)
+
+                        # weight the interpolated value with the likelihood
+                        EmargV_next += margV_next_interp*par.Yw_weight[i_Yw]*par.Ym_weight[i_Ym]
+                
+                EmargV_next = par.beta*(1.0+par.r)*EmargV_next
 
                 if par.method=='egm':
                     assert par.restricted_model , f'EGM is only applicable in the restricted model!'
@@ -266,12 +289,16 @@ class UnitaryModelClass(EconModelClass):
         V_next = sol.V[t+1]
         assets = resources - Ctot
         
-        # continuation value
-        m_next = self.trans_m(assets)
-        V_next_interp = interp_1d(par.M_grid,V_next,m_next)
+        EV_next = 0.0
+        for i_Yw,Yw in enumerate(par.Yw_grid):
+            for i_Ym,Ym in enumerate(par.Ym_grid):
+                m_next = self.trans_m(assets,Yw,Ym)
+                V_next_interp = interp_1d(par.M_grid,V_next,m_next)
+                
+                EV_next += V_next_interp*par.Yw_weight[i_Yw]*par.Ym_weight[i_Ym]
                 
         # d. return value of choice
-        return util + par.beta*V_next_interp
+        return util + par.beta*EV_next
 
     def solve_intratemporal_allocation(self,Ctot,precomputed):
         par = self.par
@@ -378,7 +405,13 @@ class UnitaryModelClass(EconModelClass):
             return par.scale*Ctot**(-rho)
         
         else:
-            #numerical gradient of HH_util
+            # something is weird with these interpolations.. using this code messes with another interpolation..
+            # if ((par.method=='iegm') & (par.interp_method!='numerical')):
+            #     # interpolate pre-computed marginal utility
+            #     return interp_1d(par.grid_C,par.grid_marg_U,Ctot)
+            
+            # else:
+                #numerical gradient of HH_util
             step = 1.0e-4
             forward = self.HH_util(Ctot+step)
             backward = self.HH_util(Ctot-step)
@@ -394,9 +427,9 @@ class UnitaryModelClass(EconModelClass):
         scale = par.scale**(1.0/rho)
         return scale*W**(-1.0/rho)
     
-    def trans_m(self,assets):
+    def trans_m(self,assets,Yw,Ym):
         par = self.par
-        return (1+par.r)*assets + par.Yw + par.Ym 
+        return (1+par.r)*assets + par.Yw*Yw + par.Ym*Ym
     
     def precompute_C(self):
         """ precompute consumption function on a grid """
@@ -415,8 +448,8 @@ class UnitaryModelClass(EconModelClass):
                 par.grid_marg_U[iC] = self.marg_HH_util(C)
 
         # c. flip grids such that marginal utility is increasing (for interpolation)
-        par.grid_marg_U_flip = np.flip(par.grid_marg_U)
-        par.grid_C_flip = np.flip(par.grid_C)
+        par.grid_marg_U_flip = np.flip(par.grid_marg_U.copy())
+        par.grid_C_flip = np.flip(par.grid_C.copy())
 
         # d. inverse if wanted
         if par.interp_inverse:
