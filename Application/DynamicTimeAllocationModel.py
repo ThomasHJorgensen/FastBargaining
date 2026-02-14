@@ -50,11 +50,13 @@ class HouseholdModelClass(EconModelClass):
         # a. income
         # par.inc_w = 1.0
         par.mu = 0.5              # level
+        par.sigma_mu = 0.1        # std of mu over types
         par.gamma = 0.1           # return to human capital
         par.gamma2 = 0.00         # quadratic return to human capital
 
         # par.inc_m = 1.0
         par.mu_mult = 1.0              # level
+        par.sigma_mu_mult = 1.0        # std of mu over types
         par.gamma_mult = 1.0           # return to human capital   
         par.gamma2_mult = 1.0           # return to human capital   
 
@@ -107,7 +109,7 @@ class HouseholdModelClass(EconModelClass):
         par.max_love = 1.0
 
         par.sigma_love = 0.1
-        par.num_shock_love = 5
+        par.num_shock_love = 5 #can not be 1, because of interpolation things in code
 
         # d. re-partnering
         par.p_meet = 0.0
@@ -382,6 +384,8 @@ class HouseholdModelClass(EconModelClass):
         sim.couple = np.nan + np.ones(shape_sim)
         sim.power = np.nan + np.ones(shape_sim)
         sim.love = np.nan + np.ones(shape_sim)
+        sim.iSw = np.zeros(shape_sim,dtype=np.int_)
+        sim.iSm = np.zeros(shape_sim,dtype=np.int_)
 
         # for simulated moments
         sim.wage_w = np.nan + np.ones(shape_sim)
@@ -474,9 +478,9 @@ class HouseholdModelClass(EconModelClass):
     def setup_grids(self):
         par = self.par
         
-        par.grid_S = np.arange(par.num_S, dtype=np.float64) # type grid
-        par.Sw_share = np.ones(par.num_S) / par.num_S # share of each type
-        par.Sm_share = np.ones(par.num_S) / par.num_S
+        par.grid_S = np.arange(par.num_S, dtype=np.float64)        
+        par.grid_mu_w, par.Sw_share = quadrature.normal_gauss_hermite(par.sigma_mu, par.num_S, mu=par.mu)
+        par.grid_mu_m, par.Sm_share = quadrature.normal_gauss_hermite(par.sigma_mu * par.sigma_mu_mult, par.num_S, mu=par.mu * par.mu_mult)
 
         
         par.grid_l = np.array([0.0, 0.75, 1])  * par.full_time_hours # labor supply choices (in hours)

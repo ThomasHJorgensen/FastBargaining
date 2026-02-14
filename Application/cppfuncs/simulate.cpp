@@ -14,11 +14,13 @@ namespace sim {
         auto idx_sol = index::couple(t,0,0,0,0,0,0,0,par); 
         double Vw_couple_to_couple=0.0;
         double Vm_couple_to_couple=0.0;
-        tools::interp_5d_2out(
-            par->grid_power,par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A, 
-            par->num_power,par->num_love, par->num_K, par->num_K, par->num_A, 
+        double Sw = par->grid_S[iSw];
+        double Sm = par->grid_S[iSm];
+        tools::interp_7d_2out(
+            par->grid_power,par->grid_love, par->grid_S, par->grid_S, par->grid_Kw, par->grid_Km, par->grid_A, 
+            par->num_power,par->num_love, par->num_S, par->num_S, par->num_K, par->num_K, par->num_A, 
             &sol->Vw_couple_to_couple[idx_sol],&sol->Vm_couple_to_couple[idx_sol], 
-            power_lag, love, Kw_lag, Km_lag, A_lag, 
+            power_lag, love, Sw, Sm, Kw_lag, Km_lag, A_lag, 
             &Vw_couple_to_couple, &Vm_couple_to_couple);
 
         // b. value of transitioning into singlehood
@@ -277,6 +279,8 @@ namespace sim {
                         couple_lag = sim->couple[it_1];
                         power_lag = sim->power[it_1];
                         love = sim->love[it];
+                        iSw = sim->iSw[it_1];
+                        iSm = sim->iSm[it_1];
                     } 
                     
                     // a) Find transitions in couple/single status and calculate power 
@@ -345,7 +349,7 @@ namespace sim {
                             &sol->Cd_tot_couple_to_couple[idx_sol],
                             power,love,Sw,Sm,Kw_lag,Km_lag,A_lag);
 
-                        double M_resources = couple::resources_couple(labor_w,labor_m, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double M_resources = couple::resources_couple(labor_w,labor_m, iSw, iSm, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
                         if (C_tot > M_resources){ 
                             C_tot = M_resources;
                         }
@@ -369,6 +373,8 @@ namespace sim {
                         sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
                         sim->Aw[it] = par->div_A_share * sim->A[it];
                         sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
+                        sim->iSw[it] = iSw;
+                        sim->iSm[it] = iSm;
                         sim->power[it] = power;
                         if(t<par->simT-1){
                             int it1 = index::index2(i,t+1,par->simN,par->simT);
@@ -393,8 +399,8 @@ namespace sim {
                         // total consumption
                         double Cw_tot = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,sol_single_w,Kw_lag,Aw_lag);
                         double Cm_tot = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
-                        double Mw = single::resources_single(labor_w, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                        double Mm = single::resources_single(labor_m, Km_lag, Am_lag, man, par);
+                        double Mw = single::resources_single(labor_w, iSw, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                        double Mm = single::resources_single(labor_m, iSm, Km_lag, Am_lag, man, par);
                         if (Cw_tot > Mw){
                             Cw_tot = Mw;
                         }
@@ -413,14 +419,16 @@ namespace sim {
                         sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                         sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
                         sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
+                        sim->iSw[it] = iSw;
+                        sim->iSm[it] = iSm;
                         // sim->power[it] = -1.0;
 
                     }
 
                     // c) variables for moment simulation
                     // i) wages
-                    sim->wage_w[it] = utils::wage(Kw_lag, woman, par);
-                    sim->wage_m[it] = utils::wage(Km_lag, man, par);
+                    sim->wage_w[it] = utils::wage(iSw, Kw_lag, woman, par);
+                    sim->wage_m[it] = utils::wage(iSm, Km_lag, man, par);
 
                     // ii) leisure
                     sim->leisure_w[it] = (1.0 - sim->hw[it] - sim->lw[it]);

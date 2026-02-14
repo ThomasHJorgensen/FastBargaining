@@ -66,10 +66,10 @@ namespace single {
         return best_Ctot;
     };
 
-    double resources_single(double labor, double K, double A, int gender, par_struct* par) {
+    double resources_single(double labor, int iS, double K, double A, int gender, par_struct* par) {
         if (labor == 0.0) return par->R * A + RESOURCES_EPS;
 
-        double w = utils::wage(K, gender, par);
+        double w = utils::wage(iS, K, gender, par);
         return par->R * A + w * labor * par->available_hours * (1.0 - par->tax_rate);
     }
 
@@ -198,7 +198,7 @@ namespace single {
             // resources depend on K and A
             const double K = grid_K[iK];
             const double A = grid_A[iA];
-            double M_resources = resources_single(labor, K, A, gender, par);
+            double M_resources = resources_single(labor, iS, K, A, gender, par);
 
             // starting value: previous solution or fraction of resources
             double starting_val = (iA > 0) ? Cd_tot[iA - 1] : (M_resources * 0.8);
@@ -296,7 +296,7 @@ namespace single {
 
         // Loop over the common (exogenous) asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_now = resources_single(labor, K, grid_A[iA], gender, par);
+            double M_now = resources_single(labor, iS, K, grid_A[iA], gender, par);
 
             // If liquidity constraint binds, consume all resources
             if (M_now < m_vec[0]) {

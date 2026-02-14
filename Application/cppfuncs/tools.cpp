@@ -887,4 +887,100 @@ void interp_5d_2out(double* grid1,double* grid2,double* grid3,double* grid4,doub
         value1,value2,xi1,xi2,xi3,xi4,xi5,j1,j2,j3,j4,j5,out1,out2);
 }
 
+
+void _interp_7d_2out_index(double* grid1,double* grid2,double* grid3,double* grid4,double* grid5,double* grid6,double* grid7,
+    int num1, int num2, int num3, int num4, int num5, int num6, int num7,
+    double* value1,double* value2,
+    double xi1,double xi2,double xi3,double xi4,double xi5,double xi6,double xi7,
+    int j1, int j2, int j3, int j4, int j5, int j6, int j7,
+    double* out1,double* out2){
+
+    // a. left/right
+    double nom_1_left = grid1[j1+1]-xi1;
+    double nom_1_right = xi1-grid1[j1];
+
+    double nom_2_left = grid2[j2+1]-xi2;
+    double nom_2_right = xi2-grid2[j2];
+
+    double nom_3_left = grid3[j3+1]-xi3;
+    double nom_3_right = xi3-grid3[j3];
+
+    double nom_4_left = grid4[j4+1]-xi4;
+    double nom_4_right = xi4-grid4[j4];
+
+    double nom_5_left = grid5[j5+1]-xi5;
+    double nom_5_right = xi5-grid5[j5];
+
+    double nom_6_left = grid6[j6+1]-xi6;
+    double nom_6_right = xi6-grid6[j6];
+
+    double nom_7_left = grid7[j7+1]-xi7;
+    double nom_7_right = xi7-grid7[j7];
+
+    // b. interpolation
+    double denom = (grid1[j1+1]-grid1[j1])*(grid2[j2+1]-grid2[j2])*(grid3[j3+1]-grid3[j3])*(grid4[j4+1]-grid4[j4])*(grid5[j5+1]-grid5[j5])*(grid6[j6+1]-grid6[j6])*(grid7[j7+1]-grid7[j7]);
+    double nom1 = 0.0;
+    double nom2 = 0.0;
+    for (size_t k1 = 0; k1 < 2; k1++){
+        double nom_1 = nom_1_left;
+        if (k1==1){ nom_1 = nom_1_right;}
+
+        for (size_t k2 = 0; k2 < 2; k2++){
+            double nom_2 = nom_2_left;
+            if (k2==1){ nom_2 = nom_2_right;}
+
+            for (size_t k3 = 0; k3 < 2; k3++){
+                double nom_3 = nom_3_left;
+                if (k3==1){ nom_3 = nom_3_right;}    
+
+                for (size_t k4 = 0; k4 < 2; k4++){
+                    double nom_4 = nom_4_left;
+                    if (k4==1){ nom_4 = nom_4_right;}         
+
+                    for (size_t k5 = 0; k5 < 2; k5++){
+                        double nom_5 = nom_5_left;
+                        if (k5==1){ nom_5 = nom_5_right;}
+
+                        for (size_t k6 = 0; k6 < 2; k6++){
+                            double nom_6 = nom_6_left;
+                            if (k6==1){ nom_6 = nom_6_right;}
+
+                            for (size_t k7 = 0; k7 < 2; k7++){
+                                double nom_7 = nom_7_left;
+                                if (k7==1){ nom_7 = nom_7_right;}
+
+                                auto idx = index::index7(j1+k1,j2+k2,j3+k3,j4+k4,j5+k5,j6+k6,j7+k7, num1,num2, num3,num4,num5,num6,num7);
+                                nom1 += nom_1*nom_2*nom_3*nom_4*nom_5*nom_6*nom_7*value1[idx];
+                                nom2 += nom_1*nom_2*nom_3*nom_4*nom_5*nom_6*nom_7*value2[idx];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    out1[0] = nom1/denom;
+    out2[0] = nom2/denom;
+}
+
+void interp_7d_2out(double* grid1,double* grid2,double* grid3,double* grid4,double* grid5,double* grid6,double* grid7,
+    int num1, int num2, int num3, int num4, int num5, int num6, int num7,
+    double* value1,double* value2,
+    double xi1,double xi2,double xi3,double xi4,double xi5,double xi6,double xi7,
+    double* out1,double* out2){
+
+    // a. search in each dimension
+    int j1 = binary_search(0,num1,grid1,xi1);
+    int j2 = binary_search(0,num2,grid2,xi2);
+    int j3 = binary_search(0,num3,grid3,xi3);
+    int j4 = binary_search(0,num4,grid4,xi4);
+    int j5 = binary_search(0,num5,grid5,xi5);
+    int j6 = binary_search(0,num6,grid6,xi6);
+    int j7 = binary_search(0,num7,grid7,xi7);
+
+    _interp_7d_2out_index(grid1,grid2,grid3,grid4,grid5,grid6,grid7,num1,num2,num3,num4,num5,num6,num7,
+        value1,value2,xi1,xi2,xi3,xi4,xi5,xi6,xi7,j1,j2,j3,j4,j5,j6,j7,out1,out2);
+}
+
 } // tools

@@ -25,14 +25,14 @@ namespace couple {
     static constexpr double MULTISTART_FACTOR = 0.5;
 
 
-    double resources_couple(double labor_w, double labor_m, double Kw, double Km, double A, par_struct* par) {
+    double resources_couple(double labor_w, double labor_m, int iSw, int iSm, double Kw, double Km, double A, par_struct* par) {
         // If no labor income, return asset income plus small epsilon to avoid zero
         if ((labor_w == 0.0) && (labor_m == 0.0)) {
             return par->R * A + 1.0e-4;
         }
 
-        double wage_w = utils::wage(Kw, woman, par);
-        double wage_m = utils::wage(Km, man, par);
+        double wage_w = utils::wage(iSw, Kw, woman, par);
+        double wage_m = utils::wage(iSm, Km, man, par);
 
         return par->R * A + wage_w * labor_w * par->available_hours * (1.0 - par->tax_rate) + wage_m * labor_m * par->available_hours * (1.0 - par->tax_rate);
     }
@@ -194,7 +194,7 @@ namespace couple {
         double* Cd_tot = &sol->Cd_tot_couple_to_couple[idx_d_A];
 
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_resources = resources_couple(labor_w, labor_m, par->grid_Kw[iKw], par->grid_Km[iKm], par->grid_A[iA], par);
+            double M_resources = resources_couple(labor_w, labor_m, iSw, iSm, par->grid_Kw[iKw], par->grid_Km[iKm], par->grid_A[iA], par);
 
             // starting values
             double starting_val = M_resources * 0.8;
@@ -300,7 +300,7 @@ namespace couple {
 
         // Loop over exogenous asset grid
         for (int iA = 0; iA < par->num_A; iA++) {
-            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], par->grid_Kw[iKw], par->grid_Km[iKm], par->grid_A[iA], par);
+            double M_now = resources_couple(par->grid_l[ilw], par->grid_l[ilm], iSw, iSm, par->grid_Kw[iKw], par->grid_Km[iKm], par->grid_A[iA], par);
 
             // If liquidity constraint binds, consume all resources
             if (M_now < m_vec[0]) {
