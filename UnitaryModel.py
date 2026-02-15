@@ -365,11 +365,12 @@ class UnitaryModelClass(EconModelClass):
         return util + penalty
 
     
-    def HH_util(self,Ctot):
+    def HH_util(self,Ctot,recalculate=False):
         par = self.par
         
         # solve intratemporal problem
-        Cw,Cm,Cpub = self.solve_intratemporal_allocation(Ctot,par.precompute_intra)
+        precomputed_intra = par.precompute_intra & (not recalculate)
+        Cw,Cm,Cpub = self.solve_intratemporal_allocation(Ctot,precomputed_intra)
         
         # return household level utility for this allocation
         return self.util(Cw,Cm,Cpub)
@@ -489,6 +490,54 @@ class UnitaryModelClass(EconModelClass):
 
                     sim.A[:,t+1] = sim.M[:,t] - sim.C[:,t]
                     sim.M[:,t+1] = self.trans_m(sim.A[:,t+1])
+                    
+                    
+    # accuracy measures
+    def MSE_consumption(self,true_model,grid_m):
+        
+        # interpolate true consumption function in the first period
+        true_C = interp_1d(true_model.sol.M[0],true_model.sol.C[0],grid_m)
+        
+        # interpolate model in self likewise
+        model_C = interp_1d(self.sol.M[0],self.sol.C[0],grid_m)
+        
+        # compute MSE
+        MSE = np.mean((true_C - model_C)**2)
+        return MSE
+    
+    def lifetime_utility(self,true_model=None):
+        # a. unpack
+        par = self.par
+        sim = self.sim
+
+        # b. compute utility for each simulated individual and time period
+        for t in range(par.T):
+            for i in range(par.simN):
+                sim.util[i,t] = par.beta*true_model.HH_util(sim.C[i,t],recalculate=True) if true_model is not None else par.beta*self.HH_util(sim.C[i,t],recalculate=True)         
+        
+        # c. compute mean lifetime utility across individuals
+        sim.mean_lifetime_util = np.mean(np.sum(sim.util,axis=1))
+        
+        if true_model is not None:
+            diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
+            return diff/true_model.sim.mean_lifetime_util * 100.0
+        
+        
+    def wealth_compensation(self,true_model):
+        # search for level of initial wealth that makes mean lifetime utility similar with true model
+        par = self.par
+        sim = self.sim
+        
+        def obj_func(a_init):
+            sim.a_init += a_init 
+            self.simulate()
+            self.lifetime_utility()
+            
+            diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
+            return diff*diff
+        
+        res = minimize(obj_func,0.0,method='SLSQP')
+        return res.x[0]
             
 
 
