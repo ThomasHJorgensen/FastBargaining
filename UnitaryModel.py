@@ -27,15 +27,15 @@ class UnitaryModelClass(EconModelClass):
         # preferences
         par.beta = 0.99 # discount factor
         
-        par.rho_w = 1.5 # CRRA coefficient, women
+        par.rho_w = 2.5 # CRRA coefficient, women
         par.rho_m = 1.5 # CRRA coefficient, men
         
-        par.phi_w = 0.5 # private and public consumption complementarity, women
+        par.phi_w = 0.8 # private and public consumption complementarity, women
         par.phi_m = 0.5 # private and public consumption complementarity, men
         
         par.alpha = 0.5 # weight on private consumption
 
-        par.mu = 0.5 # weight on women's utility
+        par.mu = 0.6 # weight on women's utility
         
         # income
         par.Yw = 1.0 # income level, women
@@ -201,11 +201,7 @@ class UnitaryModelClass(EconModelClass):
             # b. loop over end-of-period wealth
             for ia,assets in enumerate(par.a_grid): # same dimension as m_grid
                 
-                # i. interpoalte consumption
-                # m_next = self.trans_m(assets)
-                # C_next_interp = interp_1d(m_interp_next,c_interp_next,m_next)
-                
-                # ii. discounted marginal value of wealth, W
+                # i. discounted marginal value of wealth, W
                 EmargV_next = 0.0
                 for i_Yw,Yw in enumerate(par.Yw_grid):
                     for i_Ym,Ym in enumerate(par.Ym_grid):
@@ -309,24 +305,6 @@ class UnitaryModelClass(EconModelClass):
             Cm = Ctot - Cw
             Cpub = 0.0
             
-        # elif par.restricted_model: # Cpub always zero
-        #     if precomputed:
-        #         Cw = interp_1d(par.grid_C,par.grid_Cw,Ctot)       
-            
-        #     else:
-        #         obj = lambda Cvec: - self.util(Cvec[0],Ctot-Cvec[0],0.0)
-                
-        #         lb = 0.00001
-        #         ub = Ctot
-                
-        #         init = np.array([0.5*Ctot])
-        #         res = minimize(obj,init,bounds=((lb,ub),),method='SLSQP')
-                
-        #         Cw = res.x[0]
-            
-        #     Cm = Ctot - Cw
-        #     Cpub = 0.0
-            
         else:
             if precomputed:
                 Cw = interp_1d(par.grid_C,par.grid_Cw,Ctot) 
@@ -365,7 +343,7 @@ class UnitaryModelClass(EconModelClass):
         
         return (CES)**(1.0-rho) / (1.0-rho)
     
-    def util(self,Cw,Cm,Cpub,verbose=True):
+    def util(self,Cw,Cm,Cpub,verbose=False):
         par = self.par
         
         # ensure that all consumption elements are non-negative
@@ -397,7 +375,7 @@ class UnitaryModelClass(EconModelClass):
         return self.util(Cw,Cm,Cpub)
         
     
-    def marg_HH_util(self,Ctot):
+    def marg_HH_util(self,Ctot,precomputed_marg=True):
         par = self.par
         
         if par.restricted_model: # then marginal utility is known in closed form
@@ -406,17 +384,18 @@ class UnitaryModelClass(EconModelClass):
         
         else:
             # something is weird with these interpolations.. using this code messes with another interpolation..
-            # if ((par.method=='iegm') & (par.interp_method!='numerical')):
-            #     # interpolate pre-computed marginal utility
-            #     return interp_1d(par.grid_C,par.grid_marg_U,Ctot)
+            if ((precomputed_marg) & (par.method=='iegm') & (par.interp_method!='numerical')):
+                
+                return interp_1d(par.grid_C,par.grid_marg_U,Ctot)
+                    
             
-            # else:
-                #numerical gradient of HH_util
-            step = 1.0e-4
-            forward = self.HH_util(Ctot+step)
-            backward = self.HH_util(Ctot-step)
-            
-            return (forward - backward)/(2*step)
+            else:
+                # numerical gradient of HH_util
+                step = 1.0e-4
+                forward = self.HH_util(Ctot+step)
+                backward = self.HH_util(Ctot-step)
+                
+                return (forward - backward)/(2*step)
             
     
     def inv_marg_HH_util(self,W):
@@ -442,10 +421,10 @@ class UnitaryModelClass(EconModelClass):
 
         # b. loop over consumption grid and store marginal utility
         if par.restricted_model:
-            par.grid_marg_U = self.marg_HH_util(par.grid_C)
+            par.grid_marg_U = self.marg_HH_util(par.grid_C,precomputed_marg=False)
         else:
             for iC,C in enumerate(par.grid_C):
-                par.grid_marg_U[iC] = self.marg_HH_util(C)
+                par.grid_marg_U[iC] = self.marg_HH_util(C,precomputed_marg=False)
 
         # c. flip grids such that marginal utility is increasing (for interpolation)
         par.grid_marg_U_flip = np.flip(par.grid_marg_U.copy())
