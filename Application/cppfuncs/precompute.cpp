@@ -406,69 +406,67 @@ namespace precompute{
     
     ////////////////////////////// Precomputation //////////////////////////////
     void precompute(sol_struct* sol, par_struct* par){
-        #pragma omp parallel num_threads(par->threads)
-        {
-            // pre-compute optimal allocation for single
-            const int nP   = par->num_power;
-            const int nL = par->num_l;
-            const int nC = par->num_Ctot;
-            const int nMargU   = par->num_marg_u;
-
-            // Total number of iterations
-            long long total = (long long)nL * nC;
-
-            #pragma omp parallel for num_threads(par->threads)
-            for (long long idx = 0; idx < total; ++idx) {
-
-                long long tmp = idx;
-
-                const int iC = nC - 1 - (tmp % nC); // descending
-                tmp /= nC;
-
-                const int il = tmp;
-                double l = par->grid_l[il];
-                
-                double start_hw = (1 - (l-1e-6))/2.0;
-                double start_hm = (1 - (l-1e-6))/2.0;
+        // pre-compute optimal allocation for single
+        # pragma omp parallel for num_threads(par->threads)
+        for (int il=0; il<par->num_l; il++){
             
+            double l = par->grid_l[il];
+            
+            double start_hw = (1 - (l-1e-6))/2.0;
+            double start_hm = (1 - (l-1e-6))/2.0;
+            
+            for (int iC=par->num_Ctot - 1; iC>=0; iC--){  //solve in descending order to have correct starting values for h in first grid point
                 double C_tot = par->grid_Ctot[iC];
-                auto idx_now = index::index2(il,iC,par->num_l,par->num_Ctot);
+                auto idx = index::index2(il,iC,par->num_l,par->num_Ctot);
 
                 double start_C_priv = C_tot/2.0;
 
-                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx_now], &sol->pre_hmd_single[idx_now], &sol->pre_Cmd_inter_single[idx_now], &sol->pre_Qmd_single[idx_now], C_tot, l, &start_C_priv, &start_hm, man, par);
-                solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx_now], &sol->pre_hwd_single[idx_now], &sol->pre_Cwd_inter_single[idx_now], &sol->pre_Qwd_single[idx_now], C_tot, l, &start_C_priv, &start_hw, woman, par);
+                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_C_priv, &start_hm, man, par);
+                solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_C_priv, &start_hw, woman, par);
 
                 // start_hw = sol->pre_hmd_single[idx]; //update starting values for h
                 // start_hm = sol->pre_hmd_single[idx];
 
-            }
+            } //C_tot
 
-            // Total number of iterations
-            total = (long long)nL * nL * nP * nC;
+            if(strcmp(par->interp_method,"numerical")!=0){
+                for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
+                    bool interpolate = true;
+                    precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
+                    precompute_cons_interp_single(i_marg_u, il, man, par, sol, interpolate);
+                } // marg_u
+            } // interp method
+        } // labor supply
 
-            #pragma omp parallel for num_threads(par->threads)
-            for (long long idx = 0; idx < total; ++idx) {
+        // precompute optimal allocation for couples
+        const int nL = par->num_l;
+        const int nP = par->num_power;
 
-                long long tmp = idx;
+        // total number of iterations
+        const long long total = (long long)nL * nL * nP;
 
-                const int iC   = nC - 1 - (tmp % nC); // descending order
-                tmp /= nC;
+        #pragma omp parallel for num_threads(par->threads)
+        for (long long idx = 0; idx < total; ++idx) {
 
-                const int iP   = tmp % nP;
-                tmp /= nP;
+            long long tmp = idx;
 
-                const int ilm  = tmp % nL;
-                tmp /= nL;
+            const int iP  = tmp % nP;
+            tmp /= nP;
 
-                const int ilw  = tmp;
-                double lw = par->grid_l[ilw];
-                double lm = par->grid_l[ilm];
-                double power = par->grid_power[iP];
-                
-                double start_hw = (1 - (lw-1e-6))/2.0;
-                double start_hm = (1 - (lm-1e-6))/2.0;
+            const int ilm = tmp % nL;
+            tmp /= nL;
+
+            const int ilw = tmp;
+                    
+            double lw = par->grid_l[ilw];
+            double lm = par->grid_l[ilm];
+            double power = par->grid_power[iP];
             
+            double start_hw = (1 - (lw-1e-6))/2.0;
+            double start_hm = (1 - (lm-1e-6))/2.0;
+            
+            for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
+                
                 double C_tot = par->grid_Ctot[iC];
                 double start_Cw_priv = C_tot/3.0;
                 double start_Cm_priv = C_tot/3.0;
@@ -479,64 +477,21 @@ namespace precompute{
                     start_hm = sol->pre_hmd_couple[index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot)];
                 }
 
-                auto idx_now = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
-                solve_intraperiod_couple(&sol->pre_Cwd_priv_couple[idx_now], &sol->pre_Cmd_priv_couple[idx_now], &sol->pre_hwd_couple[idx_now], &sol->pre_hmd_couple[idx_now], 
-                    &sol->pre_Cd_inter_couple[idx_now], &sol->pre_Qd_couple[idx_now],
+                auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+                solve_intraperiod_couple(&sol->pre_Cwd_priv_couple[idx], &sol->pre_Cmd_priv_couple[idx], &sol->pre_hwd_couple[idx], &sol->pre_hmd_couple[idx], 
+                    &sol->pre_Cd_inter_couple[idx], &sol->pre_Qd_couple[idx],
                     C_tot, lw, lm, power, par,
                     start_Cw_priv, start_Cm_priv, start_hw, start_hm,
                     1.0e-8, 1.0e-7);
-            } //power
+            } // iC
 
-
-            // pre-compute marginal utilities and consumption interpolator for EGM
             if(strcmp(par->interp_method,"numerical")!=0){
-                // singles
-
-                // Total number of iterations
-                total = (long long)nL * nMargU;
-
-                #pragma omp parallel for num_threads(par->threads)
-                for (long long idx = 0; idx < total; ++idx) {
-
-                    long long tmp = idx;
-
-                    const int i_marg_u = tmp % nMargU;
-                    tmp /= nMargU;
-
-                    const int il = tmp;
-                    bool interpolate = true;
-                    precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
-                    precompute_cons_interp_single(i_marg_u, il, man, par, sol, interpolate);
-                }
-
-                // couples
-                const int nL      = par->num_l;
-                const int nP      = par->num_power;
-                const int nMargU  = par->num_marg_u;
-
-                // Total number of iterations
-                total = (long long)nL * nL * nP * nMargU;
-
-                #pragma omp parallel for num_threads(par->threads)
-                for (long long idx = 0; idx < total; ++idx) {
-
-                    long long tmp = idx;
-
-                    const int i_marg_u = tmp % nMargU;
-                    tmp /= nMargU;
-
-                    const int iP  = tmp % nP;
-                    tmp /= nP;
-
-                    const int ilm = tmp % nL;
-                    tmp /= nL;
-
-                    const int ilw = tmp;
+                for(int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){
                     bool interpolate = true; // this is sometimes a bit unstable when resolve numerically
                     precompute_cons_interp_couple(i_marg_u, iP, ilw, ilm, par, sol, interpolate);
-                } //power
+                } // i_marg_u
             } // interp method
-        } // parallel
+        } // idx
     } // precompute
 
 }

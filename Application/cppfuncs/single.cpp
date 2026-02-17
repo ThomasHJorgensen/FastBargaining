@@ -626,18 +626,14 @@ namespace single {
         // 1. solve choice specific
         const int nS   = par->num_S;
         const int nK   = par->num_K;
-        const int nSex = 2;  // 0 and 1
 
         // Total number of iterations
-        const int total = nS * nK * nSex;
+        const int total = nS * nK;
 
         #pragma omp parallel for num_threads(par->threads)
         for (int idx = 0; idx < total; ++idx) {
 
             int tmp = idx;
-
-            const int sex = tmp % nSex;
-            tmp /= nSex;
 
             const int iK  = tmp % nK;
             tmp /= nK;
@@ -645,8 +641,8 @@ namespace single {
             const int iS  = tmp;
 
             for (int il = 0; il < par->num_l; il++) {
-                const int gender = (sex == 0) ? woman : man;
-                solve_choice_specific_single_to_single(t, il, iS, iK, gender, sol, par); // CHANGED
+                solve_choice_specific_single_to_single(t, il, iS, iK, woman, sol, par); // CHANGED
+                solve_choice_specific_single_to_single(t, il, iS, iK, man, sol, par); // CHANGED
             }
         }
     }
@@ -943,36 +939,55 @@ namespace single {
             const bool repartnering = (par->p_meet > 0.0);
             double EV_uncondtitional;
             
-            #pragma omp parallel for collapse(3) num_threads(par->threads) // CHANGED
-            for (int iS = 0; iS < par->num_S; iS++) {                     // NEW
-                for (int iK = 0; iK < par->num_K; iK++) {
-                    for (int iA = 0; iA < par->num_A; iA++) {
-                        auto idx = index::single(t, iS, iK, iA, par); // CHANGED
+            // Total number of iterations
+            const int nS   = par->num_S;
+            const int nK   = par->num_K;
+            long long int total = nS * nK;
 
-                        double EV_cond_not_meet = expected_value_cond_not_meet_partner(t, iS, iK, iA, gender, sol, par); // CHANGED
+            #pragma omp parallel for num_threads(par->threads)
+            for (long long int idx = 0; idx < total; ++idx) {
 
-                        if (repartnering) {
-                            double EV_cond_meet = expected_value_cond_meet_partner(t, iS, iK, iA, gender, sol, par); // CHANGED
-                            EV_cond_meet_partner[idx] = EV_cond_meet;
-                            EV_uncond_meet_partner[idx] = p_meet * EV_cond_meet + (1.0 - p_meet) * EV_cond_not_meet;
-                        } else {
-                            EV_uncond_meet_partner[idx] = EV_cond_not_meet;
-                        }
+                int tmp = idx;
+
+                const int iK  = tmp % nK;
+                tmp /= nK;
+
+                const int iS  = tmp;
+                for (int iA = 0; iA < par->num_A; iA++) {
+                    auto idx = index::single(t, iS, iK, iA, par); // CHANGED
+
+                    double EV_cond_not_meet = expected_value_cond_not_meet_partner(t, iS, iK, iA, gender, sol, par); // CHANGED
+
+                    if (repartnering) {
+                        double EV_cond_meet = expected_value_cond_meet_partner(t, iS, iK, iA, gender, sol, par); // CHANGED
+                        EV_cond_meet_partner[idx] = EV_cond_meet;
+                        EV_uncond_meet_partner[idx] = p_meet * EV_cond_meet + (1.0 - p_meet) * EV_cond_not_meet;
+                    } else {
+                        EV_uncond_meet_partner[idx] = EV_cond_not_meet;
                     }
                 }
             }
 
             // apply quadrature weights + marginal values (type-specific slices)
-            for (int iS = 0; iS < par->num_S; iS++) { // NEW
-                for (int iK = 0; iK < par->num_K; iK++) {
-                    for (int iA = 0; iA < par->num_A; iA++) {
-                        calc_expected_value_single(t, iS, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par); // CHANGED
-                    }
+            // Total number of iterations
+            total = nS * nK;
 
-                    if (par->do_egm){
-                        auto idx_A = index::single(t, iS, iK, 0, par); // CHANGED
-                        calc_marginal_value_single_Agrid(&EV_start_as_single[idx_A], &EmargV_start_as_single[idx_A], gender, sol, par);
-                    }
+            #pragma omp parallel for num_threads(par->threads)
+            for (int idx = 0; idx < total; ++idx) {
+
+                int tmp = idx;
+
+                const int iK  = tmp % nK;
+                tmp /= nK;
+
+                const int iS  = tmp;
+                for (int iA = 0; iA < par->num_A; iA++) {
+                    calc_expected_value_single(t, iS, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par); // CHANGED
+                }
+
+                if (par->do_egm){
+                    auto idx_A = index::single(t, iS, iK, 0, par); // CHANGED
+                    calc_marginal_value_single_Agrid(&EV_start_as_single[idx_A], &EmargV_start_as_single[idx_A], gender, sol, par);
                 }
             }
         }
@@ -981,25 +996,36 @@ namespace single {
     void solve_couple_to_single(int t, sol_struct *sol, par_struct *par) {
         const double div_cost = par->div_cost;
 
-        for (int iS = 0; iS < par->num_S; iS++) {          // NEW
-            for (int iK = 0; iK < par->num_K; iK++) {
-                auto idx_A = index::single(t, iS, iK, 0, par); // CHANGED
+        const int nS   = par->num_S;
+        const int nK   = par->num_K;
+        const int total = nS * nK;
 
-                double* Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
-                double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
-                double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
-                double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
-                double* lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
-                double* lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
-                double* lw_single_to_single = &sol->lw_single_to_single[idx_A];
-                double* lm_single_to_single = &sol->lm_single_to_single[idx_A];
+        #pragma omp parallel for num_threads(par->threads)
+        for (int idx = 0; idx < total; ++idx) {
 
-                for (int iA = 0; iA < par->num_A; iA++) {
-                    Vw_couple_to_single[iA] = Vw_single_to_single[iA] - div_cost;
-                    Vm_couple_to_single[iA] = Vm_single_to_single[iA] - div_cost;
-                    lw_couple_to_single[iA] = lw_single_to_single[iA];
-                    lm_couple_to_single[iA] = lm_single_to_single[iA];
-                }
+            int tmp = idx;
+
+            const int iK  = tmp % nK;
+            tmp /= nK;
+
+            const int iS  = tmp;
+            
+            auto idx_A = index::single(t, iS, iK, 0, par); // CHANGED
+
+            double* Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
+            double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
+            double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
+            double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
+            double* lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
+            double* lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
+            double* lw_single_to_single = &sol->lw_single_to_single[idx_A];
+            double* lm_single_to_single = &sol->lm_single_to_single[idx_A];
+
+            for (int iA = 0; iA < par->num_A; iA++) {
+                Vw_couple_to_single[iA] = Vw_single_to_single[iA] - div_cost;
+                Vm_couple_to_single[iA] = Vm_single_to_single[iA] - div_cost;
+                lw_couple_to_single[iA] = lw_single_to_single[iA];
+                lm_couple_to_single[iA] = lm_single_to_single[iA];
             }
         }
     }
