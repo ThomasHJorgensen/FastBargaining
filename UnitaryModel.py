@@ -52,15 +52,15 @@ class UnitaryModelClass(EconModelClass):
         par.r = 0.03 # interest rate
 
         # grid
-        par.max_m = 5.0 # maximum point in resource grid
+        par.max_m = 15.0 # maximum point in resource grid
         par.num_m = 50 # number of grid points in resource grid   
 
         # EGM
-        par.max_A_pd = 5.0
+        par.max_A_pd = 15.0
 
         # iEGM
         par.num_C = 30 # number of points in pre-computation grid
-        par.max_C = 10.0 # maximum point in pre-computation grid
+        par.max_C = 20.0 # maximum point in pre-computation grid
         par.unequal_C = 1.1
 
         par.interp_method = 'linear' # numerical, linear, Bspline
@@ -119,6 +119,13 @@ class UnitaryModelClass(EconModelClass):
         sim.mean_lifetime_util = np.nan
         sim.euler = np.nan + np.zeros(shape)
         sim.mean_log10_euler = np.nan
+        
+        sim.MSE = np.nan
+        
+        # d. income draws
+        np.random.seed(2026)
+        sim.Yw = np.random.choice(par.Yw_grid,size=(par.simN,par.T),p=par.Yw_weight)
+        sim.Ym = np.random.choice(par.Ym_grid,size=(par.simN,par.T),p=par.Ym_weight)
     
         # e. initialization
         sim.a_init = np.linspace(0.0,par.max_m*0.5,par.simN)
@@ -471,7 +478,7 @@ class UnitaryModelClass(EconModelClass):
         sim.A[:,t] = sim.a_init[:]
         
         # ii. resources
-        sim.M[:,t] = self.trans_m(sim.A[:,t])
+        sim.M[:,t] = self.trans_m(sim.A[:,t],sim.Yw[:,t],sim.Ym[:,t])
 
         for t in range(par.T):
             # add credit constraint
@@ -481,7 +488,7 @@ class UnitaryModelClass(EconModelClass):
             if t<par.T: # check that simulation does not go further than solution                 
 
                 # iii. interpolate optimal total consumption
-                interp_1d_vec(m_interp,c_interp,sim.m[:,t],sim.C[:,t])
+                interp_1d_vec(m_interp,c_interp,sim.M[:,t],sim.C[:,t])
                 
                 # iv. intra-temporal allocation (not really needed for our purpose)
 
@@ -489,21 +496,25 @@ class UnitaryModelClass(EconModelClass):
                 if t<par.T-1:
 
                     sim.A[:,t+1] = sim.M[:,t] - sim.C[:,t]
-                    sim.M[:,t+1] = self.trans_m(sim.A[:,t+1])
+                    sim.M[:,t+1] = self.trans_m(sim.A[:,t+1],sim.Yw[:,t+1],sim.Ym[:,t+1])
                     
                     
     # accuracy measures
     def MSE_consumption(self,true_model,grid_m):
         
         # interpolate true consumption function in the first period
-        true_C = interp_1d(true_model.sol.M[0],true_model.sol.C[0],grid_m)
+        true_C = np.ones(len(grid_m))
+        interp_1d_vec(true_model.sol.M[0],true_model.sol.C[0],grid_m,true_C)
         
         # interpolate model in self likewise
-        model_C = interp_1d(self.sol.M[0],self.sol.C[0],grid_m)
+        model_C = np.ones(len(grid_m))
+        m_interp =  np.concatenate((np.array([0.0]),self.sol.M[0]))
+        c_interp =  np.concatenate((np.array([0.0]),self.sol.C[0]))
+        interp_1d_vec(m_interp,c_interp,grid_m,model_C)
         
         # compute MSE
-        MSE = np.mean((true_C - model_C)**2)
-        return MSE
+        self.sim.MSE = np.mean((true_C - model_C)**2)
+        return self.sim.MSE
     
     def lifetime_utility(self,true_model=None):
         # a. unpack
@@ -511,12 +522,14 @@ class UnitaryModelClass(EconModelClass):
         sim = self.sim
 
         # b. compute utility for each simulated individual and time period
+        # THIS IS SUPER SLOW... construct fine grid  and precompute.
         for t in range(par.T):
             for i in range(par.simN):
-                sim.util[i,t] = par.beta*true_model.HH_util(sim.C[i,t],recalculate=True) if true_model is not None else par.beta*self.HH_util(sim.C[i,t],recalculate=True)         
+                sim.util[i,t] = true_model.HH_util(sim.C[i,t],recalculate=True) if true_model is not None else par.beta*self.HH_util(sim.C[i,t],recalculate=True)         
         
         # c. compute mean lifetime utility across individuals
-        sim.mean_lifetime_util = np.mean(np.sum(sim.util,axis=1))
+        discount = par.beta**np.arange(par.T)
+        sim.mean_lifetime_util = np.mean(np.sum(discount*sim.util,axis=1))
         
         if true_model is not None:
             diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
