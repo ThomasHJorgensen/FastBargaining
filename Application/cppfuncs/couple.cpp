@@ -90,18 +90,18 @@ namespace couple {
 
         // additional starts
         for (int s = 0; s < num_starts; ++s) {
-        if (s == 0) {
-            x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
-        } else {
-            double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-            x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
-        }
+            if (s == 0) {
+                x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
+            } else {
+                double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
+                x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
+            }
 
-        nlopt_optimize(optimizer_handle, x, &minf_local);
-        if (minf_local < minf_global) {
-            best_Ctot = x[0];
-            minf_global = minf_local;
-        }
+            nlopt_optimize(optimizer_handle, x, &minf_local);
+            if (minf_local < minf_global) {
+                best_Ctot = x[0];
+                minf_global = minf_local;
+            }
         }
 
         return best_Ctot;
@@ -520,25 +520,43 @@ namespace couple {
 
     void solve_couple(int t, sol_struct* sol, par_struct* par)
     {
-        #pragma omp parallel for collapse(6) num_threads(par->threads)
-        for (int iP = 0; iP < par->num_power; ++iP) {
-            for (int iL = 0; iL < par->num_love; ++iL) {
-                for (int iSw = 0; iSw < par->num_S; ++iSw) {
-                    for (int iSm = 0; iSm < par->num_S; ++iSm) {
-                        for (int iKw = 0; iKw < par->num_K; ++iKw) {
-                            for (int iKm = 0; iKm < par->num_K; ++iKm) {
-                                // Note: important to have discrete choice as inner loop
-                                //       to allow parallelization over outer loops while
-                                //       making the optimal choice of discrete choice
-                                //       thread-safe
-                                for (int ilw = 0; ilw < par->num_l; ++ilw) {
-                                    for (int ilm = 0; ilm < par->num_l; ++ilm) {
-                                        solve_choice_specific_couple_to_couple(t, iP, iL, iSw, iSm, iKw, iKm, ilw, ilm, sol, par);
-                                    }
-                                }
-                            }
-                        }
-                    }
+
+        const int nP  = par->num_power;
+        const int nL  = par->num_love;
+        const int nS  = par->num_S;
+        const int nK  = par->num_K;
+
+        const long long total =
+            (long long)nP * nL * nS * nS * nK * nK;
+
+        #pragma omp parallel for num_threads(par->threads)
+        for (long long idx = 0; idx < total; ++idx) {
+
+            long long tmp = idx;
+
+            const int iKm = tmp % nK;
+            tmp /= nK;
+
+            const int iKw = tmp % nK;
+            tmp /= nK;
+
+            const int iSm = tmp % nS;
+            tmp /= nS;
+
+            const int iSw = tmp % nS;
+            tmp /= nS;
+
+            const int iL  = tmp % nL;
+            tmp /= nL;
+
+            const int iP  = tmp;
+            // Note: important to have discrete choice as inner loop
+            //       to allow parallelization over outer loops while
+            //       making the optimal choice of discrete choice
+            //       thread-safe
+            for (int ilw = 0; ilw < par->num_l; ++ilw) {
+                for (int ilm = 0; ilm < par->num_l; ++ilm) {
+                    solve_choice_specific_couple_to_couple(t, iP, iL, iSw, iSm, iKw, iKm, ilw, ilm, sol, par);
                 }
             }
         }
@@ -666,87 +684,136 @@ namespace couple {
 
     void expected_value_start_couple(int t, sol_struct* sol, par_struct* par)
     {
-        // logs::write("barg_log.txt", 0, "start");
-        // #pragma omp parallel for collapse(4) num_threads(par->threads)
-        for (int iL = 0; iL < par->num_love; ++iL) {
-            for (int iSw = 0; iSw < par->num_S; ++iSw) {
-                for (int iSm = 0; iSm < par->num_S; ++iSm) {
-                    for (int iKw = 0; iKw < par->num_K; ++iKw) {
-                        for (int iKm = 0; iKm < par->num_K; ++iKm) {
-                            for (int iA = 0; iA < par->num_A; ++iA) {
-                                solve_start_as_couple_powergrid(t, iL, iSw, iSm, iKw, iKm, iA, sol, par);
-                            }
-                        }
-                    }
+        const int nP  = par->num_power;
+        const int nL  = par->num_love;
+        const int nS  = par->num_S;
+        const int nK  = par->num_K;
+
+        // Total number of iterations
+        long long total = 
+            (long long)nL * nS * nS * nK * nK;
+
+        #pragma omp parallel for num_threads(par->threads)
+        for (long long idx = 0; idx < total; ++idx) {
+
+            long long tmp = idx;
+
+            const int iKm = tmp % nK;
+            tmp /= nK;
+
+            const int iKw = tmp % nK;
+            tmp /= nK;
+
+            const int iSm = tmp % nS;
+            tmp /= nS;
+
+            const int iSw = tmp % nS;
+            tmp /= nS;
+
+            const int iL  = tmp;
+                for (int iA = 0; iA < par->num_A; ++iA) {
+                    solve_start_as_couple_powergrid(t, iL, iSw, iSm, iKw, iKm, iA, sol, par);
                 }
-            }
         }
 
-        #pragma omp parallel for collapse(6) num_threads(par->threads)
-        for (int iP = 0; iP < par->num_power; ++iP) {
-            for (int iL = 0; iL < par->num_love; ++iL) {
-                for (int iSw = 0; iSw < par->num_S; ++iSw) {
-                    for (int iSm = 0; iSm < par->num_S; ++iSm) {
-                        for (int iKw = 0; iKw < par->num_K; ++iKw) {
-                            for (int iKm = 0; iKm < par->num_K; ++iKm) {
-                                for (int iA = 0; iA < par->num_A; ++iA) {
-                                    calc_expected_value_couple(
-                                        t, iP, iL, iSw, iSm, iKw, iKm, iA,
-                                        sol->Vw_start_as_couple, sol->Vm_start_as_couple,
-                                        sol->EVw_start_as_couple, sol->EVm_start_as_couple,
-                                        sol, par
-                                    );
-                                }
 
-                                if (par->do_egm) {
-                                    auto idx_A = index::couple(t, iP, iL, iSw, iSm, iKw, iKm, 0, par);
-                                    double power = par->grid_power[iP];
-                                    calc_marginal_value_couple_Agrid(
-                                        power,
-                                        &sol->EVw_start_as_couple[idx_A], &sol->EVm_start_as_couple[idx_A],
-                                        &sol->EmargV_start_as_couple[idx_A],
-                                        sol, par
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
+        total = (long long)nP * nL * nS * nS * nK * nK;
+            
+        #pragma omp parallel for num_threads(par->threads)
+        for (long long idx = 0; idx < total; ++idx) {
+
+            long long tmp = idx;
+
+            const int iKm = tmp % nK;
+            tmp /= nK;
+
+            const int iKw = tmp % nK;
+            tmp /= nK;
+
+            const int iSm = tmp % nS;
+            tmp /= nS;
+
+            const int iSw = tmp % nS;
+            tmp /= nS;
+
+            const int iL  = tmp % nL;
+            tmp /= nL;
+
+            const int iP  = tmp;
+
+            for (int iA = 0; iA < par->num_A; ++iA) {
+                calc_expected_value_couple(
+                    t, iP, iL, iSw, iSm, iKw, iKm, iA,
+                    sol->Vw_start_as_couple, sol->Vm_start_as_couple,
+                    sol->EVw_start_as_couple, sol->EVm_start_as_couple,
+                    sol, par
+                );
+            }
+
+            if (par->do_egm) {
+                auto idx_A = index::couple(t, iP, iL, iSw, iSm, iKw, iKm, 0, par);
+                double power = par->grid_power[iP];
+                calc_marginal_value_couple_Agrid(
+                    power,
+                    &sol->EVw_start_as_couple[idx_A], &sol->EVm_start_as_couple[idx_A],
+                    &sol->EmargV_start_as_couple[idx_A],
+                    sol, par
+                );
             }
         }
     }
 
     void solve_single_to_couple(int t, sol_struct* sol, par_struct* par) {
-        for (int iP = 0; iP < par->num_power; ++iP) {
-            for (int iL = 0; iL < par->num_love; ++iL) {
-                for (int iSw = 0; iSw < par->num_S; ++iSw) {
-                    for (int iSm = 0; iSm < par->num_S; ++iSm) {
-                        for (int iKw = 0; iKw < par->num_K; ++iKw) {
-                            for (int iKm = 0; iKm < par->num_K; ++iKm) {
-                                auto idx_A = index::couple(t, iP, iL, iSw, iSm, iKw, iKm, 0, par);
+        const int nP  = par->num_power;
+        const int nL  = par->num_love;
+        const int nS  = par->num_S;
+        const int nK  = par->num_K;
 
-                                double* Vw_single_to_couple = &sol->Vw_single_to_couple[idx_A];
-                                double* Vm_single_to_couple = &sol->Vm_single_to_couple[idx_A];
-                                double* Vw_couple_to_couple = &sol->Vw_couple_to_couple[idx_A];
-                                double* Vm_couple_to_couple = &sol->Vm_couple_to_couple[idx_A];
-                                double* lw_single_to_couple = &sol->lw_single_to_couple[idx_A];
-                                double* lm_single_to_couple = &sol->lm_single_to_couple[idx_A];
-                                double* lw_couple_to_couple = &sol->lw_couple_to_couple[idx_A];
-                                double* lm_couple_to_couple = &sol->lm_couple_to_couple[idx_A];
+        const long long total =
+            (long long)nP * nL * nS * nS * nK * nK;
+            
+        #pragma omp parallel for num_threads(par->threads)
+        for (long long idx = 0; idx < total; ++idx) {
 
-                                for (int iA = 0; iA < par->num_A; ++iA) {
-                                    Vw_single_to_couple[iA] = Vw_couple_to_couple[iA];
-                                    Vm_single_to_couple[iA] = Vm_couple_to_couple[iA];
-                                    lw_single_to_couple[iA] = lw_couple_to_couple[iA];
-                                    lm_single_to_couple[iA] = lm_couple_to_couple[iA];
-                                }
-                            }
-                        }
-                    }
-                }
+            long long tmp = idx;
+
+            const int iKm = tmp % nK;
+            tmp /= nK;
+
+            const int iKw = tmp % nK;
+            tmp /= nK;
+
+            const int iSm = tmp % nS;
+            tmp /= nS;
+
+            const int iSw = tmp % nS;
+            tmp /= nS;
+
+            const int iL  = tmp % nL;
+            tmp /= nL;
+
+            const int iP  = tmp;
+
+            auto idx_A = index::couple(t, iP, iL, iSw, iSm, iKw, iKm, 0, par);
+
+            double* Vw_single_to_couple = &sol->Vw_single_to_couple[idx_A];
+            double* Vm_single_to_couple = &sol->Vm_single_to_couple[idx_A];
+            double* Vw_couple_to_couple = &sol->Vw_couple_to_couple[idx_A];
+            double* Vm_couple_to_couple = &sol->Vm_couple_to_couple[idx_A];
+            double* lw_single_to_couple = &sol->lw_single_to_couple[idx_A];
+            double* lm_single_to_couple = &sol->lm_single_to_couple[idx_A];
+            double* lw_couple_to_couple = &sol->lw_couple_to_couple[idx_A];
+            double* lm_couple_to_couple = &sol->lm_couple_to_couple[idx_A];
+
+            for (int iA = 0; iA < par->num_A; ++iA) {
+                Vw_single_to_couple[iA] = Vw_couple_to_couple[iA];
+                Vm_single_to_couple[iA] = Vm_couple_to_couple[iA];
+                lw_single_to_couple[iA] = lw_couple_to_couple[iA];
+                lm_single_to_couple[iA] = lm_couple_to_couple[iA];
             }
         }
     }
+
 
     void find_interpolated_labor_index_couple(
         int t, double power, double love, int iSw, int iSm, double Kw, double Km, double A,

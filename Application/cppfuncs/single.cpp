@@ -624,15 +624,29 @@ namespace single {
 
     void solve_single_to_single(int t, sol_struct *sol,par_struct *par){
         // 1. solve choice specific
-        #pragma omp parallel for collapse(3) num_threads(par->threads) // CHANGED collapse(2)->collapse(3)
-        for (int iS = 0; iS < par->num_S; iS++) {                     // NEW loop
-            for (int iK = 0; iK < par->num_K; iK++) {
-                for (int sex = 0; sex < 2; sex++) {
-                    for (int il = 0; il < par->num_l; il++) {
-                        const int gender = (sex == 0) ? woman : man;
-                        solve_choice_specific_single_to_single(t, il, iS, iK, gender, sol, par); // CHANGED
-                    }
-                }
+        const int nS   = par->num_S;
+        const int nK   = par->num_K;
+        const int nSex = 2;  // 0 and 1
+
+        // Total number of iterations
+        const int total = nS * nK * nSex;
+
+        #pragma omp parallel for num_threads(par->threads)
+        for (int idx = 0; idx < total; ++idx) {
+
+            int tmp = idx;
+
+            const int sex = tmp % nSex;
+            tmp /= nSex;
+
+            const int iK  = tmp % nK;
+            tmp /= nK;
+
+            const int iS  = tmp;
+
+            for (int il = 0; il < par->num_l; il++) {
+                const int gender = (sex == 0) ? woman : man;
+                solve_choice_specific_single_to_single(t, il, iS, iK, gender, sol, par); // CHANGED
             }
         }
     }
