@@ -516,16 +516,18 @@ class UnitaryModelClass(EconModelClass):
         self.sim.MSE = np.mean((true_C - model_C)**2)
         return self.sim.MSE
     
-    def lifetime_utility(self,true_model=None):
+    def lifetime_utility(self,HH_util=None,true_model=None):
         # a. unpack
         par = self.par
         sim = self.sim
 
         # b. compute utility for each simulated individual and time period
-        # THIS IS SUPER SLOW... construct fine grid  and precompute.
         for t in range(par.T):
-            for i in range(par.simN):
-                sim.util[i,t] = true_model.HH_util(sim.C[i,t],recalculate=True) if true_model is not None else par.beta*self.HH_util(sim.C[i,t],recalculate=True)         
+            if HH_util is None: # slow!
+                for i in range(par.simN):
+                    sim.util[i,t] = true_model.HH_util(sim.C[i,t],recalculate=True)
+            else:
+                interp_1d_vec(HH_util['C_grid'],HH_util['HH_util_grid'],sim.C[:,t],sim.util[:,t])
         
         # c. compute mean lifetime utility across individuals
         discount = par.beta**np.arange(par.T)
@@ -533,23 +535,26 @@ class UnitaryModelClass(EconModelClass):
         
         if true_model is not None:
             diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
-            return diff/true_model.sim.mean_lifetime_util * 100.0
+            return abs(diff/true_model.sim.mean_lifetime_util) * 100.0
         
         
-    def wealth_compensation(self,true_model):
+    def wealth_compensation(self,HH_util,true_model):
         # search for level of initial wealth that makes mean lifetime utility similar with true model
-        par = self.par
         sim = self.sim
         
         def obj_func(a_init):
-            sim.a_init += a_init 
-            self.simulate()
-            self.lifetime_utility()
+            a_init_orig = sim.a_init.copy()
             
-            diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
+            sim.a_init += a_init/200.0 # measure is in percent relative to expected income 
+            self.simulate()
+            self.lifetime_utility(HH_util=HH_util)
+                        
+            sim.a_init = a_init_orig # reset initial wealth for next evaluation
+            
+            diff = (sim.mean_lifetime_util - true_model.sim.mean_lifetime_util)*1.0
             return diff*diff
         
-        res = minimize(obj_func,0.0,method='SLSQP')
+        res = minimize(obj_func,np.array([0.3]),bounds=((0.0,None),),method='nelder-mead')
         return res.x[0]
             
 
