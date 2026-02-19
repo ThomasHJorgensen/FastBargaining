@@ -407,7 +407,7 @@ namespace couple {
             } else {
                 if (strcmp(par->interp_method, "linear") == 0) {
                     auto idx_interp = index::index4(ilw, ilm, iP, 0, par->num_l, par->num_l, par->num_power, par->num_marg_u);
-                    Cd_tot_pd[iA_pd] = tools::interp_1d(&par->grid_marg_u_couple_for_inv[idx_interp], par->num_marg_u, par->grid_inv_marg_u, EmargUd_pd[iA_pd]);
+                    Cd_tot_pd[iA_pd] = tools::interp_1d(&sol->grid_marg_u_couple_for_inv[idx_interp], par->num_marg_u, par->grid_inv_marg_u, EmargUd_pd[iA_pd]);
                 }
 
                 if (par->interp_inverse) Cd_tot_pd[iA_pd] = 1.0 / Cd_tot_pd[iA_pd];

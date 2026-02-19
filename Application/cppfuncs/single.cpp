@@ -357,7 +357,7 @@ namespace single {
         double* grid_A = par->grid_Aw;
         double* grid_A_pd = par->grid_Aw_pd;
         double* grid_K = par->grid_Kw;
-        double* grid_marg_u_single_for_inv = par->grid_marg_u_single_w_for_inv;
+        double* grid_marg_u_single_for_inv = sol->grid_marg_u_single_w_for_inv;
         double* V = sol->Vwd_single_to_single;
         double* EV = sol->EVw_start_as_single;
         double* margV = sol->EmargVw_start_as_single;
@@ -375,7 +375,7 @@ namespace single {
             grid_A = par->grid_Am;
             grid_A_pd = par->grid_Am_pd;
             grid_K = par->grid_Km;
-            grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
+            grid_marg_u_single_for_inv = sol->grid_marg_u_single_m_for_inv;
             V = sol->Vmd_single_to_single;
             EV = sol->EVm_start_as_single;
             margV = sol->EmargVm_start_as_single;

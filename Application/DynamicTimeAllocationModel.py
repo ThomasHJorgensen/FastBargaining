@@ -37,124 +37,122 @@ class HouseholdModelClass(EconModelClass):
         
     def setup(self):
         par = self.par
-        
+
+        # -------- core / accounting --------
         par.R = 1.03
-        par.beta = 1.0/par.R # Discount factor
-        
-        par.div_A_share = 0.5 # divorce share of wealth to wife
+        par.beta = 1.0 / par.R  # Discount factor
+
+        par.div_A_share = 0.5  # divorce share of wealth to wife
         par.div_cost = 0.0
 
-        par.available_hours = 1.0 #7.0*16.0 # assuming 5*16*52=4160 annual hours)   
-        par.tax_rate = 0.25 # flat tax rate on labor income     
-        
-        # a. income
-        # par.inc_w = 1.0
-        par.mu = 0.5              # level
-        par.sigma_mu = 0.1        # std of mu over types
-        par.gamma = 0.1           # return to human capital
-        par.gamma2 = 0.00         # quadratic return to human capital
+        par.available_hours = 1.0
+        par.tax_rate = 0.25
 
-        # par.inc_m = 1.0
-        par.mu_mult = 1.0              # level
-        par.sigma_mu_mult = 1.0        # std of mu over types
-        par.gamma_mult = 1.0           # return to human capital   
-        par.gamma2_mult = 1.0           # return to human capital   
-
-        # a.1. human capital
-        par.delta = -1.0 # depreciation  
-        par.phi_k = 0.4 # accumulation efficiency
-        par.sigma_epsilon = 0.08         # std of shock to human capital (women baseline)
-        par.sigma_epsilon_mult = 1.0
-
-
-        # b. utility: gender-specific parameters
-        par.rho = 2.0        # CRRA (women baseline)
+        # -------- preferences (baseline + multipliers) --------
+        par.rho = 2.0
         par.rho_mult = 1.0
 
-        par.phi = 0.05        # weight on labor supply (women baseline)
+        par.phi = 0.05
         par.phi_mult = 1.0
 
-        par.eta = 0.5         # curvature on labor supply (women baseline)
+        par.eta = 0.5
         par.eta_mult = 1.0
 
-        par.lambda_ = 0.5      # weight on public good (women baseline)
+        par.lambda_ = 0.5
         par.lambda_mult = 1.0
 
-        # c. Home production
-        par.alpha = 1.0         # output elasticity of hw relative to hm in housework aggregator
-        par.zeta = 0.5             # Substitution paremeter between hw and hm in housework aggregator
-        par.omega = 0.5         # substitution between home produced good and market purchased good
-        par.pi = 0.5            # weight on marked purchased goods in home production
+        # -------- home production --------
+        par.alpha = 1.0
+        par.zeta = 0.5
+        par.omega = 0.5
+        par.pi = 0.5
 
-        # c. state variables
-        par.T = 10
-        
-        # c.1 wealth
-        par.num_A = 50
-        par.max_A = 15.0
+        # -------- income / wages (baseline + multipliers) --------
+        par.mu = 0.5
+        par.sigma_mu = 0.1
+        par.gamma = 0.1
+        par.gamma2 = 0.00
 
-        # c.2. human capital
-        par.num_K = 16
-        par.max_K = par.T*1.5
-        
+        par.mu_mult = 1.0
+        par.sigma_mu_mult = 1.0
+        par.gamma_mult = 1.0
+        par.gamma2_mult = 1.0
+
+        # -------- human capital process --------
+        par.delta = -1.0
+        par.phi_k = 0.4
+        par.sigma_epsilon = 0.08
+        par.sigma_epsilon_mult = 1.0
+
         par.num_shock_K = 5
         par.sigma_K = 0.1
         par.sigma_K_mult = 1.0
-        
-        # c.3 bargaining power
+
+        # -------- model horizon / state space sizes --------
+        par.T = 10
+
+        # wealth
+        par.num_A = 50
+        par.max_A = 15.0
+
+        # human capital
+        par.num_K = 16
+        par.max_K = par.T * 1.5
+
+        # bargaining power
         par.num_power = 21
 
-        # c.4 love/match quality
+        # love / match quality
         par.num_love = 11
         par.max_love = 1.0
-
         par.sigma_love = 0.1
-        par.num_shock_love = 5 #can not be 1, because of interpolation things in code
+        par.num_shock_love = 5  # cannot be 1 due to interpolation
 
-        # d. re-partnering
-        par.p_meet = 0.0
-        par.prob_partner_Kw = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
-        par.prob_partner_Km = np.array([[np.nan]])
-        par.prob_partner_A_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
-        par.prob_partner_A_m = np.array([[np.nan]])
-        par.prob_partner_type_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_types) in setup_grids
-        par.prob_partner_type_m = np.array([[np.nan]])
-
-        # e. discrete choices
-        # par.grid_l = np.array([0.00, 0.4, 0.6])
-        par.full_time_hours = 0.35
-
-
-        # f. pre-computation
-        par.interp_inverse = False # True: interpolate inverse consumption
-        par.precompute_intratemporal = True # if True, precompute intratemporal allocation, else re-solve every time
-
-        # f.1. intratemporal precomputation
-        par.num_Ctot = 20
-        par.max_Ctot = par.max_A*2
+        # types
+        par.num_types = 3
         
-        # f.2. intertemporal precomputation (iEGM)
-        par.do_egm = False
+        # EGM
         par.num_A_pd = par.num_A * 2
         par.max_A_pd = par.max_A
+        
+        # precomputation of intratemporal solution (for iEGM)
         par.num_marg_u = 200
 
-        # g. simulation
+        # -------- (re-)partnering --------
+        par.p_meet = 0.0
+        par.prob_partner_Kw = np.array([[np.nan]])
+        par.prob_partner_Km = np.array([[np.nan]])
+        par.prob_partner_A_w = np.array([[np.nan]])
+        par.prob_partner_A_m = np.array([[np.nan]])
+        par.prob_partner_type_w = np.array([[np.nan]])
+        par.prob_partner_type_m = np.array([[np.nan]])
+
+        # -------- discrete choices --------
+        par.full_time_hours = 0.35
+
+        # -------- precomputation controls --------
+        par.interp_inverse = False
+        par.precompute_intratemporal = True
+
+        # intratemporal precomputation
+        par.num_Ctot = 20
+        par.max_Ctot = par.max_A * 2
+
+        # EGM
+        par.do_egm = False
+
+        # -------- simulation --------
         par.seed = 9210
         par.simT = par.T
         par.simN = 50
         par.init_couple_share = 1.0
 
-        # h. misc
+        # -------- misc --------
         par.threads = 8
         par.num_multistart = 1
-        par.interp_method = 'linear'
+        par.interp_method = "linear"
         par.centered_gradient = True
-        
-        # types
-        par.num_types = 3 # number of types
 
-        
     def setup_gender_parameters(self):
         par = self.par
         
@@ -188,418 +186,485 @@ class HouseholdModelClass(EconModelClass):
         par.sigma_Kw = par.sigma_K
         par.sigma_Km = par.sigma_K * par.sigma_K_mult
         
-
-        
-    def allocate(self):
-        par = self.par
-        sol = self.sol
-        sim = self.sim
-
-        # derive gender-specific parameters
-        self.setup_gender_parameters()
-
-        # setup grids
-        self.setup_grids()
-        
-        # a. singles
-        shape_single = (par.T, par.num_types, par.num_K, par.num_A)                        # single states: T, human capital, assets
-        shape_single_d = (par.T, par.num_l, par.num_types, par.num_K, par.num_A)                        # single states: T, human capital, assets
-        shape_single_egm = (par.T, par.num_l, par.num_types, par.num_K, par.num_A_pd)
-
-        # a.1. single to single
-        sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
-        sol.Vmd_single_to_single = np.ones(shape_single_d) - np.inf
-
-        sol.Cwd_tot_single_to_single = np.ones(shape_single_d) + np.nan           # private consumption, single
-        sol.Cmd_tot_single_to_single = np.ones(shape_single_d) + np.nan
-        sol.Cwd_priv_single_to_single = np.ones(shape_single_d) + np.nan           # private consumption, single
-        sol.Cmd_priv_single_to_single = np.ones(shape_single_d) + np.nan
-        sol.Cwd_inter_single_to_single = np.ones(shape_single_d) + np.nan            # intermediate good, single
-        sol.Cmd_inter_single_to_single = np.ones(shape_single_d) + np.nan
-        sol.Qwd_single_to_single = np.ones(shape_single_d) + np.nan                # home produced good, single
-        sol.Qmd_single_to_single = np.ones(shape_single_d) + np.nan
-        sol.lwd_single_to_single = np.ones(shape_single_d) + np.nan   # labor supply, single
-        sol.lmd_single_to_single = np.ones(shape_single_d) + np.nan
-        sol.hwd_single_to_single = np.ones(shape_single_d) + np.nan                # housework, single
-        sol.hmd_single_to_single = np.ones(shape_single_d) + np.nan
-
-        ### a.1.1. post-decision grids (EGM)
-        sol.EmargUwd_single_to_single_pd = np.zeros(shape_single_egm)           # Expected marginal utility post-decision, woman single
-        sol.Cwd_tot_single_to_single_pd = np.zeros(shape_single_egm)            # C for EGM, woman single 
-        sol.Mwd_single_to_single_pd = np.zeros(shape_single_egm)                # Endogenous grid, woman single
-        sol.Vwd_single_to_single_pd = np.zeros(shape_single_egm)                # Value of being single, post-decision
-
-        sol.EmargUmd_single_to_single_pd = np.zeros(shape_single_egm)          # Expected marginal utility post-decision, man single
-        sol.Cmd_totm_single_to_single_pd = np.zeros(shape_single_egm)           # C for EGM, man single
-        sol.Mmd_single_to_single_pd = np.zeros(shape_single_egm)               # Endogenous grid, man single
-        sol.Vmd_single_to_single_pd = np.zeros(shape_single_egm)               # Value of being single, post-decision
-
-        ## a.2. couple to single
-        sol.Vw_couple_to_single = np.nan + np.ones(shape_single)        # Value marriage -> single
-        sol.Vm_couple_to_single = np.nan + np.ones(shape_single)
-        sol.lw_couple_to_single = np.nan + np.ones(shape_single)   # labor supply marriage -> single
-        sol.lm_couple_to_single = np.nan + np.ones(shape_single)
-
-        sol.Cw_priv_couple_to_single = np.nan + np.ones(shape_single)   # Private consumption marriage -> single
-        sol.Cm_priv_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Cw_inter_couple_to_single = np.nan + np.ones(shape_single)    # intermediate consumption marriage -> single 
-        sol.Cm_inter_couple_to_single = np.nan + np.ones(shape_single)    # Not used
-        sol.Cw_tot_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Cm_tot_couple_to_single = np.nan + np.ones(shape_single)
-        sol.hw_couple_to_single = np.nan + np.ones(shape_single)                # housework,
-        sol.hm_couple_to_single = np.nan + np.ones(shape_single)
-        sol.Qw_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
-        sol.Qm_couple_to_single = np.nan + np.ones(shape_single)        # home produced good, marriage -> single
-
-        ## a.3. start as single
-        sol.EVw_start_as_single = -np.inf + np.ones(shape_single)
-        sol.EVm_start_as_single = -np.inf + np.ones(shape_single)  
-        sol.EmargVw_start_as_single = np.nan + np.ones(shape_single)
-        sol.EmargVm_start_as_single = np.nan + np.ones(shape_single)  
-
-        sol.EVw_cond_meet_partner = np.nan + np.ones(shape_single)
-        sol.EVm_cond_meet_partner = np.nan + np.ones(shape_single)
-        sol.EVw_uncond_meet_partner = np.nan + np.ones(shape_single)
-        sol.EVm_uncond_meet_partner = np.nan + np.ones(shape_single)
-
-
-        # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
-        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
-        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_types, par.num_types, par.num_K, par.num_K,par.num_A_pd)
-        # shape_couple_d = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
-            # couple states: T, power, love, human capital w, human capital w, assets
-
-        # b.1. couple to couple
-        sol.Vwd_couple_to_couple = np.ones(shape_couple_d) + np.nan                # value
-        sol.Vmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
-        sol.Vd_couple_to_couple = np.ones(shape_couple_d) - np.inf                 # couple objective function
-
-        sol.Cwd_priv_couple_to_couple = np.ones(shape_couple_d) + np.nan           # private consumption, couple
-        sol.Cmd_priv_couple_to_couple = np.ones(shape_couple_d) + np.nan
-        sol.Cd_inter_couple_to_couple = np.ones(shape_couple_d) + np.nan             # intermediate good, couple
-        sol.Qd_couple_to_couple = np.ones(shape_couple_d) + np.nan                 # home produced good, couple
-        sol.lwd_couple_to_couple = np.ones(shape_couple_d) + np.nan   # labor supply, couple
-        sol.lmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
-        sol.hwd_couple_to_couple = np.ones(shape_couple_d) + np.nan                # housework, couple
-        sol.hmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
-        sol.Cd_tot_couple_to_couple = np.ones(shape_couple_d) + np.nan
-
-        sol.type_w = np.ones(par.num_types) + np.nan                                 # surplus of marriage
-        sol.type_m = np.ones(par.num_types) + np.nan                                 # surplus of marriage
-
-        sol.power_idx = np.zeros(shape_couple, dtype = np.int_)                     # index of bargaining weight (approx)
-        sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
-
-        ### b.1.1. post-decision grids (EGM)
-        sol.EmargUd_pd = np.zeros(shape_couple_egm)                     # Expected marginal utility post-decision
-        sol.Cd_tot_pd = np.zeros(shape_couple_egm)                      # C for EGM
-        sol.Md_pd = np.zeros(shape_couple_egm)                          # Endogenous grid
-        sol.Vd_couple_to_couple_pd = np.zeros(shape_couple_egm)         # Value of being couple, post-decision
-
-        ## b.2. single to couple
-        sol.Vw_single_to_couple = np.nan + np.ones(shape_couple)           # value single -> marriage
-        sol.Vm_single_to_couple = np.nan + np.ones(shape_couple)
-        sol.V_single_to_couple = -np.inf + np.ones(shape_couple) 
-        sol.lw_single_to_couple = np.nan + np.ones(shape_couple)   # labor supply single -> marriage
-        sol.lm_single_to_couple = np.nan + np.ones(shape_couple)   # labor supply single -> marriage
-
-        sol.Cw_priv_single_to_couple = np.nan + np.ones(shape_couple)
-        sol.Cm_priv_single_to_couple = np.nan + np.ones(shape_couple)
-        sol.hw_single_to_couple = np.nan + np.ones(shape_couple)
-        sol.hm_single_to_couple = np.nan + np.ones(shape_couple)
-        sol.C_inter_single_to_couple = np.nan + np.ones(shape_couple)        
-        sol.Q_single_to_couple = np.nan + np.ones(shape_couple)        
-        sol.Cw_tot_single_to_couple = np.nan + np.ones(shape_couple)   
-        sol.Cm_tot_single_to_couple = np.nan + np.ones(shape_couple) 
-  
-        # shape_power =(par.T,par.num_love,par.num_A,par.num_A)          
-        # sol.initial_power = np.nan + np.zeros(shape_power)
-        # sol.initial_power_idx = np.zeros(shape_power,dtype=np.int_)
-
-        ## b.3. start as couple
-        sol.Vw_start_as_couple = np.ones(shape_couple) + np.nan                 # value
-        sol.Vm_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.margV_start_as_couple = np.ones(shape_couple) + np.nan              # marginal value
-
-        sol.EVw_start_as_couple = np.ones(shape_couple) + np.nan                # expected value
-        sol.EVm_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.EmargV_start_as_couple = np.ones(shape_couple) + np.nan             # expected marginal value
-
-        sol.C_tot_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
-        sol.Cw_priv_start_as_couple = np.ones(shape_couple) + np.nan            # private consumption
-        sol.Cm_priv_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.C_inter_start_as_couple = np.ones(shape_couple) + np.nan              # intermediate good
-        sol.Q_start_as_couple = np.ones(shape_couple) + np.nan                  # home produced good
-        sol.lw_start_as_couple = np.ones(shape_couple) + np.nan    # labor supply
-        sol.lm_start_as_couple = np.ones(shape_couple) + np.nan
-        sol.hw_start_as_couple = np.ones(shape_couple) + np.nan                 # housework
-        sol.hm_start_as_couple = np.ones(shape_couple) + np.nan
-        
-
-        # c. Precomputed intratemporal solution
-        # c.1. couple
-        shape_pre = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
-        sol.pre_Cwd_priv_couple = np.ones(shape_pre) + np.nan
-        sol.pre_Cmd_priv_couple = np.ones(shape_pre) + np.nan
-        sol.pre_Cd_inter_couple = np.ones(shape_pre) + np.nan
-        sol.pre_Qd_couple = np.ones(shape_pre) + np.nan
-        sol.pre_hwd_couple = np.ones(shape_pre) + np.nan
-        sol.pre_hmd_couple = np.ones(shape_pre) + np.nan
-
-        # c.2. single
-        shape_pre_single = (par.num_l, par.num_K, par.num_Ctot)
-        sol.pre_Cwd_priv_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cmd_priv_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cwd_inter_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Cmd_inter_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Qwd_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_Qmd_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_hwd_single = np.ones(shape_pre_single) + np.nan
-        sol.pre_hmd_single = np.ones(shape_pre_single) + np.nan
-    
-
-        # d. simulation
-        # NB: all arrays not containing "init" or "draw" in name are wiped before each simulation
-        shape_sim = (par.simN,par.simT)
-        sim.lw = np.nan + np.ones(shape_sim)
-        sim.lm = np.nan + np.ones(shape_sim)
-        sim.Cw_priv = np.nan + np.ones(shape_sim)               
-        sim.Cm_priv = np.nan + np.ones(shape_sim)
-        sim.hw = np.nan + np.ones(shape_sim)
-        sim.hm = np.nan + np.ones(shape_sim)
-        sim.Cw_inter = np.nan + np.ones(shape_sim)
-        sim.Cm_inter = np.nan + np.ones(shape_sim)
-        sim.Qw = np.nan + np.ones(shape_sim)
-        sim.Qm = np.nan + np.ones(shape_sim)
-        sim.Cw_tot = np.nan + np.ones(shape_sim)
-        sim.Cm_tot = np.nan + np.ones(shape_sim)
-        sim.C_tot = np.nan + np.ones(shape_sim)
-        
-        sim.Kw = np.nan + np.ones(shape_sim)
-        sim.Km = np.nan + np.ones(shape_sim)
-        sim.A = np.nan + np.ones(shape_sim)
-        sim.Aw = np.nan + np.ones(shape_sim)
-        sim.Am = np.nan + np.ones(shape_sim)
-        sim.couple = np.nan + np.ones(shape_sim)
-        sim.power = np.nan + np.ones(shape_sim)
-        sim.love = np.nan + np.ones(shape_sim)
-        sim.type_w = np.zeros(shape_sim,dtype=np.int_)
-        sim.type_m = np.zeros(shape_sim,dtype=np.int_)
-
-        # for simulated moments
-        sim.wage_w = np.nan + np.ones(shape_sim)
-        sim.wage_m = np.nan + np.ones(shape_sim)
-        sim.leisure_w = np.nan + np.ones(shape_sim)
-        sim.leisure_m = np.nan + np.ones(shape_sim)
-        
-        # lifetime utility
-        sim.util = np.nan + np.ones((par.simN, par.simT))
-        sim.mean_lifetime_util = np.array([np.nan])
-
-        # # containers for verifying simulaton
-        # sim.A_own = np.nan + np.ones(shape_sim)
-        # sim.A_partner = np.nan + np.ones(shape_sim)
-
-        ## d.2. shocks
-        self.allocate_draws()
-
-        ## d.3. initial distribution
-        # sim.init_A = np.linspace(0.0,par.max_A*0.2,par.simN) 
-        sim.init_A = np.zeros(par.simN)
-        # sim.init_Kw = np.linspace(0.0,par.max_K*0.2,par.simN) 
-        sim.init_Kw = np.zeros(par.simN)
-        # sim.init_Km = np.linspace(0.0,par.max_K*0.2,par.simN) 
-        sim.init_Km = np.zeros(par.simN)
-        sim.init_Aw = sim.init_A * par.div_A_share
-        sim.init_Am = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
-        sim.init_love = np.zeros(par.simN)
-        sim.init_type_w = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
-        sim.init_type_m = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
-        
-        # e. timing
-        sol.solution_time = np.array([0.0])
-        
-        # f. optimal choices over discrete choices
-        ## a. single
-        sol.Vw_single_to_single = np.ones(shape_single) - np.inf
-        sol.Vm_single_to_single = np.ones(shape_single) - np.inf
-        sol.Cw_tot_single_to_single = np.ones(shape_single) + np.nan
-        sol.Cm_tot_single_to_single = np.ones(shape_single) + np.nan
-        sol.lw_single_to_single = np.ones(shape_single) + np.nan
-        sol.lm_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cw_priv_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_priv_single_to_single = np.ones(shape_single) + np.nan
-        # sol.hw_single_to_single = np.ones(shape_single) + np.nan
-        # sol.hm_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cw_inter_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Cm_inter_single_to_single = np.ones(shape_single) + np.nan
-        # sol.Qw_single_to_single = np.ones(shape_single) + np.nan        
-        # sol.Qm_single_to_single = np.ones(shape_single) + np.nan        
-
-        # b. couple
-        sol.V_couple_to_couple = np.ones(shape_couple) - np.inf
-        sol.Vw_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.Vm_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.C_tot_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.lw_couple_to_couple = np.ones(shape_couple) + np.nan
-        sol.lm_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Cw_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Cm_priv_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.hw_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.hm_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.C_inter_couple_to_couple = np.ones(shape_couple) + np.nan
-        # sol.Q_couple_to_couple = np.ones(shape_couple) + np.nan
-
-    def allocate_draws(self):
-        par = self.par
-        sim = self.sim
-        shape_sim = (par.simN,par.simT)
-
-        np.random.seed(par.seed)
-        # draw K shocks
-        sim.draw_shock_Kw = np.random.lognormal(size=shape_sim, mean=-0.5*par.sigma_Kw**2, sigma=par.sigma_Kw)
-        sim.draw_shock_Km = np.random.lognormal(size=shape_sim, mean=-0.5*par.sigma_Km**2, sigma=par.sigma_Km)
-        sim.draw_love = np.random.normal(size=shape_sim)
-        sim.draw_meet = np.random.uniform(size=shape_sim) # for meeting a partner
-
-        sim.draw_uniform_partner_Kw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner human capital
-        sim.draw_uniform_partner_Km = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner human capital
-        sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
-        sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
-        sim.draw_uniform_partner_type_w = np.random.uniform(size=shape_sim) # for discrete draw of partner type
-        sim.draw_uniform_partner_type_m = np.random.uniform(size=shape_sim) # for discrete draw of partner type
-
-        sim.draw_repartner_love = par.sigma_love*np.random.normal(0.0,1.0,size=shape_sim) #np.random.choice(par.num_love, p=par.prob_partner_love, size=shape_sim) # Love index when repartnering
-
-        
+   
     def setup_grids(self):
         par = self.par
-        
-        par.grid_type = np.arange(par.num_types, dtype=np.float64)        
+
+        # ---------- 0) time ----------
+        par.grid_t = np.arange(par.T)
+
+        # ---------- 1) types ----------
+        par.grid_type = np.arange(par.num_types, dtype=np.float64)
         par.grid_mu_w, par.type_w_share = quadrature.normal_gauss_hermite(par.sigma_mu, par.num_types, mu=par.mu)
-        par.grid_mu_m, par.type_m_share = quadrature.normal_gauss_hermite(par.sigma_mu * par.sigma_mu_mult, par.num_types, mu=par.mu * par.mu_mult)
+        par.grid_mu_m, par.type_m_share = quadrature.normal_gauss_hermite(
+            par.sigma_mu * par.sigma_mu_mult, par.num_types, mu=par.mu * par.mu_mult
+        )
 
-        
-        par.grid_l = np.array([0.0, 0.75, 1])  * par.full_time_hours # labor supply choices (in hours)
+        # ---------- 2) discrete choices ----------
+        par.grid_l = np.array([0.0, 0.75, 1.0]) * par.full_time_hours
         par.num_l = len(par.grid_l)
-        
-        # 0. time
-        par.grid_t = np.arange(par.T) # time grid
-        
-        # a. state variables
-        # a.1. wealth. Single grids are such to avoid interpolation
-        par.grid_A = nonlinspace(0.0,par.max_A,par.num_A,1.1)       # asset grid
 
-        par.grid_Aw = par.div_A_share * par.grid_A                  # asset grid in case of divorce
+        # ---------- 3) state grids ----------
+        # 3.1 assets
+        par.grid_A = nonlinspace(0.0, par.max_A, par.num_A, 1.1)
+        par.grid_Aw = par.div_A_share * par.grid_A
         par.grid_Am = (1.0 - par.div_A_share) * par.grid_A
 
-        # a.2. human capital
+        # 3.2 human capital
         par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
         par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
-        
+
+        # 3.3 bargaining power (more mass in tails)
+        odd_num = np.mod(par.num_power, 2)
+        first_part = nonlinspace(1e-6, 0.5, (par.num_power + odd_num) // 2, 1.3)
+        last_part = np.flip(1.0 - nonlinspace(1e-6, 0.5, (par.num_power - odd_num) // 2 + 1, 1.3))[1:]
+        par.grid_power = np.append(first_part, last_part)
+        par.grid_power_flip = np.flip(par.grid_power)
+
+        # 3.4 love
+        par.grid_love = np.linspace(-par.max_love, par.max_love, par.num_love) if par.num_love > 1 else np.array([0.0])
+
+        # ---------- 4) shocks ----------
         par.grid_shock_Kw, par.grid_weight_Kw = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
         par.grid_shock_Km, par.grid_weight_Km = quadrature.log_normal_gauss_hermite(par.sigma_Km, par.num_shock_K)
 
-        # a.3 power. non-linear grid with more mass in both tails.
-        odd_num = np.mod(par.num_power,2)
-        first_part = nonlinspace(1e-6,0.5,(par.num_power+odd_num)//2,1.3)
-        last_part = np.flip(1.0 - nonlinspace(1e-6,0.5,(par.num_power-odd_num)//2 + 1,1.3))[1:]
-        par.grid_power = np.append(first_part,last_part)
-        par.grid_power_flip = np.flip(par.grid_power) # flip for men
-
-        # a.4 love grid and shock
-        if par.num_love>1:
-            par.grid_love = np.linspace(-par.max_love,par.max_love,par.num_love)
-        else:
-            par.grid_love = np.array([0.0])
-
-        if par.sigma_love<=1.0e-6:
+        if par.sigma_love <= 1.0e-6:
             par.num_shock_love = 1
-            par.grid_shock_love,par.grid_weight_love = np.array([0.0]),np.array([1.0])
-
+            par.grid_shock_love, par.grid_weight_love = np.array([0.0]), np.array([1.0])
         else:
-            par.grid_shock_love,par.grid_weight_love = quadrature.normal_gauss_hermite(par.sigma_love,par.num_shock_love)
+            par.grid_shock_love, par.grid_weight_love = quadrature.normal_gauss_hermite(par.sigma_love, par.num_shock_love)
 
-        # b. Precomputation of intertemporal allocation
-        par.grid_Ctot = nonlinspace(1.0e-6,par.max_Ctot,par.num_Ctot,1.1)  
-
-        # b.1. couple
-        shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_marg_u, )
-        par.grid_marg_u_couple = np.ones(shape_pre_couple) + np.nan
-        par.grid_marg_u_couple_for_inv = np.ones(shape_pre_couple) + np.nan
-
-        # b.2. single
-        shape_pre_single = (par.num_l, par.num_marg_u)
-        par.grid_marg_u_single_w = np.ones(shape_pre_single) + np.nan
-        par.grid_marg_u_single_m = np.ones(shape_pre_single) + np.nan
-        par.grid_marg_u_single_w_for_inv = np.ones(shape_pre_single) + np.nan
-        par.grid_marg_u_single_m_for_inv = np.ones(shape_pre_single) + np.nan
-
-        # b.3 Common
-        par.grid_C_for_marg_u = nonlinspace(1.0e-5,par.max_Ctot,par.num_marg_u,1.1)    # Consumption interpolator grid 
-
-        # EGM
-        par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u) # Flipped to make interpolation possible ## AMO: invert
-        if par.interp_inverse:
-            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
-
-        par.grid_A_pd = nonlinspace(0.0,par.max_A_pd,par.num_A_pd,1.1)
+        # ---------- 5) EGM / iEGM grids ----------
+        # post-decision assets
+        par.grid_A_pd = nonlinspace(0.0, par.max_A_pd, par.num_A_pd, 1.1)
         par.grid_Aw_pd = par.div_A_share * par.grid_A_pd
         par.grid_Am_pd = (1.0 - par.div_A_share) * par.grid_A_pd
 
+        # total consumption grid + marginal utility grid
+        par.grid_Ctot = nonlinspace(1.0e-6, par.max_Ctot, par.num_Ctot, 1.1)
+        par.grid_C_for_marg_u = nonlinspace(1.0e-5, par.max_Ctot, par.num_marg_u, 1.1)
 
+        par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u)
+        if par.interp_inverse:
+            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
+        
+        
+        
+        # ---------- 6) repartnering ----------
+        
         # re-partering probabilities
         par.prob_repartner = par.p_meet*np.ones(par.T) # likelihood of meeting a partner
         
-        if np.isnan(par.prob_partner_Kw[0,0]):
-            par.prob_partner_Kw = np.eye(par.num_K)
-    
-        if np.isnan(par.prob_partner_Km[0,0]):
-            par.prob_partner_Km = np.eye(par.num_K)
-       
-        if np.isnan(par.prob_partner_A_w[0,0]):
-            par.prob_partner_A_w = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
-    
-        if np.isnan(par.prob_partner_A_m[0,0]):
-            par.prob_partner_A_m = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
-       
-        if np.isnan(par.prob_partner_type_w[0,0]):
-            par.prob_partner_type_w = np.eye(par.num_types) #np.ones((par.num_types,par.num_types))/par.num_types # likelihood of meeting a partner with a particular type, conditional on own
-        
-        if np.isnan(par.prob_partner_type_m[0,0]):
-            par.prob_partner_type_m = np.eye(par.num_types) #np.ones((par.num_types,par.num_types))/par.num_types # likelihood of meeting a partner with a particular type, conditional on own
-           
-           
-        # Norm distributed initial love - note: Probability mass between points (approximation of continuous distribution)
-        if par.sigma_love<=1.0e-6:
-            love_cdf = np.where(par.grid_love>=0.0,1.0,0.0)
-        else:
-            love_cdf = stats.norm.cdf(par.grid_love,0.0,par.sigma_love)
-        par.prob_partner_love = np.diff(love_cdf,1)
-        par.prob_partner_love = np.append(par.prob_partner_love,0.0) # lost last point in diff
-        # par.prob_partner_love = np.ones(par.num_love)/par.num_love # uniform
-
+        def _use_eye_if_nan(arr, n):
+            return np.eye(n) if np.isnan(arr[0, 0]) else arr
+            
+        par.prob_partner_Kw = _use_eye_if_nan(par.prob_partner_Kw, par.num_K)
+        par.prob_partner_Km = _use_eye_if_nan(par.prob_partner_Km, par.num_K)
+        par.prob_partner_A_w = _use_eye_if_nan(par.prob_partner_A_w, par.num_A)
+        par.prob_partner_A_m = _use_eye_if_nan(par.prob_partner_A_m, par.num_A)
+        par.prob_partner_type_w = _use_eye_if_nan(par.prob_partner_type_w, par.num_types)
+        par.prob_partner_type_m = _use_eye_if_nan(par.prob_partner_type_m, par.num_types)
+          
         par.cdf_partner_Kw = np.cumsum(par.prob_partner_Kw,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
         par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
         par.cdf_partner_type_w = np.cumsum(par.prob_partner_type_w,axis=1)
         par.cdf_partner_type_m = np.cumsum(par.prob_partner_type_m,axis=1)
+        
+        # Norm distributed initial love - note: Probability mass between points (approximation of continuous distribution)
+        if par.sigma_love <= 1.0e-6:
+            love_cdf = np.where(par.grid_love >= 0.0,1.0,0.0)
+        else:
+            love_cdf = stats.norm.cdf(par.grid_love,0.0,par.sigma_love)
+        par.prob_partner_love = np.append(np.diff(love_cdf, 1), 0.0)
+        
+    def allocate(self):
+        """Allocate model storage (memory) and initialize all values."""
+        # derive gender-specific parameters + grids (needed for sizes)
+        self.setup_gender_parameters()
+        self.setup_grids()
 
+        self.allocate_memory()
+        self.fill_allocations()
+
+    def allocate_memory(self):
+        """Allocate arrays only (no filling/initialization)."""
+        par = self.par
+        sol = self.sol
+        sim = self.sim
+
+        # a. singles
+        shape_single = (par.T, par.num_types, par.num_K, par.num_A)
+        shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
+        shape_single_egm = (par.T, par.num_l, par.num_types, par.num_K, par.num_A_pd)
+
+        # b. couples
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
+        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_types, par.num_types, par.num_K, par.num_K,par.num_A_pd)
+ 
+        # c. precomputations
+        shape_pre_single = (par.num_l, par.num_K, par.num_Ctot)
+        shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
+
+        # d. simulation
+        shape_sim = (par.simN, par.simT)
+        
+        
+        # helper
+        def _alloc(obj, name, shape, dtype=np.float64):
+            setattr(obj, name, np.empty(shape, dtype=dtype))
+
+        # --- a.1. single to single (discrete l choices) ---
+        for name in (
+            "Vwd_single_to_single", "Vmd_single_to_single",
+            "Cwd_tot_single_to_single", "Cmd_tot_single_to_single",
+            "Cwd_priv_single_to_single", "Cmd_priv_single_to_single",
+            "Cwd_inter_single_to_single", "Cmd_inter_single_to_single",
+            "Qwd_single_to_single", "Qmd_single_to_single",
+            "lwd_single_to_single", "lmd_single_to_single",
+            "hwd_single_to_single", "hmd_single_to_single",
+        ):
+            _alloc(sol, name, shape_single_d)
+
+        # --- single to single (EGM post-decision) ---
+        for name in (
+            "EmargUwd_single_to_single_pd", "Cwd_tot_single_to_single_pd",
+            "Mwd_single_to_single_pd", "Vwd_single_to_single_pd",
+            "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
+            "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
+        ):
+            _alloc(sol, name, shape_single_egm)
+
+        # --- a.2. couple to single ---
+        for name in (
+            "Vw_couple_to_single", "Vm_couple_to_single",
+            "lw_couple_to_single", "lm_couple_to_single",
+            "Cw_priv_couple_to_single", "Cm_priv_couple_to_single",
+            "Cw_inter_couple_to_single", "Cm_inter_couple_to_single",
+            "Cw_tot_couple_to_single", "Cm_tot_couple_to_single",
+            "hw_couple_to_single", "hm_couple_to_single",
+            "Qw_couple_to_single", "Qm_couple_to_single",
+        ):
+            _alloc(sol, name, shape_single)
+
+        # --- a.3. start as single ---
+        for name in (
+            "EVw_start_as_single", "EVm_start_as_single",
+            "EmargVw_start_as_single", "EmargVm_start_as_single",
+            "EVw_cond_meet_partner", "EVm_cond_meet_partner",
+            "EVw_uncond_meet_partner", "EVm_uncond_meet_partner",
+        ):
+            _alloc(sol, name, shape_single)
+            
+        # --- a.4 optimal discrete choices single ---
+        for name in (
+            "Vw_single_to_single", "Vm_single_to_single",
+            "Cw_tot_single_to_single", "Cm_tot_single_to_single",
+            "lw_single_to_single", "lm_single_to_single",
+        ):
+            _alloc(sol, name, shape_single)
+
+        # --- b.1. couple to couple ---
+        for name in (
+            "Vwd_couple_to_couple", "Vmd_couple_to_couple", "Vd_couple_to_couple",
+            "Cwd_priv_couple_to_couple", "Cmd_priv_couple_to_couple",
+            "Cd_inter_couple_to_couple", "Qd_couple_to_couple",
+            "lwd_couple_to_couple", "lmd_couple_to_couple",
+            "hwd_couple_to_couple", "hmd_couple_to_couple",
+            "Cd_tot_couple_to_couple",
+        ):
+            _alloc(sol, name, shape_couple_d)
+
+        # state-level power objects (must be shape_couple)
+        _alloc(sol, "power_idx", shape_couple, dtype=np.int_)
+        _alloc(sol, "power", shape_couple)
+
+        # --- couple to couple (EGM post-decision) ---
+        for name in (
+            "EmargUd_pd", "Cd_tot_pd", "Md_pd", "Vd_couple_to_couple_pd"
+        ):
+            _alloc(sol, name, shape_couple_egm)
+
+        # --- b.2. single to couple ---
+        for name in (
+            "Vw_single_to_couple", "Vm_single_to_couple", "V_single_to_couple",
+            "lw_single_to_couple", "lm_single_to_couple",
+            "Cw_priv_single_to_couple", "Cm_priv_single_to_couple",
+            "hw_single_to_couple", "hm_single_to_couple",
+            "C_inter_single_to_couple", "Q_single_to_couple",
+            "Cw_tot_single_to_couple", "Cm_tot_single_to_couple",
+        ):
+            _alloc(sol, name, shape_couple)
+            
+        # --- b.3. start as couple ---
+        for name in (
+            "Vw_start_as_couple", "Vm_start_as_couple", "margV_start_as_couple",
+            "EVw_start_as_couple", "EVm_start_as_couple", "EmargV_start_as_couple",
+            "C_tot_start_as_couple", "Cw_priv_start_as_couple", "Cm_priv_start_as_couple",
+            "C_inter_start_as_couple", "Q_start_as_couple",
+            "lw_start_as_couple", "lm_start_as_couple",
+            "hw_start_as_couple", "hm_start_as_couple",
+        ):
+            _alloc(sol, name, shape_couple)
+            
+        # --- b.4 optimal discrete choices couple ---
+        for name in (
+            "V_couple_to_couple", "Vw_couple_to_couple", "Vm_couple_to_couple",
+            "C_tot_couple_to_couple", "lw_couple_to_couple", "lm_couple_to_couple",
+        ):
+            _alloc(sol, name, shape_couple)
+
+        # --- c. precomputed intratemporal solution ---
+        for name in (
+            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
+            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
+            "pre_Qwd_single", "pre_Qmd_single",
+            "pre_hwd_single", "pre_hmd_single",
+            "grid_marg_u_single_w", "grid_marg_u_single_m",
+            "grid_marg_u_single_w_for_inv", "grid_marg_u_single_m_for_inv",
+        ):
+            _alloc(sol, name, shape_pre_single)
+
+        for name in (
+            "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
+            "pre_Cd_inter_couple", "pre_Qd_couple",
+            "pre_hwd_couple", "pre_hmd_couple",
+            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
+            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
+            "pre_Qwd_single", "pre_Qmd_single",
+            "pre_hwd_single", "pre_hmd_single",
+            "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
+        ):
+            _alloc(sol, name, shape_pre_couple)
+
+
+        # --- d.1 simulation variables ---
+        shape_sim = (par.simN, par.simT)
+        for name in (
+            "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
+            "Cw_inter", "Cm_inter", "Qw", "Qm", "Cw_tot", "Cm_tot", "C_tot",
+            "Kw", "Km", "A", "Aw", "Am", "couple", "power", "love",
+            "wage_w", "wage_m", "leisure_w", "leisure_m",
+        ):
+            _alloc(sim, name, shape_sim)
+
+        # ints (do NOT allocate as float)
+        _alloc(sim, "type_w", shape_sim, dtype=np.int_)
+        _alloc(sim, "type_m", shape_sim, dtype=np.int_)
+
+        _alloc(sim, "util", (par.simN, par.simT))
+        _alloc(sim, "mean_lifetime_util", (1,))
+
+        # --- d.2 shocks ---
+        for name in (
+            "draw_shock_Kw", "draw_shock_Km", "draw_love", "draw_meet",
+            "draw_uniform_partner_Kw", "draw_uniform_partner_Km",
+            "draw_uniform_partner_Aw", "draw_uniform_partner_Am",
+            "draw_uniform_partner_type_w", "draw_uniform_partner_type_m",
+            "draw_repartner_love",
+        ):
+            _alloc(sim, name, shape_sim)
+
+
+        # --- d.3 initial distribution ---
+        _alloc(sim, "init_type_w", (par.simN,), dtype=np.int_)
+        _alloc(sim, "init_type_m", (par.simN,), dtype=np.int_)
+        _alloc(sim, "init_love", (par.simN,))
+        _alloc(sim, "init_Kw", (par.simN,))
+        _alloc(sim, "init_Km", (par.simN,))
+        _alloc(sim, "init_A", (par.simN,))
+        _alloc(sim, "init_Aw", (par.simN,))
+        _alloc(sim, "init_Am", (par.simN,))
+        _alloc(sim, "init_couple", (par.simN,), dtype=np.bool_)
+        _alloc(sim, "init_power_idx", (par.simN,), dtype=np.int_)
+
+        # --- e. other
+        # timing
+        _alloc(sol, "solution_time", (1,))
+
+    def fill_allocations(self):
+        """Fill all allocated arrays with their initial values (nan/inf/zeros) and draws/init states."""
+        par = self.par
+        sol = self.sol
+        sim = self.sim
+
+        def _fill(obj, names, value):
+            for n in names:
+                getattr(obj, n)[...] = value
+
+        # ========= a. singles =========
+        # a.1 single -> single (discrete)
+        _fill(sol, ("Vwd_single_to_single", "Vmd_single_to_single"), -np.inf)
+        _fill(sol, (
+            "Cwd_tot_single_to_single", "Cmd_tot_single_to_single",
+            "Cwd_priv_single_to_single", "Cmd_priv_single_to_single",
+            "Cwd_inter_single_to_single", "Cmd_inter_single_to_single",
+            "Qwd_single_to_single", "Qmd_single_to_single",
+            "lwd_single_to_single", "lmd_single_to_single",
+            "hwd_single_to_single", "hmd_single_to_single",
+        ), np.nan)
+
+        # a.1 EGM post-decision (singles)
+        _fill(sol, (
+            "EmargUwd_single_to_single_pd", "Cwd_tot_single_to_single_pd",
+            "Mwd_single_to_single_pd", "Vwd_single_to_single_pd",
+            "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
+            "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
+        ), 0.0)
+
+        # a.2 couple -> single
+        _fill(sol, (
+            "Vw_couple_to_single", "Vm_couple_to_single",
+            "lw_couple_to_single", "lm_couple_to_single",
+            "Cw_priv_couple_to_single", "Cm_priv_couple_to_single",
+            "Cw_inter_couple_to_single", "Cm_inter_couple_to_single",
+            "Cw_tot_couple_to_single", "Cm_tot_couple_to_single",
+            "hw_couple_to_single", "hm_couple_to_single",
+            "Qw_couple_to_single", "Qm_couple_to_single",
+        ), np.nan)
+
+        # a.3 start as single
+        _fill(sol, ("EVw_start_as_single", "EVm_start_as_single"), -np.inf)
+        _fill(sol, (
+            "EmargVw_start_as_single", "EmargVm_start_as_single",
+            "EVw_cond_meet_partner", "EVm_cond_meet_partner",
+            "EVw_uncond_meet_partner", "EVm_uncond_meet_partner",
+        ), np.nan)
+
+        # a.4 optimal discrete choices (single)
+        _fill(sol, ("Vw_single_to_single", "Vm_single_to_single"), -np.inf)
+        _fill(sol, (
+            "Cw_tot_single_to_single", "Cm_tot_single_to_single",
+            "lw_single_to_single", "lm_single_to_single",
+        ), np.nan)
+
+        # ========= b. couples =========
+        # b.1 couple -> couple (discrete)
+        _fill(sol, ("Vwd_couple_to_couple", "Vmd_couple_to_couple"), np.nan)
+        sol.Vd_couple_to_couple[...] = -np.inf
+        _fill(sol, (
+            "Cwd_priv_couple_to_couple", "Cmd_priv_couple_to_couple",
+            "Cd_inter_couple_to_couple", "Qd_couple_to_couple",
+            "lwd_couple_to_couple", "lmd_couple_to_couple",
+            "hwd_couple_to_couple", "hmd_couple_to_couple",
+            "Cd_tot_couple_to_couple",
+        ), np.nan)
+
+        sol.power_idx[...] = 0
+        sol.power[...] = np.nan
+
+        # b.1 EGM post-decision (couples)
+        _fill(sol, ("EmargUd_pd", "Cd_tot_pd", "Md_pd", "Vd_couple_to_couple_pd"), 0.0)
+
+        # b.2 single -> couple
+        _fill(sol, ("Vw_single_to_couple", "Vm_single_to_couple"), np.nan)
+        sol.V_single_to_couple[...] = -np.inf
+        _fill(sol, (
+            "lw_single_to_couple", "lm_single_to_couple",
+            "Cw_priv_single_to_couple", "Cm_priv_single_to_couple",
+            "hw_single_to_couple", "hm_single_to_couple",
+            "C_inter_single_to_couple", "Q_single_to_couple",
+            "Cw_tot_single_to_couple", "Cm_tot_single_to_couple",
+        ), np.nan)
+
+        # b.3 start as couple
+        _fill(sol, (
+            "Vw_start_as_couple", "Vm_start_as_couple", "margV_start_as_couple",
+            "EVw_start_as_couple", "EVm_start_as_couple", "EmargV_start_as_couple",
+            "C_tot_start_as_couple", "Cw_priv_start_as_couple", "Cm_priv_start_as_couple",
+            "C_inter_start_as_couple", "Q_start_as_couple",
+            "lw_start_as_couple", "lm_start_as_couple",
+            "hw_start_as_couple", "hm_start_as_couple",
+        ), np.nan)
+
+        # b.4 optimal discrete choices (couple)
+        sol.V_couple_to_couple[...] = -np.inf
+        _fill(sol, (
+            "Vw_couple_to_couple", "Vm_couple_to_couple",
+            "C_tot_couple_to_couple",
+            "lw_couple_to_couple", "lm_couple_to_couple",
+        ), np.nan)
+
+        # ========= c. precomputed intratemporal solution =========
+        _fill(sol, (
+            "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
+            "pre_Cd_inter_couple", "pre_Qd_couple",
+            "pre_hwd_couple", "pre_hmd_couple",
+            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
+            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
+            "pre_Qwd_single", "pre_Qmd_single",
+            "pre_hwd_single", "pre_hmd_single",
+        ), np.nan)
+
+        # ========= d. simulation =========
+        # d.1 simulated outcomes (floats -> nan, ints -> 0)
+        _fill(sim, (
+            "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
+            "Cw_inter", "Cm_inter", "Qw", "Qm",
+            "Cw_tot", "Cm_tot", "C_tot",
+            "Kw", "Km", "A", "Aw", "Am",
+            "couple", "power", "love",
+            "wage_w", "wage_m", "leisure_w", "leisure_m",
+            "util",
+        ), np.nan)
+
+        sim.type_w[...] = -1000
+        sim.type_m[...] = -1000
+        sim.mean_lifetime_util[...] = np.nan
+
+        # d.2 shocks (seed -> draws)
+        np.random.seed(par.seed)
+        shape_sim = (par.simN, par.simT)
+        
+        sim.draw_shock_Kw[...] = np.random.lognormal(size=shape_sim, mean=-0.5 * par.sigma_Kw**2, sigma=par.sigma_Kw)
+        sim.draw_shock_Km[...] = np.random.lognormal(size=shape_sim, mean=-0.5 * par.sigma_Km**2, sigma=par.sigma_Km)
+        sim.draw_love[...] = np.random.normal(size=shape_sim)
+        sim.draw_meet[...] = np.random.uniform(size=shape_sim)
+
+        sim.draw_uniform_partner_Kw[...] = np.random.uniform(size=shape_sim)
+        sim.draw_uniform_partner_Km[...] = np.random.uniform(size=shape_sim)
+        sim.draw_uniform_partner_Aw[...] = np.random.uniform(size=shape_sim)
+        sim.draw_uniform_partner_Am[...] = np.random.uniform(size=shape_sim)
+        sim.draw_uniform_partner_type_w[...] = np.random.uniform(size=shape_sim)
+        sim.draw_uniform_partner_type_m[...] = np.random.uniform(size=shape_sim)
+
+        sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
+
+
+        # d.3 initial distribution
+        sim.init_A[...] = 0.0
+        sim.init_Kw[...] = 0.0
+        sim.init_Km[...] = 0.0
+        sim.init_Aw[...] = sim.init_A * par.div_A_share
+        sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
+        sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
+        sim.init_power_idx[...] = (par.num_power // 2)
+        sim.init_love[...] = 0.0
+        sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
+        sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
+
+        # ========= e. timing =========
+        sol.solution_time[...] = 0.0
 
     def solve(self):
 
         sol = self.sol
-        par = self.par 
+        par = self.par
 
-        # re-allocate to ensure new solution
-        # TODO: find alternative to re-allocate every time model is solved
-        self.allocate()
+        # always ensure sizes/grids are up-to-date (needed for shape checks)
+        self.setup_gender_parameters()
+        self.setup_grids()
 
-        self.cpp.solve(sol,par)
+        # allocate once (or when shapes changed), otherwise just reset values
+        shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
+        if (not hasattr(sol, "Vwd_single_to_single")) or (sol.Vwd_single_to_single.shape != shape_single_d):
+            self.allocate()
+        else:
+            self.fill_allocations()
+
+        self.cpp.solve(sol, par)
 
 
     def simulate(self):
@@ -615,14 +680,14 @@ class HouseholdModelClass(EconModelClass):
         self.cpp.simulate(sim,sol,par)
 
         sim.mean_lifetime_util[0] = np.mean(np.sum(sim.util,axis=1))
-        
-    # Make a function that takes sim and makes it into a polars dataframe
-    
+            
     # Estimation
     def obj_func(self,theta,estpar,datamoms,weights=None,do_print=False):
         
         # update parameters, impose bounds and return penalty
         penalty = self.update_par(theta,estpar)
+        self.setup_gender_parameters()
+        self.setup_grids()
         
         # a. solve model
         self.solve()

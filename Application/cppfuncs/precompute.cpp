@@ -167,11 +167,11 @@ namespace precompute{
 
     void precompute_cons_interp_single(int i_marg_u, int il, int gender, par_struct *par, sol_struct *sol, bool interpolate = true){ 
         // get baseline utility
-        double* grid_marg_u_single = par->grid_marg_u_single_w;
-        double* grid_marg_u_single_for_inv = par->grid_marg_u_single_w_for_inv;
+        double* grid_marg_u_single = sol->grid_marg_u_single_w;
+        double* grid_marg_u_single_for_inv = sol->grid_marg_u_single_w_for_inv;
         if(gender==man){
-            grid_marg_u_single = par->grid_marg_u_single_m;
-            grid_marg_u_single_for_inv = par->grid_marg_u_single_m_for_inv;
+            grid_marg_u_single = sol->grid_marg_u_single_m;
+            grid_marg_u_single_for_inv = sol->grid_marg_u_single_m_for_inv;
         }
 
         double delta = 0.0001;
@@ -398,10 +398,10 @@ namespace precompute{
         double util_delta = util_C_couple(par->grid_C_for_marg_u[i_marg_u] + delta, ilw, ilm, iP, 0.0, par, sol, interpolate);
 
         auto idx = index::index4(ilw, ilm, iP, i_marg_u, par->num_l, par->num_l, par->num_power, par->num_marg_u);
-        par->grid_marg_u_couple[idx] = (util_delta - util)/delta;
+        sol->grid_marg_u_couple[idx] = (util_delta - util)/delta;
 
         auto idx_inv = index::index4(ilw, ilm, iP, par->num_marg_u-1 - i_marg_u, par->num_l, par->num_l, par->num_power, par->num_marg_u);
-        par->grid_marg_u_couple_for_inv[idx_inv] = par->grid_marg_u_couple[idx];
+        sol->grid_marg_u_couple_for_inv[idx_inv] = sol->grid_marg_u_couple[idx];
     }
     
     ////////////////////////////// Precomputation //////////////////////////////
