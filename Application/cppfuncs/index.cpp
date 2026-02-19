@@ -41,40 +41,40 @@ namespace index {
     }
 
     // New canonical couple indexing with two K indices: (t, iP, iL, iKw, iKm, iA)
-    long long int couple(long long int t, long long int iP, long long int iL, long long int iSw, long long int iSm, long long int iKw, long long int iKm, long long int iA, par_struct* par){
-        return index8(t, iP, iL, iSw, iSm, iKw, iKm, iA, par->T, par->num_power, par->num_love, par->num_S, par->num_S, par->num_K, par->num_K, par->num_A);
+    long long int couple(long long int t, long long int iP, long long int iL, long long int type_w, long long int type_m, long long int iKw, long long int iKm, long long int iA, par_struct* par){
+        return index8(t, iP, iL, type_w, type_m, iKw, iKm, iA, par->T, par->num_power, par->num_love, par->num_types, par->num_types, par->num_K, par->num_K, par->num_A);
     }
     // Discrete couple index with two K indices: (t, ilw, ilm, iP, iL, iKw, iKm, iA)
-    long long int couple_d(long long int t, long long int ilw, long long int ilm, long long int iP, long long int iL, long long int iSw, long long int iSm, long long int iKw, long long int iKm, long long int iA, par_struct* par){
-        return index10(t, ilw, ilm, iP, iL, iSw, iSm, iKw, iKm, iA, par->T, par->num_l, par->num_l, par->num_power, par->num_love, par->num_S, par->num_S, par->num_K, par->num_K, par->num_A);
+    long long int couple_d(long long int t, long long int ilw, long long int ilm, long long int iP, long long int iL, long long int type_w, long long int type_m, long long int iKw, long long int iKm, long long int iA, par_struct* par){
+        return index10(t, ilw, ilm, iP, iL, type_w, type_m, iKw, iKm, iA, par->T, par->num_l, par->num_l, par->num_power, par->num_love, par->num_types, par->num_types, par->num_K, par->num_K, par->num_A);
     }
     // Endogenous asset grid variant with two K indices: (t, ilw, ilm, iP, iL, iKw, iKm, iA_pd)
-    long long int couple_pd(long long int t, long long int ilw, long long int ilm, long long int iP, long long int iL, long long int iSw, long long int iSm, long long int iKw, long long int iKm, long long int iA_pd, par_struct* par){
-        return index10(t, ilw, ilm, iP, iL, iSw, iSm, iKw, iKm, iA_pd, par->T, par->num_l, par->num_l, par->num_power, par->num_love, par->num_S, par->num_S, par->num_K, par->num_K, par->num_A_pd);
+    long long int couple_pd(long long int t, long long int ilw, long long int ilm, long long int iP, long long int iL, long long int type_w, long long int type_m, long long int iKw, long long int iKm, long long int iA_pd, par_struct* par){
+        return index10(t, ilw, ilm, iP, iL, type_w, type_m, iKw, iKm, iA_pd, par->T, par->num_l, par->num_l, par->num_power, par->num_love, par->num_types, par->num_types, par->num_K, par->num_K, par->num_A_pd);
     }
 
     // Single-state indexing now uses (t, il, iK, iA)
-    long long int single(long long int t, long long int iS, long long int iK, long long int iA, par_struct* par){
-        return index4(t, iS, iK, iA, par->T, par->num_S, par->num_K, par->num_A);
+    long long int single(long long int t, long long int type, long long int iK, long long int iA, par_struct* par){
+        return index4(t, type, iK, iA, par->T, par->num_types, par->num_K, par->num_A);
     }
-    long long int single_d(long long int t, long long int il, long long int iS, long long int iK, long long int iA, par_struct* par){
-        return index5(t, il, iS, iK, iA, par->T, par->num_l, par->num_S, par->num_K, par->num_A);
+    long long int single_d(long long int t, long long int il, long long int type, long long int iK, long long int iA, par_struct* par){
+        return index5(t, il, type, iK, iA, par->T, par->num_l, par->num_types, par->num_K, par->num_A);
     }
-    long long int single_pd(long long int t, long long int il, long long int iS, long long int iK, long long int iA_pd, par_struct* par){
-        return index5(t, il, iS, iK, iA_pd, par->T, par->num_l, par->num_S, par->num_K, par->num_A_pd);
+    long long int single_pd(long long int t, long long int il, long long int type, long long int iK, long long int iA_pd, par_struct* par){
+        return index5(t, il, type, iK, iA_pd, par->T, par->num_l, par->num_types, par->num_K, par->num_A_pd);
     }
 
     struct index_couple_struct {
         int t;
         int iL;
-        int iSw;
-        int iSm;
+        int type_w;
+        int type_m;
         int iKw;
         int iKm;
         int iA;
         par_struct *par; 
         long long int idx(long long int iP){
-            return index::couple(t,iP,iL,iSw,iSm,iKw,iKm,iA,par); 
+            return index::couple(t,iP,iL,type_w,type_m,iKw,iKm,iA,par); 
         }
     };
 
@@ -82,8 +82,8 @@ namespace index {
             // state levels
             int t;
             double love;
-            int iSw;
-            int iSm;
+            int type_w;
+            int type_m;
             double Kw;
             double Km;
             double A;
@@ -103,7 +103,7 @@ namespace index {
     typedef struct{
             // state levels
             int t;
-            int iS;
+            int type;
             double K;
             double A;
             

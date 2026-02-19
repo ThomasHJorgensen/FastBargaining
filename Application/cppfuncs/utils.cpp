@@ -65,10 +65,10 @@ namespace utils {
         return CES(C_inter, h_agg, par);
     }
 
-    double wage(int iS, double K, int gender, par_struct* par) {
-        double log_wage = par->grid_mu_w[iS] + par->gamma_w*K;
+    double wage(int type, double K, int gender, par_struct* par) {
+        double log_wage = par->grid_mu_w[type] + par->gamma_w*K;
         if (gender == man) {
-            log_wage = par->grid_mu_m[iS] + par->gamma_m*K;
+            log_wage = par->grid_mu_m[type] + par->gamma_m*K;
         }
         double full_time = par->grid_l[par->num_l-1];
         return exp(log_wage) / full_time; // normalize by full-time

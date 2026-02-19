@@ -27,7 +27,7 @@ class model_plotter():
             # Default grid names if not provided
             self.grid_names = {
                 't': 'grid_t', 
-                'iS': 'grid_S',
+                'type': 'grid_type',
                 'iK': 'grid_Kw', # Female grid is used, so plots might be misleading if plotting male human capital on x-axis
                 'iP': 'grid_power', 
                 'iL': 'grid_love', 

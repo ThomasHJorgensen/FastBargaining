@@ -117,8 +117,8 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_Km = np.array([[np.nan]])
         par.prob_partner_A_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_A) in setup_grids
         par.prob_partner_A_m = np.array([[np.nan]])
-        par.prob_partner_Sw = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_S) in setup_grids
-        par.prob_partner_Sm = np.array([[np.nan]])
+        par.prob_partner_type_w = np.array([[np.nan]]) # if not set here, defaults to np.eye(par.num_types) in setup_grids
+        par.prob_partner_type_m = np.array([[np.nan]])
 
         # e. discrete choices
         # par.grid_l = np.array([0.00, 0.4, 0.6])
@@ -152,7 +152,7 @@ class HouseholdModelClass(EconModelClass):
         par.centered_gradient = True
         
         # types
-        par.num_S = 5 # number of types
+        par.num_types = 3 # number of types
 
         
     def setup_gender_parameters(self):
@@ -202,9 +202,9 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         
         # a. singles
-        shape_single = (par.T, par.num_S, par.num_K, par.num_A)                        # single states: T, human capital, assets
-        shape_single_d = (par.T, par.num_l, par.num_S, par.num_K, par.num_A)                        # single states: T, human capital, assets
-        shape_single_egm = (par.T, par.num_l, par.num_S, par.num_K, par.num_A_pd)
+        shape_single = (par.T, par.num_types, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single_d = (par.T, par.num_l, par.num_types, par.num_K, par.num_A)                        # single states: T, human capital, assets
+        shape_single_egm = (par.T, par.num_l, par.num_types, par.num_K, par.num_A_pd)
 
         # a.1. single to single
         sol.Vwd_single_to_single = np.ones(shape_single_d) - np.inf                
@@ -264,9 +264,9 @@ class HouseholdModelClass(EconModelClass):
 
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_S, par.num_S, par.num_K, par.num_K, par.num_A)
-        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_S, par.num_S, par.num_K, par.num_K, par.num_A)
-        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_S, par.num_S, par.num_K, par.num_K,par.num_A_pd)
+        shape_couple = (par.T, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
+        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_types, par.num_types, par.num_K, par.num_K,par.num_A_pd)
         # shape_couple_d = (par.T, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
             # couple states: T, power, love, human capital w, human capital w, assets
 
@@ -285,8 +285,8 @@ class HouseholdModelClass(EconModelClass):
         sol.hmd_couple_to_couple = np.ones(shape_couple_d) + np.nan
         sol.Cd_tot_couple_to_couple = np.ones(shape_couple_d) + np.nan
 
-        sol.Sw = np.ones(par.num_power) + np.nan                                 # surplus of marriage
-        sol.Sm = np.ones(par.num_power) + np.nan
+        sol.type_w = np.ones(par.num_types) + np.nan                                 # surplus of marriage
+        sol.type_m = np.ones(par.num_types) + np.nan                                 # surplus of marriage
 
         sol.power_idx = np.zeros(shape_couple, dtype = np.int_)                     # index of bargaining weight (approx)
         sol.power = np.zeros(shape_couple) + np.nan                             # bargainng weight (interpolated)
@@ -384,8 +384,8 @@ class HouseholdModelClass(EconModelClass):
         sim.couple = np.nan + np.ones(shape_sim)
         sim.power = np.nan + np.ones(shape_sim)
         sim.love = np.nan + np.ones(shape_sim)
-        sim.iSw = np.zeros(shape_sim,dtype=np.int_)
-        sim.iSm = np.zeros(shape_sim,dtype=np.int_)
+        sim.type_w = np.zeros(shape_sim,dtype=np.int_)
+        sim.type_m = np.zeros(shape_sim,dtype=np.int_)
 
         # for simulated moments
         sim.wage_w = np.nan + np.ones(shape_sim)
@@ -416,8 +416,8 @@ class HouseholdModelClass(EconModelClass):
         sim.init_couple = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx = par.num_power//2 * np.ones(par.simN,dtype=np.int_)
         sim.init_love = np.zeros(par.simN)
-        sim.init_Sw = np.random.choice(par.num_S, par.simN, p=par.Sw_share)
-        sim.init_Sm = np.random.choice(par.num_S, par.simN, p=par.Sm_share)
+        sim.init_type_w = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
+        sim.init_type_m = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
         
         # e. timing
         sol.solution_time = np.array([0.0])
@@ -469,8 +469,8 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_uniform_partner_Km = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner human capital
         sim.draw_uniform_partner_Aw = np.random.uniform(size=shape_sim) # for inverse cdf transformation of partner wealth
         sim.draw_uniform_partner_Am = np.random.uniform(size=shape_sim) # for inverse cdf tranformation of partner wealth
-        sim.draw_uniform_partner_Sw = np.random.uniform(size=shape_sim) # for discrete draw of partner type
-        sim.draw_uniform_partner_Sm = np.random.uniform(size=shape_sim) # for discrete draw of partner type
+        sim.draw_uniform_partner_type_w = np.random.uniform(size=shape_sim) # for discrete draw of partner type
+        sim.draw_uniform_partner_type_m = np.random.uniform(size=shape_sim) # for discrete draw of partner type
 
         sim.draw_repartner_love = par.sigma_love*np.random.normal(0.0,1.0,size=shape_sim) #np.random.choice(par.num_love, p=par.prob_partner_love, size=shape_sim) # Love index when repartnering
 
@@ -478,9 +478,9 @@ class HouseholdModelClass(EconModelClass):
     def setup_grids(self):
         par = self.par
         
-        par.grid_S = np.arange(par.num_S, dtype=np.float64)        
-        par.grid_mu_w, par.Sw_share = quadrature.normal_gauss_hermite(par.sigma_mu, par.num_S, mu=par.mu)
-        par.grid_mu_m, par.Sm_share = quadrature.normal_gauss_hermite(par.sigma_mu * par.sigma_mu_mult, par.num_S, mu=par.mu * par.mu_mult)
+        par.grid_type = np.arange(par.num_types, dtype=np.float64)        
+        par.grid_mu_w, par.type_w_share = quadrature.normal_gauss_hermite(par.sigma_mu, par.num_types, mu=par.mu)
+        par.grid_mu_m, par.type_m_share = quadrature.normal_gauss_hermite(par.sigma_mu * par.sigma_mu_mult, par.num_types, mu=par.mu * par.mu_mult)
 
         
         par.grid_l = np.array([0.0, 0.75, 1])  * par.full_time_hours # labor supply choices (in hours)
@@ -566,11 +566,11 @@ class HouseholdModelClass(EconModelClass):
         if np.isnan(par.prob_partner_A_m[0,0]):
             par.prob_partner_A_m = np.eye(par.num_A) #np.ones((par.num_A,par.num_A))/par.num_A # likelihood of meeting a partner with a particular level of wealth, conditional on own
        
-        if np.isnan(par.prob_partner_Sw[0,0]):
-            par.prob_partner_Sw = np.eye(par.num_S) #np.ones((par.num_S,par.num_S))/par.num_S # likelihood of meeting a partner with a particular type, conditional on own
+        if np.isnan(par.prob_partner_type_w[0,0]):
+            par.prob_partner_type_w = np.eye(par.num_types) #np.ones((par.num_types,par.num_types))/par.num_types # likelihood of meeting a partner with a particular type, conditional on own
         
-        if np.isnan(par.prob_partner_Sm[0,0]):
-            par.prob_partner_Sm = np.eye(par.num_S) #np.ones((par.num_S,par.num_S))/par.num_S # likelihood of meeting a partner with a particular type, conditional on own
+        if np.isnan(par.prob_partner_type_m[0,0]):
+            par.prob_partner_type_m = np.eye(par.num_types) #np.ones((par.num_types,par.num_types))/par.num_types # likelihood of meeting a partner with a particular type, conditional on own
            
            
         # Norm distributed initial love - note: Probability mass between points (approximation of continuous distribution)
@@ -586,8 +586,8 @@ class HouseholdModelClass(EconModelClass):
         par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
         par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Am = np.cumsum(par.prob_partner_A_m,axis=1)
-        par.cdf_partner_Sw = np.cumsum(par.prob_partner_Sw,axis=1)
-        par.cdf_partner_Sm = np.cumsum(par.prob_partner_Sm,axis=1)
+        par.cdf_partner_type_w = np.cumsum(par.prob_partner_type_w,axis=1)
+        par.cdf_partner_type_m = np.cumsum(par.prob_partner_type_m,axis=1)
 
 
     def solve(self):
