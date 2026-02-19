@@ -296,7 +296,7 @@ class HouseholdModelClass(EconModelClass):
 
         # a. singles
         shape_single = (par.T, par.num_types, par.num_K, par.num_A)
-        shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
+        shape_single_d = (par.T, par.num_l, par.num_types, par.num_K, par.num_A)
         shape_single_egm = (par.T, par.num_l, par.num_types, par.num_K, par.num_A_pd)
 
         # b. couples
