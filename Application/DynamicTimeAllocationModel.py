@@ -322,7 +322,6 @@ class HouseholdModelClass(EconModelClass):
         # par.idx_pre_single_l, par.idx_pre_single_K, par.idx_pre_single_Ctot = self.fast_unravel_indices(shape_pre_single)
         # par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, par.idx_pre_couple_Ctot = self.fast_unravel_indices(shape_pre_couple)
         # OBS: shape_pre_single should not be used for iEGM where i_u_marg is important and not iC.
-        # OBS: K is or is not in precomputation?
         
     def allocate(self):
         """Allocate model storage (memory) and initialize all values."""

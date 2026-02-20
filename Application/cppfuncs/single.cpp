@@ -470,7 +470,7 @@ namespace single {
         double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
 
         if (par->centered_gradient) {
-            for (int iA = 1; iA <= par->num_A - 2; ++iA) {
+            for (int iA = 1; iA < par->num_A - 1; ++iA) {
                 int iA_plus = iA + 1;
                 int iA_minus = iA - 1;
                 double denom = 1.0 / (grid_A[iA_plus] - grid_A[iA_minus]);
@@ -482,7 +482,7 @@ namespace single {
             int i = par->num_A - 1;
             margV[i] = (margV[i - 2] - margV[i - 1]) / (grid_A[i - 2] - grid_A[i - 1]) * (grid_A[i] - grid_A[i - 1]) + margV[i - 1];
         } else {
-            for (int iA = 0; iA <= par->num_A - 2; ++iA) {
+            for (int iA = 0; iA < par->num_A - 1; ++iA) {
                 int iA_plus = iA + 1;
                 double denom = 1.0 / (grid_A[iA_plus] - grid_A[iA]);
                 margV[iA] = V[iA_plus] * denom - V[iA] * denom;
@@ -490,6 +490,8 @@ namespace single {
             }
         }
     }
+
+
 
     void update_optimal_discrete_solution_single_Agrid(int t, int type, int il, int iK, int gender, sol_struct* sol, par_struct* par){
 
@@ -508,7 +510,7 @@ namespace single {
         }
 
         // Find maximum value over all labor choices
-        for (int iA=0; iA<par->num_A; iA++){
+        for (int iA=0; iA < par->num_A; iA++){
             if (V[iA] < Vd[iA]) {
                 V[iA] = Vd[iA];
                 labor[iA] = par->grid_l[il];
@@ -595,7 +597,7 @@ namespace single {
         
         // Get indices
         int iA_single = state_single->iA;
-        int iK_single = state_single->iK; // OBS: return to this. Probably need to interpolate over K as well in single interpolation.
+        int iK_single = state_single->iK;
         int iL_couple = state_couple->iL;
         int iKw_couple = state_couple->iKw;
         int iKm_couple = state_couple->iKm;
@@ -616,10 +618,13 @@ namespace single {
         double Vsts = tools::_interp_2d(grid_K_single, grid_A_single, par->num_K, par->num_A, &V_single_to_single[idx_interp_single], K, A, iK_single, iA_single);
         // interpolate couple V_single_to_couple
         auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par); // OBS: can we do something else than interpolating over all dimensions here? Does this even work with S?
-        double Vstc = tools::_interp_5d_index(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+        double Vstc = tools::_interp_5d_index(
+            par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
             par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-            &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot,
-            iP, iL_couple, iKw_couple, iKm_couple, iA_couple);
+            &V_single_to_couple[idx_interp_couple], 
+            power, love, Kw, Km, A_tot,
+            iP, iL_couple, iKw_couple, iKm_couple, iA_couple
+        );
 
         // surplus
         return Vstc - Vsts;
@@ -762,9 +767,12 @@ namespace single {
                             if (power >= 0.0) {
                                 double A_tot = Aw + Am;
                                 auto idx_interp_couple = index::couple(t, type_w, type_m, 0, iL, 0, 0, 0, par); 
-                                val = tools::_interp_5d(par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                                                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                                                    &V_single_to_couple[idx_interp_couple], power, love, Kw, Km, A_tot);
+                                val = tools::_interp_5d(
+                                    par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+                                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                                    &V_single_to_couple[idx_interp_couple], 
+                                    power, love, Kw, Km, A_tot
+                                );
                                 // OBS: actually onlu interpolation in power and A_tot is needed here
                             } else {
                                 val = V_single_to_single[idx_single];

@@ -443,7 +443,7 @@ namespace couple {
     void calc_marginal_value_couple_Agrid(double power, double* Vw, double* Vm, double* margV, sol_struct* sol, par_struct* par)
     {
         if (par->centered_gradient) {
-            for (int iA = 1; iA <= par->num_A - 2; ++iA) {
+            for (int iA = 1; iA < par->num_A - 1; ++iA) {
                 int iA_plus = iA + 1;
                 int iA_minus = iA - 1;
                 double denom = 1.0 / (par->grid_A[iA_plus] - par->grid_A[iA_minus]);
@@ -457,7 +457,7 @@ namespace couple {
             int i = par->num_A - 1;
             margV[i] = (margV[i - 2] - margV[i - 1]) / (par->grid_A[i - 2] - par->grid_A[i - 1]) * (par->grid_A[i] - par->grid_A[i - 1]) + margV[i - 1];
         } else {
-            for (int iA = 0; iA <= par->num_A - 2; ++iA) {
+            for (int iA = 0; iA < par->num_A - 1; ++iA) {
                 int iA_plus = iA + 1;
                 double denom = 1.0 / (par->grid_A[iA_plus] - par->grid_A[iA]);
                 double margVw = Vw[iA_plus] * denom - Vw[iA] * denom;
@@ -648,7 +648,7 @@ namespace couple {
                     auto idx_Km = tools::binary_search(0, par->num_K, par->grid_Km, Km_shock);
                     
                     
-                    auto idx_interp = index::couple(t, type_w, type_m, iP, 0, 0, 0, 0, par); // OBS: does interpolation over S go well?
+                    auto idx_interp = index::couple(t, type_w, type_m, iP, 0, 0, 0, 0, par);
                     double Vw_now = tools::_interp_4d_index(
                         par->grid_love, par->grid_Kw,par->grid_Km,par->grid_A,
                         par->num_love, par->num_K, par->num_K, par->num_A,

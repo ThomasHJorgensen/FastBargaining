@@ -169,7 +169,7 @@ namespace sim {
         // b. find first index in asset cdf above uniform draw.
         int index_iA = tools::binary_search(0,par->num_A,grid_A,A);
         for (int iAp=0; iAp<par->num_A; iAp++){
-            double cdf_Ap_cond = tools::interp_1d_index_delta(grid_A,par->num_A,cdf_partner_A,A, index_iA,par->num_A, iAp,1,0);
+            double cdf_Ap_cond = tools::interp_1d_index_delta(grid_A,par->num_A,cdf_partner_A,A, index_iA,par->num_A, iAp,1,0); // OBS: is 1,0 correct for interpolation here?
             if(cdf_Ap_cond >= random){
                 return grid_A[iAp];
             }
@@ -303,7 +303,7 @@ namespace sim {
                             double Ap = draw_partner_assets(Aw_lag, woman, i,t, sim, par);
                             love = sim->draw_repartner_love[it]; // note: love draws on grid.
 
-                            power = single::calc_initial_bargaining_weight(t, type_w, type_m, love, Kw_lag, Kp, Aw_lag, Ap, sol, par); // OBS: use type_p or something I think
+                            power = single::calc_initial_bargaining_weight(t, type_w, type_p, love, Kw_lag, Kp, Aw_lag, Ap, sol, par); 
 
                             if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
                                 sim->couple[it] = true;
