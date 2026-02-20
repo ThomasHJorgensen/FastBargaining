@@ -238,212 +238,207 @@ namespace sim {
 
     void model(sim_struct *sim, sol_struct *sol, par_struct *par){
     
-        // pre-compute intra-temporal optimalallocation
-        #pragma omp parallel num_threads(par->threads)
-        {
-            #pragma omp for
-            for (int i=0; i<par->simN; i++){
-                for (int t=0; t < par->simT; t++){
-                    int it = index::index2(i,t,par->simN,par->simT);
+        #pragma omp for schedule(static)
+        for (int i=0; i<par->simN; i++){
+            for (int t=0; t < par->simT; t++){
+                int it = index::index2(i,t,par->simN,par->simT);
 
-                    // state variables
-                    double A_lag = 0.0;
-                    double Aw_lag = 0.0;
-                    double Am_lag = 0.0;
-                    double Kw_lag = 0.0;
-                    double Km_lag = 0.0;
-                    bool   couple_lag = false;
-                    double power_lag = 0.0;
-                    double love = 0.0;
-                    int type_w = 0;
-                    int type_m = 0;
-                    if (t==0){
-                        Kw_lag = sim->init_Kw[i];
-                        Km_lag = sim->init_Km[i];
-                        A_lag = sim->init_A[i];
-                        Aw_lag = sim->init_Aw[i];
-                        Am_lag = sim->init_Am[i];
-                        couple_lag = sim->init_couple[i];
-                        power_lag = par->grid_power[sim->init_power_idx[i]];
-                        love = sim->init_love[i];
-                        sim->love[it] = love;
-                        type_w = sim->init_type_w[i];
-                        type_m = sim->init_type_m[i];
+                // state variables
+                double A_lag = 0.0;
+                double Aw_lag = 0.0;
+                double Am_lag = 0.0;
+                double Kw_lag = 0.0;
+                double Km_lag = 0.0;
+                bool   couple_lag = false;
+                double power_lag = 0.0;
+                double love = 0.0;
+                int type_w = 0;
+                int type_m = 0;
+                if (t==0){
+                    Kw_lag = sim->init_Kw[i];
+                    Km_lag = sim->init_Km[i];
+                    A_lag = sim->init_A[i];
+                    Aw_lag = sim->init_Aw[i];
+                    Am_lag = sim->init_Am[i];
+                    couple_lag = sim->init_couple[i];
+                    power_lag = par->grid_power[sim->init_power_idx[i]];
+                    love = sim->init_love[i];
+                    sim->love[it] = love;
+                    type_w = sim->init_type_w[i];
+                    type_m = sim->init_type_m[i];
+                } else {
+                    int it_1 = index::index2(i,t-1,par->simN,par->simT);
+                    Kw_lag = sim->Kw[it_1];
+                    Km_lag = sim->Km[it_1];
+                    A_lag = sim->A[it_1];
+                    Aw_lag = sim->Aw[it_1];
+                    Am_lag = sim->Am[it_1];
+                    couple_lag = sim->couple[it_1];
+                    power_lag = sim->power[it_1];
+                    love = sim->love[it];
+                    type_w = sim->type_w[it_1];
+                    type_m = sim->type_m[it_1];
+                } 
+                
+                // a) Find transitions in couple/single status and calculate power 
+                double power = 1000.0; // nonsense value
+                if (couple_lag) { // if start as couple
+
+                    power = update_power(t,type_w, type_m, power_lag,love, Kw_lag, Km_lag, A_lag, Aw_lag, Am_lag, sim, sol, par);
+    
+                    if (power < 0.0) { // divorce is coded as -1
+                        sim->couple[it] = false;
                     } else {
-                        int it_1 = index::index2(i,t-1,par->simN,par->simT);
-                        Kw_lag = sim->Kw[it_1];
-                        Km_lag = sim->Km[it_1];
-                        A_lag = sim->A[it_1];
-                        Aw_lag = sim->Aw[it_1];
-                        Am_lag = sim->Am[it_1];
-                        couple_lag = sim->couple[it_1];
-                        power_lag = sim->power[it_1];
-                        love = sim->love[it];
-                        type_w = sim->type_w[it_1];
-                        type_m = sim->type_m[it_1];
-                    } 
-                    
-                    // a) Find transitions in couple/single status and calculate power 
-                    double power = 1000.0; // nonsense value
-                    if (couple_lag) { // if start as couple
+                        sim->couple[it] = true;
+                    }
 
-                        power = update_power(t,type_w, type_m, power_lag,love, Kw_lag, Km_lag, A_lag, Aw_lag, Am_lag, sim, sol, par);
-        
-                        if (power < 0.0) { // divorce is coded as -1
-                            sim->couple[it] = false;
-                        } else {
+                } else { // if start as single - follow woman only
+                    bool meet = (sim->draw_meet[it] < par->prob_repartner[t]);
+                    if (meet){ // if meet a potential partner
+                        int type_p = draw_partner_type(type_w, woman, i,t, sim, par);
+                        double Kp = draw_partner_human_capital(Kw_lag, woman, i,t, sim, par);
+                        double Ap = draw_partner_assets(Aw_lag, woman, i,t, sim, par);
+                        love = sim->draw_repartner_love[it]; // note: love draws on grid.
+
+                        power = single::calc_initial_bargaining_weight(t, type_w, type_p, love, Kw_lag, Kp, Aw_lag, Ap, sol, par); 
+
+                        if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
                             sim->couple[it] = true;
-                        }
 
-                    } else { // if start as single - follow woman only
-                        bool meet = (sim->draw_meet[it] < par->prob_repartner[t]);
-                        if (meet){ // if meet a potential partner
-                            int type_p = draw_partner_type(type_w, woman, i,t, sim, par);
-                            double Kp = draw_partner_human_capital(Kw_lag, woman, i,t, sim, par);
-                            double Ap = draw_partner_assets(Aw_lag, woman, i,t, sim, par);
-                            love = sim->draw_repartner_love[it]; // note: love draws on grid.
-
-                            power = single::calc_initial_bargaining_weight(t, type_w, type_p, love, Kw_lag, Kp, Aw_lag, Ap, sol, par); 
-
-                            if ((0.0 <= power) & (power <= 1.0)) { // if meet and agree to couple
-                                sim->couple[it] = true;
-
-                                // set beginning-of-period couple states
-                                A_lag = Aw_lag + Ap;
-                                Kw_lag = Kw_lag;
-                                Km_lag = Kp;
-                                type_w = type_w;
-                                type_m = type_p;
-                                sim->love[it] = love;
-                            } else { // if meet but do not agree to couple
-                                power = -1.0;
-                                sim->couple[it] = false;
-                            }
-                            
-                        } else { // if do not meet
+                            // set beginning-of-period couple states
+                            A_lag = Aw_lag + Ap;
+                            Kw_lag = Kw_lag;
+                            Km_lag = Kp;
+                            type_w = type_w;
+                            type_m = type_p;
+                            sim->love[it] = love;
+                        } else { // if meet but do not agree to couple
                             power = -1.0;
                             sim->couple[it] = false;
                         }
+                        
+                    } else { // if do not meet
+                        power = -1.0;
+                        sim->couple[it] = false;
+                    }
+                }
+
+                // b) Find choices and update states
+                if (sim->couple[it]){
+
+                    // Find labor choice
+                    int ilw = -1;
+                    int ilm = -1;
+                    couple::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
+                    double labor_w = par->grid_l[ilw];
+                    double labor_m = par->grid_l[ilm];
+                    sim->lw[it] = labor_w;
+                    sim->lm[it] = labor_m;
+
+
+                    // total consumption
+                    auto idx_sol = index::couple_d(t,type_w,type_m,ilw,ilm,0,0,0,0,0, par);
+                    double C_tot = tools::_interp_5d(
+                        par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+                        par->num_power,par->num_love,par->num_K, par->num_K, par->num_A,
+                        &sol->Cd_tot_couple_to_couple[idx_sol],
+                        power,love,Kw_lag,Km_lag,A_lag);
+
+                    double M_resources = couple::resources_couple(type_w, type_m, labor_w,labor_m, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                    if (C_tot > M_resources){ 
+                        C_tot = M_resources;
+                    }
+                    sim->C_tot[it] = C_tot;
+
+                    // consumpton allocation
+                    double C_inter = 0.0; // placeholder for public consumption
+                    double Q = 0.0; // placeholder for public goods
+                    precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, -1000, power, C_tot, par, sol, 
+                        true, // interpolate 
+                        false // do not use power index
+                    );
+                    sim->Cw_inter[it] = C_inter;
+                    sim->Cm_inter[it] = C_inter;
+                    sim->Qw[it] = Q;
+                    sim->Qm[it] = Q;
+
+                    // update end-of-period states
+                    sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                    sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
+                    sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
+                    sim->Aw[it] = par->div_A_share * sim->A[it];
+                    sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
+                    sim->type_w[it] = type_w;
+                    sim->type_m[it] = type_m;
+                    sim->power[it] = power;
+                    if(t<par->simT-1){
+                        int it1 = index::index2(i,t+1,par->simN,par->simT);
+                        sim->love[it1] = love + par->sigma_love*sim->draw_love[it1];
                     }
 
-                    // b) Find choices and update states
-                    if (sim->couple[it]){
 
-                        // Find labor choice
-                        int ilw = -1;
-                        int ilm = -1;
-                        couple::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
-                        double labor_w = par->grid_l[ilw];
-                        double labor_m = par->grid_l[ilm];
-                        sim->lw[it] = labor_w;
-                        sim->lm[it] = labor_m;
+                } else { // single
+                    // find labor choice
+                    int ilw = single::find_interpolated_labor_index_single(t, type_w, Kw_lag, Aw_lag, woman, sol, par);
+                    int ilm = single::find_interpolated_labor_index_single(t, type_m, Km_lag, Am_lag, man, sol, par);
+                    double labor_w = par->grid_l[ilw]; 
+                    double labor_m = par->grid_l[ilm];
+                    sim->lw[it] = labor_w;
+                    sim->lm[it] = labor_m; 
 
+                    auto idx_sol_single_w = index::single_d(t,type_w,ilw,0,0,par);
+                    auto idx_sol_single_m = index::single_d(t,type_m,ilm,0,0,par);
+                    double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
+                    double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
 
-                        // total consumption
-                        auto idx_sol = index::couple_d(t,type_w,type_m,ilw,ilm,0,0,0,0,0, par);
-                        double C_tot = tools::_interp_5d(
-                            par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                            par->num_power,par->num_love,par->num_K, par->num_K, par->num_A,
-                            &sol->Cd_tot_couple_to_couple[idx_sol],
-                            power,love,Kw_lag,Km_lag,A_lag);
-
-                        double M_resources = couple::resources_couple(type_w, type_m, labor_w,labor_m, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                        if (C_tot > M_resources){ 
-                            C_tot = M_resources;
-                        }
-                        sim->C_tot[it] = C_tot;
-
-                        // consumpton allocation
-                        double C_inter = 0.0; // placeholder for public consumption
-                        double Q = 0.0; // placeholder for public goods
-                        precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, -1000, power, C_tot, par, sol, 
-                            true, // interpolate 
-                            false // do not use power index
-                        );
-                        sim->Cw_inter[it] = C_inter;
-                        sim->Cm_inter[it] = C_inter;
-                        sim->Qw[it] = Q;
-                        sim->Qm[it] = Q;
-
-                        // update end-of-period states
-                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
-                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
-                        sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
-                        sim->Aw[it] = par->div_A_share * sim->A[it];
-                        sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
-                        sim->type_w[it] = type_w;
-                        sim->type_m[it] = type_m;
-                        sim->power[it] = power;
-                        if(t<par->simT-1){
-                            int it1 = index::index2(i,t+1,par->simN,par->simT);
-                            sim->love[it1] = love + par->sigma_love*sim->draw_love[it1];
-                        }
-
-
-                    } else { // single
-                        // find labor choice
-                        int ilw = single::find_interpolated_labor_index_single(t, type_w, Kw_lag, Aw_lag, woman, sol, par);
-                        int ilm = single::find_interpolated_labor_index_single(t, type_m, Km_lag, Am_lag, man, sol, par);
-                        double labor_w = par->grid_l[ilw]; 
-                        double labor_m = par->grid_l[ilm];
-                        sim->lw[it] = labor_w;
-                        sim->lm[it] = labor_m; 
-
-                        auto idx_sol_single_w = index::single_d(t,type_w,ilw,0,0,par);
-                        auto idx_sol_single_m = index::single_d(t,type_m,ilm,0,0,par);
-                        double *sol_single_w = &sol->Cwd_tot_single_to_single[idx_sol_single_w];
-                        double *sol_single_m = &sol->Cmd_tot_single_to_single[idx_sol_single_m];
-
-                        // total consumption
-                        double Cw_tot = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,sol_single_w,Kw_lag,Aw_lag);
-                        double Cm_tot = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
-                        double Mw = single::resources_single(type_w, labor_w, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                        double Mm = single::resources_single(type_m, labor_m, Km_lag, Am_lag, man, par);
-                        if (Cw_tot > Mw){
-                            Cw_tot = Mw;
-                        }
-                        if (Cm_tot > Mm){
-                            Cm_tot = Mm;
-                        }
-                        sim->Cw_tot[it] = Cw_tot;
-                        sim->Cm_tot[it] = Cm_tot;
-
-                        // consumption allocation
-                        precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);
-                        precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
-
-                        // update end-of-period states  
-                        sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
-                        sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
-                        sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
-                        sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
-                        sim->type_w[it] = type_w;
-                        sim->type_m[it] = type_m;
-                        // sim->power[it] = -1.0;
-
+                    // total consumption
+                    double Cw_tot = tools::interp_2d(par->grid_Kw,par->grid_Aw,par->num_K,par->num_A,sol_single_w,Kw_lag,Aw_lag);
+                    double Cm_tot = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
+                    double Mw = single::resources_single(type_w, labor_w, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
+                    double Mm = single::resources_single(type_m, labor_m, Km_lag, Am_lag, man, par);
+                    if (Cw_tot > Mw){
+                        Cw_tot = Mw;
                     }
-
-                    // c) variables for moment simulation
-                    // i) wages
-                    sim->wage_w[it] = utils::wage(type_w, Kw_lag, woman, par);
-                    sim->wage_m[it] = utils::wage(type_m, Km_lag, man, par);
-
-                    // ii) leisure
-                    sim->leisure_w[it] = (1.0 - sim->hw[it] - sim->lw[it]);
-                    sim->leisure_m[it] = (1.0 - sim->hm[it] - sim->lm[it]);
-
-                    // iii) utility of women
-                    double love_now = 0.0;
-                    if (sim->couple[it]){
-                        love_now = sim->love[it];
+                    if (Cm_tot > Mm){
+                        Cm_tot = Mm;
                     }
-                    double lh_w = (sim->lw[it] + sim->hw[it]);
-                    sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
+                    sim->Cw_tot[it] = Cw_tot;
+                    sim->Cm_tot[it] = Cm_tot;
 
-                } // t
-            } // i
+                    // consumption allocation
+                    precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);
+                    precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
 
-        } // pragma
+                    // update end-of-period states  
+                    sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                    sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
+                    sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
+                    sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
+                    sim->type_w[it] = type_w;
+                    sim->type_m[it] = type_m;
+                    // sim->power[it] = -1.0;
+
+                }
+
+                // c) variables for moment simulation
+                // i) wages
+                sim->wage_w[it] = utils::wage(type_w, Kw_lag, woman, par);
+                sim->wage_m[it] = utils::wage(type_m, Km_lag, man, par);
+
+                // ii) leisure
+                sim->leisure_w[it] = (1.0 - sim->hw[it] - sim->lw[it]);
+                sim->leisure_m[it] = (1.0 - sim->hm[it] - sim->lm[it]);
+
+                // iii) utility of women
+                double love_now = 0.0;
+                if (sim->couple[it]){
+                    love_now = sim->love[it];
+                }
+                double lh_w = (sim->lw[it] + sim->hw[it]);
+                sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
+
+            } // t
+        } // i
 
     } // simulate
 }

@@ -528,7 +528,7 @@ namespace couple {
 
         const long long total = (long long)ntypes * ntypes * nP * nL * nK * nK;
 
-        #pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
             long long tmp = idx;
@@ -685,7 +685,7 @@ namespace couple {
         // Total number of iterations
         long long total = (long long)ntypes * ntypes * nL * nK * nK;
 
-        #pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
             long long tmp = idx;
@@ -712,7 +712,7 @@ namespace couple {
 
         total = (long long)ntypes * ntypes * nP * nL * nK * nK;
             
-        #pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
             long long tmp = idx;
@@ -764,7 +764,7 @@ namespace couple {
 
         const long long total = (long long)ntypes * ntypes * nP * nL * nK * nK;
             
-        #pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
             long long tmp = idx;

@@ -104,7 +104,7 @@ class HouseholdModelClass(EconModelClass):
 
         # love / match quality
         par.num_love = 11
-        par.max_love = 1.0
+        par.max_love = 100.0
         par.sigma_love = 0.1
         par.num_shock_love = 5  # cannot be 1 due to interpolation
 

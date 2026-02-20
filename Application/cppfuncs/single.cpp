@@ -552,7 +552,7 @@ namespace single {
         // Total number of iterations
         const int total = ntypes * nK;
 
-        #pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (int idx = 0; idx < total; ++idx) {
 
             int tmp = idx;
@@ -868,7 +868,7 @@ namespace single {
             const int nK   = par->num_K;
             long long int total = ntypes * nK;
 
-            #pragma omp parallel for num_threads(par->threads)
+            #pragma omp for schedule(static)
             for (long long int idx = 0; idx < total; ++idx) {
 
                 int tmp = idx;
@@ -896,7 +896,7 @@ namespace single {
             // Total number of iterations
             total = ntypes * nK;
 
-            #pragma omp parallel for num_threads(par->threads)
+            #pragma omp for schedule(static)
             for (int idx = 0; idx < total; ++idx) {
 
                 int tmp = idx;
@@ -924,7 +924,7 @@ namespace single {
         const int nK   = par->num_K;
         const int total = ntypes * nK;
 
-        #pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (int idx = 0; idx < total; ++idx) {
 
             int tmp = idx;
