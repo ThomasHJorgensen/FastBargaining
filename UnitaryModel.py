@@ -25,7 +25,7 @@ class UnitaryModelClass(EconModelClass):
         par.T = 20 # time periods
         
         # preferences
-        par.beta = 0.99 # discount factor
+        par.beta = 0.98 # discount factor
         
         par.rho_w = 2.5 # CRRA coefficient, women
         par.rho_m = 1.5 # CRRA coefficient, men
@@ -35,7 +35,7 @@ class UnitaryModelClass(EconModelClass):
         
         par.alpha = 0.5 # weight on private consumption
 
-        par.mu = 0.6 # weight on women's utility
+        par.mu = 0.3 # weight on women's utility
         
         # income
         par.Yw = 1.0 # income level, women
@@ -46,7 +46,6 @@ class UnitaryModelClass(EconModelClass):
         
         par.NYw = 5 # number of points in women's income shock expectaion
         par.NYm = 5  # number of points in men's income shock expectaion
-
 
         # saving
         par.r = 0.03 # interest rate
@@ -68,6 +67,7 @@ class UnitaryModelClass(EconModelClass):
         par.interp_degree = 8
         
         par.precompute_intra = False
+        par.precompute_E = False
 
         # simulation
         par.seed = 9210
@@ -96,6 +96,7 @@ class UnitaryModelClass(EconModelClass):
         par.Yw_grid,par.Yw_weight = log_normal_gauss_hermite(par.sigma_w,par.NYw)
         par.Ym_grid,par.Ym_weight = log_normal_gauss_hermite(par.sigma_m,par.NYm)
         
+        par.grid_EV = np.nan + np.zeros(par.a_grid.size) # store precomputed expectations
         
         # b. solution arrays
         shape = (par.T,par.num_m)
@@ -105,6 +106,7 @@ class UnitaryModelClass(EconModelClass):
         sol.Cpub = np.nan + np.zeros(shape)
         sol.M = np.nan + np.zeros(shape)
         sol.V = np.nan + np.zeros(shape)
+        sol.margV = np.nan + np.zeros(shape)
 
         # c. simulation arrays
         shape = (par.simN,par.T)
@@ -123,12 +125,10 @@ class UnitaryModelClass(EconModelClass):
         sim.MSE = np.nan
         
         # d. income draws
-        np.random.seed(2026)
-        sim.Yw = np.random.choice(par.Yw_grid,size=(par.simN,par.T),p=par.Yw_weight)
-        sim.Ym = np.random.choice(par.Ym_grid,size=(par.simN,par.T),p=par.Ym_weight)
-    
+        self.allocate_draws()
+        
         # e. initialization
-        sim.a_init = np.linspace(0.0,par.max_m*0.5,par.simN)
+        sim.a_init = np.linspace(0.0,5.0,par.simN)
 
         # f. pre-computation grids
         par.grid_C = nonlinspace(0.1,par.max_C,par.num_C,par.unequal_C)
@@ -139,6 +139,14 @@ class UnitaryModelClass(EconModelClass):
         
         par.grid_Cw = np.nan + np.ones(par.num_C)
         par.grid_Cm = np.nan + np.ones(par.num_C)
+    
+    def allocate_draws(self):
+        par = self.par
+        sim = self.sim
+        
+        np.random.seed(par.seed)
+        sim.Yw = np.random.choice(par.Yw_grid,size=(par.simN,par.T),p=par.Yw_weight)
+        sim.Ym = np.random.choice(par.Ym_grid,size=(par.simN,par.T),p=par.Ym_weight)
     
     def restrict_par(self):
         par = self.par
@@ -181,6 +189,8 @@ class UnitaryModelClass(EconModelClass):
         for iC,Ctot in enumerate(sol.C[t,:]):
             sol.Cw[t,iC], sol.Cm[t,iC], sol.Cpub[t,iC] = self.solve_intratemporal_allocation(Ctot,par.precompute_intra)
             sol.V[t,iC] = self.util(sol.Cw[t,iC],sol.Cm[t,iC],sol.Cpub[t,iC])
+            if (par.method != 'vfi') & par.precompute_E:
+                sol.margV[t,iC] = self.marg_HH_util(Ctot)
         
         sol.M[t,:] = par.M_grid
 
@@ -188,6 +198,9 @@ class UnitaryModelClass(EconModelClass):
         if par.method == 'vfi':
             self.solve_vfi()
         
+        elif par.method == 'vfi_simul':
+            self.solve_vfi_simul()
+            
         elif 'egm' in par.method:
             self.solve_egm()
         
@@ -200,27 +213,28 @@ class UnitaryModelClass(EconModelClass):
         sol = self.sol
 
         for t in reversed(range(par.T-1)):
-
             # add credit constraint
             m_interp_next =  np.concatenate((np.array([0.0]),sol.M[t+1]))
             c_interp_next =  np.concatenate((np.array([0.0]),sol.C[t+1]))
+                
+            if par.precompute_E: 
+                margVinv_interp_next =  np.concatenate((np.array([0.0]),1.0/sol.margV[t+1])) # if on the constraint, reciprocal of marginal utility goes to zero as consumption goes to zero (i.e. infinuty marginal utility of consumption)
+                
+                for ia,assets in enumerate(par.a_grid):
+                    par.grid_EV[ia] = self.expected_margV_precomp(assets,m_interp_next,c_interp_next,margVinv_interp_next)
+                    # par.grid_EV[ia] = self.expected_margV(assets,m_interp_next,c_interp_next)
+                
 
             # b. loop over end-of-period wealth
             for ia,assets in enumerate(par.a_grid): # same dimension as m_grid
                 
                 # i. discounted marginal value of wealth, W
-                EmargV_next = 0.0
-                for i_Yw,Yw in enumerate(par.Yw_grid):
-                    for i_Ym,Ym in enumerate(par.Ym_grid):
-                        
-                        # interpolate next period value function for this combination of transitory and permanent income shocks
-                        m_next = self.trans_m(assets,Yw,Ym)
-                        C_next_interp = interp_1d(m_interp_next,c_interp_next,m_next)
-                        margV_next_interp = self.marg_HH_util(C_next_interp)
+                if par.precompute_E:
+                    EmargV_next = interp_1d(par.a_grid,par.grid_EV,assets)
 
-                        # weight the interpolated value with the likelihood
-                        EmargV_next += margV_next_interp*par.Yw_weight[i_Yw]*par.Ym_weight[i_Ym]
-                
+                else:
+                    EmargV_next = self.expected_margV(assets,m_interp_next,c_interp_next)
+                    
                 EmargV_next = par.beta*(1.0+par.r)*EmargV_next
 
                 if par.method=='egm':
@@ -236,7 +250,9 @@ class UnitaryModelClass(EconModelClass):
                     elif par.interp_method == 'Bspline':
                         sol.C[t,ia] = interp_Bspline(EmargV_next,par)
                     elif par.interp_method == 'numerical':
-                        sol.C[t,ia] = numerical_inverse(self.marg_HH_util,EmargV_next,par.max_C)
+                        # sol.C[t,ia] = numerical_inverse(self.marg_HH_util,EmargV_next,par.max_C)
+                        init_C = sol.C[t+1,ia] # use next period's optimal consumption as initial guess
+                        sol.C[t,ia] = numerical_inverse(self.marg_HH_util,EmargV_next,par.max_C,init_C=init_C) 
                     else:
                         Warning(f'interpolation method "{par.interp_method}" not implemented!')
 
@@ -248,7 +264,9 @@ class UnitaryModelClass(EconModelClass):
                 
                 # iv. intra-temporal allocation
                 sol.Cw[t,ia], sol.Cm[t,ia], sol.Cpub[t,ia] = self.solve_intratemporal_allocation(sol.C[t,ia],par.precompute_intra)
-
+                
+                # marginal value of wealth (must equal marginal utility at optimal choice)
+                sol.margV[t,ia] = EmargV_next
 
     def solve_vfi(self):
         # a. unpack
@@ -256,6 +274,11 @@ class UnitaryModelClass(EconModelClass):
         sol = self.sol
 
         for t in reversed(range(par.T-1)):
+            
+            if par.precompute_E:
+                V_next = sol.V[t+1]
+                for iA,assets in enumerate(par.a_grid):
+                    par.grid_EV[iA] = self.expected_V(assets,V_next)
 
             # i. loop over state varible: resources in beginning of period
             for im,resources in enumerate(par.M_grid):
@@ -277,6 +300,59 @@ class UnitaryModelClass(EconModelClass):
                 
                 sol.M[t,im] = resources
                 sol.V[t,im] = -res.fun
+                
+    def solve_vfi_simul(self):
+        # a. unpack
+        par = self.par
+        sol = self.sol
+
+        for t in reversed(range(par.T-1)):
+            
+            if par.precompute_E:
+                V_next = sol.V[t+1]
+                for iA,assets in enumerate(par.a_grid):
+                    par.grid_EV[iA] = self.expected_V(assets,V_next)
+
+            # i. loop over state varible: resources in beginning of period
+            for im,resources in enumerate(par.M_grid):
+
+                # ii. find optimal consumption at this level of resources in this period t.
+                def obj(C_vec):
+                    Cw = C_vec[0]*resources # always between zero and one
+                    Cm = (resources - Cw)*C_vec[1] # always between zero and one
+                    Cpub = (resources-Cw-Cm)*C_vec[2] # always between zero and one
+                    Ctot = Cw + Cm + Cpub
+                    
+                    util = self.util(Cw,Cm,Cpub)
+                    
+                    assets = resources - Ctot
+                    if par.precompute_E:
+                        EV_next = interp_1d(par.a_grid,par.grid_EV,assets)
+                    else:
+                        EV_next = self.expected_V(assets,sol.V[t+1])
+                    
+                    val = util + par.beta*EV_next
+                    return -val
+            
+                
+                # bounds on consumption
+                lb = 0.0001 # avoid dividing with zero
+                ub = 0.9999
+                bounds = ((lb,ub),(lb,ub),(lb,ub))
+
+                # call optimizer
+                c_init = np.array([sol.Cw[t+1,im], sol.Cm[t+1,im], sol.Cpub[t+1,im]]) # initial guess on optimal consumption: last period's optimal consumption
+                res = minimize(obj,c_init,bounds=bounds,method='SLSQP')
+                
+                # store results
+                
+                sol.Cw[t,im] = res.x[0]*resources
+                sol.Cm[t,im] = res.x[1]*(resources - sol.Cw[t,im])
+                sol.Cpub[t,im] = res.x[2]*(resources - sol.Cw[t,im] - sol.Cm[t,im])
+                sol.C[t,im] = sol.Cw[t,im] + sol.Cm[t,im] + sol.Cpub[t,im]
+                
+                sol.M[t,im] = resources
+                sol.V[t,im] = -res.fun
 
 
     def intertemporal_value_of_choice(self,Ctot,resources,t):
@@ -289,9 +365,20 @@ class UnitaryModelClass(EconModelClass):
         util = self.HH_util(Ctot)
         
         # c. expected continuation value from savings
-        V_next = sol.V[t+1]
+        #V_next = sol.V[t+1]
         assets = resources - Ctot
         
+        if par.precompute_E:
+            EV_next = interp_1d(par.a_grid,par.grid_EV,assets)
+        else:
+            EV_next = self.expected_V(assets,sol.V[t+1])
+
+        # d. return value of choice
+        return util + par.beta*EV_next
+    
+    def expected_V(self,assets,V_next):
+        par = self.par
+
         EV_next = 0.0
         for i_Yw,Yw in enumerate(par.Yw_grid):
             for i_Ym,Ym in enumerate(par.Ym_grid):
@@ -300,9 +387,44 @@ class UnitaryModelClass(EconModelClass):
                 
                 EV_next += V_next_interp*par.Yw_weight[i_Yw]*par.Ym_weight[i_Ym]
                 
-        # d. return value of choice
-        return util + par.beta*EV_next
+        return EV_next
+        
+    def expected_margV(self,assets,m_interp_next,c_interp_next):
+        par = self.par
+        
+        EmargV_next = 0.0
+        for i_Yw,Yw in enumerate(par.Yw_grid):
+            for i_Ym,Ym in enumerate(par.Ym_grid):
+                
+                # interpolate next period value function for this combination of transitory and permanent income shocks
+                m_next = self.trans_m(assets,Yw,Ym)
+                C_next_interp = interp_1d(m_interp_next,c_interp_next,m_next)
+                margV_next_interp = self.marg_HH_util(C_next_interp)
 
+                # weight the interpolated value with the likelihood
+                EmargV_next += margV_next_interp*par.Yw_weight[i_Yw]*par.Ym_weight[i_Ym]
+                
+        return EmargV_next
+    
+    def expected_margV_precomp(self,assets,m_interp_next,c_interp_next,margVinv_interp_next):
+        par = self.par
+        
+        # why not use m_next directly?
+        EmargV_next = 0.0
+        for i_Yw,Yw in enumerate(par.Yw_grid):
+            for i_Ym,Ym in enumerate(par.Ym_grid):
+                
+                # interpolate next period value function for this combination of transitory and permanent income shocks
+                m_next = self.trans_m(assets,Yw,Ym)
+                C_next = interp_1d(m_interp_next,c_interp_next,m_next)
+                margV_next_interp = 1.0/interp_1d(c_interp_next,margVinv_interp_next,C_next)
+                
+                # weight the interpolated value with the likelihood
+                EmargV_next += margV_next_interp*par.Yw_weight[i_Yw]*par.Ym_weight[i_Ym]
+                
+        return EmargV_next
+            
+        
     def solve_intratemporal_allocation(self,Ctot,precomputed):
         par = self.par
         
@@ -355,13 +477,13 @@ class UnitaryModelClass(EconModelClass):
         
         # ensure that all consumption elements are non-negative
         penalty = 0.0
-        if Cw<0.0:
+        if Cw<=0.0:
             penalty += Cw**2 * 1_000.0
             Cw = 0.00001
-        if Cm<0.0:
+        if Cm<=0.0:
             penalty += Cm**2 * 1_000.0
             Cm = 0.00001
-        if Cpub<0.0:
+        if Cpub<=0.0:
             penalty += Cpub**2 * 1_000.0
             Cpub = 0.00001
             
@@ -513,8 +635,10 @@ class UnitaryModelClass(EconModelClass):
         interp_1d_vec(m_interp,c_interp,grid_m,model_C)
         
         # compute MSE
-        self.sim.MSE = np.mean((true_C - model_C)**2)
-        return self.sim.MSE
+        diff = true_C - model_C
+        self.sim.MSE = np.mean(diff**2)
+        MAD = np.mean(np.abs(diff))
+        return self.sim.MSE, MAD
     
     def lifetime_utility(self,HH_util=None,true_model=None):
         # a. unpack
