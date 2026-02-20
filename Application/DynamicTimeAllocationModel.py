@@ -186,6 +186,23 @@ class HouseholdModelClass(EconModelClass):
         par.sigma_Kw = par.sigma_K
         par.sigma_Km = par.sigma_K * par.sigma_K_mult
         
+    def fast_unravel_indices(self, shape, dtype=np.int64):
+        """Helper function to unravel indices for a given shape (for unindexing grids).
+        This is a faster implementation of np.unravel_index for large arrays, as it avoids creating large intermediate arrays.
+        INPUT:
+        - shape: tuple, the shape of the array to unravel indices for
+        - dtype: data type of the output indices (default: np.int32)
+        
+        OUTPUT:
+        - tuple of arrays, where each array contains the indices for that dimension
+        """
+        size = np.product(shape)
+        idx = np.arange(size, dtype=dtype)
+        out = []
+        for dim in reversed(shape):
+            out.append(idx % dim)
+            idx //= dim
+        return tuple(reversed(out)) 
    
     def setup_grids(self):
         par = self.par
@@ -279,6 +296,34 @@ class HouseholdModelClass(EconModelClass):
             love_cdf = stats.norm.cdf(par.grid_love,0.0,par.sigma_love)
         par.prob_partner_love = np.append(np.diff(love_cdf, 1), 0.0)
         
+        
+        # ---------- 7) unindex grids --------
+        # a. singles
+        shape_single = (par.T, par.num_types, par.num_K, par.num_A)
+        shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
+        shape_single_egm = (par.T, par.num_types, par.num_l, par.num_K, par.num_A_pd)
+
+        # b. couples
+        shape_couple = (par.T, par.num_types, par.num_types, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple_egm = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
+ 
+        # c. precomputations
+        shape_pre_single = (par.num_l, par.num_K, par.num_Ctot)
+        shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
+        
+        # flatten shape indices 
+        # par.idx_single_T, par.idx_single_type, par.idx_single_K, par.idx_single_A = self.fast_unravel_indices(shape_single)
+        # par.idx_single_d_T, par.idx_single_d_type, par.idx_single_d_l, par.idx_single_d_K, par.idx_single_d_A = self.fast_unravel_indices(shape_single_d)
+        # par.idx_single_egm_T, par.idx_single_egm_type, par.idx_single_egm_l, par.idx_single_egm_K, par.idx_single_egm_A = self.fast_unravel_indices(shape_single_egm)
+        # par.idx_couple_T, par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km, par.idx_couple_A = self.fast_unravel_indices(shape_couple)
+        # par.idx_couple_d_T, par.idx_couple_d_type_w, par.idx_couple_d_type_m, par.idx_couple_d_lw, par.idx_couple_d_lm, par.idx_couple_d_power, par.idx_couple_d_love, par.idx_couple_d_Kw, par.idx_couple_d_Km, par.idx_couple_d_A = self.fast_unravel_indices(shape_couple_d)
+        # par.idx_couple_egm_T, par.idx_couple_egm_type_w, par.idx_couple_egm_type_m, par.idx_couple_egm_lw, par.idx_couple_egm_lm, par.idx_couple_egm_power, par.idx_couple_egm_love, par.idx_couple_egm_Kw, par.idx_couple_egm_Km, par.idx_couple_egm_A = self.fast_unravel_indices(shape_couple_egm)
+        # par.idx_pre_single_l, par.idx_pre_single_K, par.idx_pre_single_Ctot = self.fast_unravel_indices(shape_pre_single)
+        # par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, par.idx_pre_couple_Ctot = self.fast_unravel_indices(shape_pre_couple)
+        # OBS: shape_pre_single should not be used for iEGM where i_u_marg is important and not iC.
+        # OBS: K is or is not in precomputation?
+        
     def allocate(self):
         """Allocate model storage (memory) and initialize all values."""
         # derive gender-specific parameters + grids (needed for sizes)
@@ -296,16 +341,16 @@ class HouseholdModelClass(EconModelClass):
 
         # a. singles
         shape_single = (par.T, par.num_types, par.num_K, par.num_A)
-        shape_single_d = (par.T, par.num_l, par.num_types, par.num_K, par.num_A)
-        shape_single_egm = (par.T, par.num_l, par.num_types, par.num_K, par.num_A_pd)
+        shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
+        shape_single_egm = (par.T, par.num_types, par.num_l, par.num_K, par.num_A_pd)
 
         # b. couples
-        shape_couple = (par.T, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
-        shape_couple_d = (par.T, par.num_l, par.num_l, par.num_power, par.num_love, par.num_types, par.num_types, par.num_K, par.num_K, par.num_A)
-        shape_couple_egm = (par.T, par.num_l, par.num_l, par.num_power,par.num_love, par.num_types, par.num_types, par.num_K, par.num_K,par.num_A_pd)
+        shape_couple = (par.T, par.num_types, par.num_types, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple_d = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
+        shape_couple_egm = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
  
         # c. precomputations
-        shape_pre_single = (par.num_l, par.num_K, par.num_Ctot)
+        shape_pre_single = (par.num_l, par.num_Ctot)
         shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
 
         # d. simulation
