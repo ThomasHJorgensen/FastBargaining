@@ -636,14 +636,17 @@ namespace couple {
 
         for (int i_love_shock = 0; i_love_shock < par->num_shock_love; ++i_love_shock) {
             double love_shock = love + par->grid_shock_love[i_love_shock];
+            love_shock = tools::max(par->grid_love[0], tools::min(love_shock, par->grid_love[par->num_love-1]));
             double weight_love = par->grid_weight_love[i_love_shock];
             auto idx_love = tools::binary_search(0, par->num_love, par->grid_love, love_shock);
             for (int iKw_shock = 0; iKw_shock < par->num_shock_K; ++iKw_shock) {
                 double Kw_shock = par->grid_shock_Kw[iKw_shock] * Kw;
+                Kw_shock = tools::max(0.0, tools::min(Kw_shock, par->max_K)); // ensure shocks don't push outside grid bounds
                 double weight_Kw = par->grid_weight_Kw[iKw_shock];
                 auto idx_Kw = tools::binary_search(0, par->num_K, par->grid_Kw, Kw_shock);
                 for (int iKm_shock = 0; iKm_shock < par->num_shock_K; ++iKm_shock) {
                     double Km_shock = par->grid_shock_Km[iKm_shock] * Km;
+                    Km_shock = tools::max(0.0, tools::min(Km_shock, par->max_K)); // ensure shocks don't push outside grid bounds
                     double weight_Km = par->grid_weight_Km[iKm_shock];
                     auto idx_Km = tools::binary_search(0, par->num_K, par->grid_Km, Km_shock);
                     

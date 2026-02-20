@@ -833,6 +833,7 @@ namespace single {
 
         for (int iK_shock = 0; iK_shock < par->num_shock_K; ++iK_shock) {
             double K_shock = grid_shock_K[iK_shock] * grid_K[iK];
+            K_shock = tools::max(grid_K[0], tools::min(K_shock, grid_K[par->num_K - 1]));
             double weight_K = grid_weight_K[iK_shock];
             auto idx_K = tools::binary_search(0, par->num_K, grid_K, K_shock);
                 

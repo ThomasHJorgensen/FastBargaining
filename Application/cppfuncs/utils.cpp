@@ -84,11 +84,8 @@ namespace utils {
             K_next = K + 1.0;
         }
         
-        if (K_next >= 0.0) {
-            return K_next;
-        } else {
-            return 0.0;
-        }
+        return tools::max(0.0, tools::min(K_next, par->max_K));
+
         // return ((1-par->delta) * K + par->phi_k * labor);
     }
 

@@ -364,7 +364,9 @@ namespace sim {
 
                     // update end-of-period states
                     sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                    sim->Kw[it] = tools::max(par->grid_Kw[0], tools::min(sim->Kw[it], par->grid_Kw[par->num_K-1]));
                     sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
+                    sim->Km[it] = tools::max(par->grid_Km[0], tools::min(sim->Km[it], par->grid_Km[par->num_K-1]));
                     sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
                     sim->Aw[it] = par->div_A_share * sim->A[it];
                     sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
@@ -374,6 +376,7 @@ namespace sim {
                     if(t<par->simT-1){
                         int it1 = index::index2(i,t+1,par->simN,par->simT);
                         sim->love[it1] = love + par->sigma_love*sim->draw_love[it1];
+                        sim->love[it1] = tools::max(par->grid_love[0], tools::min(sim->love[it1], par->grid_love[par->num_love-1]));
                     }
 
 
@@ -411,7 +414,9 @@ namespace sim {
 
                     // update end-of-period states  
                     sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
+                    sim->Kw[it] = tools::max(par->grid_Kw[0], tools::min(sim->Kw[it], par->grid_Kw[par->num_K-1]));
                     sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
+                    sim->Km[it] = tools::max(par->grid_Km[0], tools::min(sim->Km[it], par->grid_Km[par->num_K-1]));
                     sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
                     sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
                     sim->type_w[it] = type_w;
