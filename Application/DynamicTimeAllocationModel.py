@@ -128,6 +128,7 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_type_m = np.array([[np.nan]])
 
         # -------- discrete choices --------
+        par.part_time = 0.75
         par.full_time_hours = 0.35
 
         # -------- precomputation controls --------
@@ -218,8 +219,8 @@ class HouseholdModelClass(EconModelClass):
         )
 
         # ---------- 2) discrete choices ----------
-        par.grid_l = np.array([0.0, 0.75, 1.0]) * par.full_time_hours
-        par.num_l = len(par.grid_l)
+        par.grid_l = np.array([0.0, par.part_time, 1.0]) * par.full_time_hours
+        par.num_l = len(par.grid_l) 
 
         # ---------- 3) state grids ----------
         # 3.1 assets
@@ -756,7 +757,7 @@ class HouseholdModelClass(EconModelClass):
         # e. add additional penalty if employment share is too high
         cutoff = 93.0
         penalty_moms = 0.0
-        for mom_name in ('employment_rate_w_35_44', 'employment_rate_m_35_44'):
+        for mom_name in ('employment_rate_w_35_41', 'employment_rate_m_35_41'):
             if mom_name in moms:
                 if moms[mom_name] > cutoff:
                     penalty_moms += 10.0 * (moms[mom_name] - cutoff) ** 2
@@ -792,7 +793,7 @@ class HouseholdModelClass(EconModelClass):
         t_array = np.tile(np.arange(par.simT, dtype=int), (par.simN, 1))
         age_25 = 0
         age_25_to_34_mask = (t_array >= age_25) & (t_array <= age_25 + 9)
-        age_35_to_44_mask = (t_array >= age_25 + 10) & (t_array <= age_25 + 19)
+        age_35_to_41_mask = (t_array >= age_25 + 10) & (t_array <= age_25 + 19)
         age_25_to_41_mask = (t_array >= age_25) & (t_array <= age_25 + 16)
         
         ## full time
@@ -811,35 +812,35 @@ class HouseholdModelClass(EconModelClass):
 
         # c) moments
         # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
-        moms['wage_level_w_25_34'] = np.nanmean(sim.wage_w[age_25_to_34_mask & couple_mask & full_time_w_mask]) * money_metric 
-        moms['wage_level_m_25_34'] = np.nanmean(sim.wage_m[age_25_to_34_mask & couple_mask & full_time_m_mask]) * money_metric
-        moms['wage_level_w_35_44'] = np.nanmean(sim.wage_w[age_35_to_44_mask & couple_mask & full_time_w_mask]) * money_metric
-        moms['wage_level_m_35_44'] = np.nanmean(sim.wage_m[age_35_to_44_mask & couple_mask & full_time_m_mask]) * money_metric
-        # moms['wage_level_w_25_34'] = np.nanmean(sim.wage_w[age_25_to_34_mask & couple_mask]) * 1.0/(1.0 - par.tax_rate) * money_metric 
-        # moms['wage_level_m_25_34'] = np.nanmean(sim.wage_m[age_25_to_34_mask & couple_mask]) * 1.0/(1.0 - par.tax_rate) * money_metric
-        # moms['wage_level_w_35_44'] = np.nanmean(sim.wage_w[age_35_to_44_mask & couple_mask]) * 1.0/(1.0 - par.tax_rate) * money_metric
-        # moms['wage_level_m_35_44'] = np.nanmean(sim.wage_m[age_35_to_44_mask & couple_mask]) * 1.0/(1.0 - par.tax_rate) * money_metric
+        moms['wage_level_w_25_34'] = np.nanmean(sim.wage_w[age_25_to_34_mask & couple_mask & (~unemployed_w_mask)]) * money_metric 
+        moms['wage_level_m_25_34'] = np.nanmean(sim.wage_m[age_25_to_34_mask & couple_mask & (~unemployed_m_mask)]) * money_metric
+        moms['wage_level_w_35_41'] = np.nanmean(sim.wage_w[age_35_to_41_mask & couple_mask & (~unemployed_w_mask)]) * money_metric
+        moms['wage_level_m_35_41'] = np.nanmean(sim.wage_m[age_35_to_41_mask & couple_mask & (~unemployed_m_mask)]) * money_metric
 
+        # standard deviation of log wages
+        # moms['wage_sd'] = np.nanstd(np.log(np.concatenate((sim.wage_w.ravel(), sim.wage_m.ravel()))))
+        
         # employment rates
-        moms['employment_rate_w_35_44'] = np.nanmean(sim.lw[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
-        moms['employment_rate_m_35_44'] = np.nanmean(sim.lm[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
-        moms['work_hours_w'] = np.nanmean(sim.lw[age_25_to_41_mask & (~unemployed_w_mask)]) * hours_metric
-        moms['work_hours_m'] = np.nanmean(sim.lm[age_25_to_41_mask & (~unemployed_m_mask)]) * hours_metric
+        moms['employment_rate_w_35_41'] = np.nanmean(sim.lw[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
+        moms['employment_rate_m_35_41'] = np.nanmean(sim.lm[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
+        moms['work_hours_w'] = np.nanmean(sim.lw[age_25_to_41_mask]) * hours_metric
+        moms['work_hours_m'] = np.nanmean(sim.lm[age_25_to_41_mask]) * hours_metric
         
         # home production
         moms['home_prod_w'] = np.nanmean(sim.hw[age_25_to_41_mask]) * hours_metric
         moms['home_prod_m'] = np.nanmean(sim.hm[age_25_to_41_mask]) * hours_metric
         
         # leisure
-        moms['leisure_w'] = np.nanmean(sim.leisure_w) * hours_metric
-        moms['leisure_m'] = np.nanmean(sim.leisure_m) * hours_metric
+        # moms['leisure_w'] = np.nanmean(sim.leisure_w) * hours_metric
+        # moms['leisure_m'] = np.nanmean(sim.leisure_m) * hours_metric
         
         # consumption
         moms['consumption'] = np.nanmean(sim.C_tot)  * money_metric
+        moms['consumption_sd'] = np.nanstd(np.log(sim.C_tot * money_metric)) * 100.0
         
         # marriage
-        moms['marriage_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask]) * 100.0
-        moms['divorce_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask & ever_couple_mask]==0) * 100.0
+        moms['marriage_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask]) * 100.0
+        moms['divorce_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask & ever_couple_mask]==0) * 100.0
         
         # t_level = 0
         # for dt in (5,10,15):
