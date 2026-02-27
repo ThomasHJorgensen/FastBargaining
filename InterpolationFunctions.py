@@ -49,7 +49,8 @@ def interp_Bspline(x,par):
     return interpolate.splev(x,par.interp_Bspline)
 
 
-def numerical_inverse(Umarg_handle,EmargU,max_C,*args):
+def numerical_inverse(Umarg_handle,EmargU,max_C,init_C=None,*args):
     obj = lambda C: Umarg_handle(C,*args) - EmargU
-    res = root_scalar(obj,bracket=[1.0e-6,max_C],method='bisect')
+    # res = root_scalar(obj,bracket=[1.0e-6,max_C],x0=init_C,method='bisect')
+    res = root_scalar(obj,bracket=[1.0e-4,max_C],x0=init_C,method='brentq')
     return res.root
