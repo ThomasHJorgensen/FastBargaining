@@ -186,7 +186,7 @@ namespace bargaining {
     } //end of check_participation_constraints
 
 
-    void check_participation_constraints_verbose(int* power_idx, double* power, double* Sw, double* Sm, index::index_couple_struct* idx_couple, double** list_start_as_couple, double** list_remain_couple, double* list_trans_to_single, int num, par_struct* par, bool do_print=false){
+    void check_participation_constraints_verbose(int* power_idx, double* power, double* Sw, double* Sm, index::index_couple_struct* idx_couple, double** list_start_as_couple, double** list_remain_couple, double* list_trans_to_single, int num, par_struct* par, bool do_print=true){
 
         // step 0: identify key indicators for each spouse
         // 0a: min and max surplus for each spouse

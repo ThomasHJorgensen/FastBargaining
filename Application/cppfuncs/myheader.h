@@ -1,7 +1,7 @@
 ////////////////
 // 1. generic //
 ////////////////
-
+#define NOMINMAX
 #include <windows.h>
 #include <cmath>
 #include <stdio.h>
@@ -42,11 +42,11 @@
 #ifndef INDEX
 #include "index.cpp"
 #endif
-#ifndef UTILS
-#include "utils.cpp"
-#endif
 #ifndef TOOLS
 #include "tools.cpp"
+#endif
+#ifndef UTILS
+#include "utils.cpp"
 #endif
 #ifndef PRECOMPUTE
 #include "precompute.cpp"
