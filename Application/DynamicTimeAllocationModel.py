@@ -491,7 +491,7 @@ class HouseholdModelClass(EconModelClass):
             "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
             "Cw_inter", "Cm_inter", "Qw", "Qm", "Cw_tot", "Cm_tot", "C_tot",
             "Kw", "Km", "A", "Aw", "Am", "couple", "power", "love",
-            "wage_w", "wage_m", "leisure_w", "leisure_m",
+            "wage_inc_w", "wage_inc_m", "leisure_w", "leisure_m",
         ):
             _alloc(sim, name, shape_sim)
 
@@ -651,7 +651,7 @@ class HouseholdModelClass(EconModelClass):
             "Cw_tot", "Cm_tot", "C_tot",
             "Kw", "Km", "A", "Aw", "Am",
             "couple", "power", "love",
-            "wage_w", "wage_m", "leisure_w", "leisure_m",
+            "wage_inc_w", "wage_inc_m", "leisure_w", "leisure_m",
             "util",
         ), np.nan)
 
@@ -785,7 +785,7 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
         sim = self.sim
         moms = OrderedDict()
-        money_metric = 1 #_000
+        money_metric = 10 #_000
         hours_metric = 7*16  # full time hours per week
         
         # b) samples
@@ -812,13 +812,13 @@ class HouseholdModelClass(EconModelClass):
 
         # c) moments
         # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
-        moms['wage_level_w_25_34'] = np.nanmean(sim.wage_w[age_25_to_34_mask & couple_mask & (~unemployed_w_mask)]) * money_metric 
-        moms['wage_level_m_25_34'] = np.nanmean(sim.wage_m[age_25_to_34_mask & couple_mask & (~unemployed_m_mask)]) * money_metric
-        moms['wage_level_w_35_41'] = np.nanmean(sim.wage_w[age_35_to_41_mask & couple_mask & (~unemployed_w_mask)]) * money_metric
-        moms['wage_level_m_35_41'] = np.nanmean(sim.wage_m[age_35_to_41_mask & couple_mask & (~unemployed_m_mask)]) * money_metric
+        moms['wage_level_w_25_34'] = np.nanmean(sim.wage_inc_w[age_25_to_34_mask & couple_mask & (~unemployed_w_mask)]) * money_metric 
+        moms['wage_level_m_25_34'] = np.nanmean(sim.wage_inc_m[age_25_to_34_mask & couple_mask & (~unemployed_m_mask)]) * money_metric
+        moms['wage_level_w_35_41'] = np.nanmean(sim.wage_inc_w[age_35_to_41_mask & couple_mask & (~unemployed_w_mask)]) * money_metric
+        moms['wage_level_m_35_41'] = np.nanmean(sim.wage_inc_m[age_35_to_41_mask & couple_mask & (~unemployed_m_mask)]) * money_metric
 
         # standard deviation of log wages
-        # moms['wage_sd'] = np.nanstd(np.log(np.concatenate((sim.wage_w.ravel(), sim.wage_m.ravel()))))
+        # moms['wage_sd'] = np.nanstd(np.log(np.concatenate((sim.wage_inc_w.ravel(), sim.wage_inc_m.ravel()))))
         
         # employment rates
         moms['employment_rate_w_35_41'] = np.nanmean(sim.lw[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
@@ -835,12 +835,28 @@ class HouseholdModelClass(EconModelClass):
         # moms['leisure_m'] = np.nanmean(sim.leisure_m) * hours_metric
         
         # consumption
-        moms['consumption'] = np.nanmean(sim.C_tot)  * money_metric
-        moms['consumption_sd'] = np.nanstd(np.log(sim.C_tot * money_metric)) * 100.0
+        equivalence_scale_BPS = 2**0.5 # equivalence scaled used in the code of Blundell, Pistaferri, Saporta-Eksten (2018)
+        moms['consumption'] = np.nanmean(sim.C_tot) / equivalence_scale_BPS * money_metric
+        # moms['consumption_sd'] = np.nanstd(np.log(sim.C_tot * money_metric)) * 100.0
         
         # marriage
         moms['marriage_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask]) * 100.0
         moms['divorce_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask & ever_couple_mask]==0) * 100.0
+        
+        # inequality
+        adults = np.where(sim.couple == 1, 2, 1)
+        kids = np.zeros(sim.couple.shape) # for now, not modeled
+        equivalence_scale = (adults + kids*0.7)**0.7 # equivalence scale used in Meyer and Sullivan (2023)
+        
+        equivalence_income_w = np.where(sim.couple, np.nan_to_num(sim.wage_inc_w) + np.nan_to_num(sim.wage_inc_m), np.nan_to_num(sim.wage_inc_w)) / equivalence_scale
+        equivalence_income_m = np.where(sim.couple, np.nan_to_num(sim.wage_inc_w) + np.nan_to_num(sim.wage_inc_m), np.nan_to_num(sim.wage_inc_m)) / equivalence_scale
+        equivalence_income = np.concatenate((equivalence_income_w.ravel(), equivalence_income_m.ravel()))
+        moms['wage_90_10_ratio'] = np.nanpercentile(equivalence_income, 90) / np.nanpercentile(equivalence_income, 10)
+        
+        equivalence_consumption_w = np.where(sim.couple, sim.C_tot, sim.Cw_tot) / equivalence_scale
+        equivalence_consumption_m = np.where(sim.couple, sim.C_tot, sim.Cm_tot) / equivalence_scale
+        equivalence_consumption = np.concatenate(((equivalence_consumption_w).ravel(), (equivalence_consumption_m).ravel()))
+        moms['consumption_90_10_ratio'] = np.nanpercentile(equivalence_consumption, 90) / np.nanpercentile(equivalence_consumption, 10)
         
         # t_level = 0
         # for dt in (5,10,15):

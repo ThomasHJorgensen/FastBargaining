@@ -423,12 +423,16 @@ namespace sim {
                     sim->type_m[it] = type_m;
                     // sim->power[it] = -1.0;
 
-                }
+                } // couple / single
 
                 // c) variables for moment simulation
                 // i) wages
-                sim->wage_w[it] = utils::wage(type_w, Kw_lag, woman, par);
-                sim->wage_m[it] = utils::wage(type_m, Km_lag, man, par);
+                if (sim->lw[it] > 1e-6){
+                    sim->wage_inc_w[it] = utils::wage(type_w, Kw_lag, woman, par) * sim->lw[it];
+                }
+                if (sim->lm[it] > 1e-6){
+                    sim->wage_inc_m[it] = utils::wage(type_m, Km_lag, man, par) * sim->lm[it];
+                }
 
                 // ii) leisure
                 sim->leisure_w[it] = (1.0 - sim->hw[it] - sim->lw[it]);

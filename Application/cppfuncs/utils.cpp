@@ -71,7 +71,7 @@ namespace utils {
             log_wage = par->grid_mu_m[type] + par->gamma_m*K;
         }
         double full_time = par->grid_l[par->num_l-1];
-        return exp(log_wage) / full_time; // normalize by full-time
+        return exp(log_wage); 
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {
