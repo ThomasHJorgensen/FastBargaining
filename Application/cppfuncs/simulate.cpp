@@ -428,10 +428,19 @@ namespace sim {
                 // c) variables for moment simulation
                 // i) wages
                 if (sim->lw[it] > 1e-6){
-                    sim->wage_inc_w[it] = utils::wage(type_w, Kw_lag, woman, par) * sim->lw[it];
+                    sim->wage_inc_w[it] = utils::wage(type_w, Kw_lag, woman, par) * sim->lw[it] * par->available_hours;
                 }
                 if (sim->lm[it] > 1e-6){
-                    sim->wage_inc_m[it] = utils::wage(type_m, Km_lag, man, par) * sim->lm[it];
+                    sim->wage_inc_m[it] = utils::wage(type_m, Km_lag, man, par) * sim->lm[it] * par->available_hours;
+                }
+
+                // after tax income
+                if (sim->couple[it]){
+                    sim->after_tax_inc_w[it] = couple::after_tax_income_couple(type_w, type_m, sim->lw[it], sim->lm[it], Kw_lag, Km_lag, A_lag, par);
+                    sim->after_tax_inc_m[it] = couple::after_tax_income_couple(type_m, type_w, sim->lm[it], sim->lw[it], Km_lag, Kw_lag, A_lag, par);
+                } else {
+                    sim->after_tax_inc_w[it] = single::after_tax_income_single(type_w, sim->lw[it], Kw_lag, Aw_lag, woman, par);
+                    sim->after_tax_inc_m[it] = single::after_tax_income_single(type_m, sim->lm[it], Km_lag, Am_lag, man, par);
                 }
 
                 // ii) leisure

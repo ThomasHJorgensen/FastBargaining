@@ -66,11 +66,60 @@ namespace single {
         return best_Ctot;
     };
 
-    double resources_single(int type, double labor, double K, double A, int gender, par_struct* par) {
-        if (labor == 0.0) return par->R * A + RESOURCES_EPS;
+    
+    double tax_single(double income, par_struct* par) {
+
+        // Define brackets and their rates in one place
+        // Each row: {bracket top, rate applied up to that top}
+        int    num_brackets     = 5;
+        double bracket_tops[5]  = {26250.0, 63550.0, 132600.0, 288350.0, 1e308};
+        // double bracket_rates[5] = {20.0, 20.0, 20.0, 20.0, 20.0};
+        double bracket_rates[5] = {15.0, 28.0, 31.0, 36.0, 39.6};
+        
+        double money_metric = 10000.0;
+        double percent = 100.0;
+        for (int i = 0; i < num_brackets; i++) {
+            bracket_tops[i] = bracket_tops[i] / money_metric;
+            bracket_rates[i] = bracket_rates[i] / percent;
+        }
+
+
+        double tax        = 0.0;
+        double prev_top   = 0.0;
+
+        for (int i = 0; i < num_brackets; i++) {
+            double bracket_income = 0.0;
+            if (income <= bracket_tops[i]) {
+                bracket_income = income - prev_top;
+                tax += bracket_income * bracket_rates[i];
+                return tax;
+            }
+            bracket_income = bracket_tops[i] - prev_top;
+            tax += bracket_income * bracket_rates[i];
+            prev_top = bracket_tops[i];
+        }
+
+        return tax;
+
+    }
+
+    double after_tax_income_single(int type, double labor, double K, double A, int gender, par_struct* par) {
+        if (labor == 0.0) return RESOURCES_EPS;
 
         double w = utils::wage(type, K, gender, par);
-        return par->R * A + w * labor * par->available_hours * (1.0 - par->tax_rate);
+        double gross_wage_income = w * labor * par->available_hours;
+        
+        // income floor
+        if (gross_wage_income < 0.0001) { 
+            gross_wage_income = 0.0001;
+        }
+        double tax = tax_single(gross_wage_income, par);
+        return gross_wage_income - tax + (par->R - 1.0) * A;
+    }
+
+    double resources_single(int type, double labor, double K, double A, int gender, par_struct* par) {
+        double after_tax_income = after_tax_income_single(type, labor, K, A, gender, par);
+        return A + after_tax_income; // note that interest rates of A are included in after_tax_income
     }
 
     double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q,
