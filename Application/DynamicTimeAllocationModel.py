@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import numba as nb
 from scipy.stats import norm, multivariate_normal
@@ -744,10 +745,10 @@ class HouseholdModelClass(EconModelClass):
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
         sim.init_divorces[...] = 0
         
-        # allow for correlation in types of couples
-        probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
-        draws = np.random.rand(probs.shape[0])
-        sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
+        # # allow for correlation in types of couples
+        # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
+        # draws = np.random.rand(probs.shape[0])
+        # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
         
         # ========= e. timing =========
         sol.solution_time[...] = 0.0
@@ -1007,3 +1008,15 @@ class HouseholdModelClass(EconModelClass):
                 
         Imin = np.argsort(objs) 
         return param_guess_mat[Imin[0:num_guess],:]
+    
+    def save_par(self,filename):
+        par_dict = self.par.__dict__
+        folder = 'par_files'
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        np.savez(f'{folder}/{filename}', **par_dict)
+        
+    def load_par(self,filename):
+        par_dict = np.load(f'par_files/{filename}.npz')
+        for key in par_dict.files:
+            setattr(self.par, key, par_dict[key])

@@ -837,34 +837,34 @@ namespace single {
     }
 
 
-    void expected_value_start_single_Agrid(int t, int type, int iK, int gender, sol_struct* sol,par_struct* par){
-        auto idx_A = index::single(t, type, iK, 0, par);
-        // get variables
-        double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
-        double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
-        double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
-        double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
+    // void expected_value_start_single_Agrid(int t, int type, int iK, int gender, sol_struct* sol,par_struct* par){
+    //     auto idx_A = index::single(t, type, iK, 0, par);
+    //     // get variables
+    //     double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
+    //     double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
+    //     double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
+    //     double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
 
-        const double p_meet = par->prob_repartner[t];
-        const bool no_meet = (par->p_meet == 0.0);
-        for (int iA = 0; iA < par->num_A; iA++) {
-            if (no_meet) {
-                // expected value of starting single is just value of remaining single
-                EV_start_as_single[iA] = V_single_to_single[iA];
-                EV_cond_meet_partner[iA] = V_single_to_single[iA];
-                continue;
-            }
+    //     const double p_meet = par->prob_repartner[t];
+    //     const bool no_meet = (par->p_meet == 0.0);
+    //     for (int iA = 0; iA < par->num_A; iA++) {
+    //         if (no_meet) {
+    //             // expected value of starting single is just value of remaining single
+    //             EV_start_as_single[iA] = V_single_to_single[iA];
+    //             EV_cond_meet_partner[iA] = V_single_to_single[iA];
+    //             continue;
+    //         }
 
-            // Value conditional on meeting partner
-            double EV_cond = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
+    //         // Value conditional on meeting partner
+    //         double EV_cond = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
 
-            // expected value of starting single
-            EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
-            EV_cond_meet_partner[iA] = EV_cond;
-        }
+    //         // expected value of starting single
+    //         EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
+    //         EV_cond_meet_partner[iA] = EV_cond;
+    //     }
 
         
-    }
+    // }
 
 
     
