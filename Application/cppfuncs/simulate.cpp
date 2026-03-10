@@ -175,8 +175,8 @@ namespace sim {
             }
         }
 
-        // c. return asset value
-        return grid_A[par->num_A-1]; // OBS: Is this right? Returning highest value if not found?
+        // // c. return asset value
+        // return grid_A[par->num_A-1]; // OBS: Is this right? Returning highest value if not found?
 
     }
 
@@ -206,8 +206,8 @@ namespace sim {
             }
         }
 
-        // c. return human capital value
-        return grid_Kp[par->num_K-1]; // OBS: Is this right? Returning highest value if not found?
+        // // c. return human capital value
+        // return grid_Kp[par->num_K-1]; // OBS: Is this right? Returning highest value if not found?
 
     }
 
@@ -266,6 +266,7 @@ namespace sim {
                     sim->love[it] = love;
                     type_w = sim->init_type_w[i];
                     type_m = sim->init_type_m[i];
+                    sim->divorces[it] = sim->init_divorces[i];
                 } else {
                     int it_1 = index::index2(i,t-1,par->simN,par->simT);
                     Kw_lag = sim->Kw[it_1];
@@ -278,6 +279,7 @@ namespace sim {
                     love = sim->love[it];
                     type_w = sim->type_w[it_1];
                     type_m = sim->type_m[it_1];
+                    sim->divorces[it] = sim->divorces[it_1];
                 } 
                 
                 // a) Find transitions in couple/single status and calculate power 
@@ -441,6 +443,11 @@ namespace sim {
                 } else {
                     sim->after_tax_inc_w[it] = single::after_tax_income_single(type_w, sim->lw[it], Kw_lag, Aw_lag, woman, par);
                     sim->after_tax_inc_m[it] = single::after_tax_income_single(type_m, sim->lm[it], Km_lag, Am_lag, man, par);
+                }
+
+                // divorces
+                if (couple_lag & (!sim->couple[it])){
+                    sim->divorces[it] += 1;
                 }
 
                 // ii) leisure

@@ -742,7 +742,7 @@ namespace single {
     
     }
     
-        double expected_value_cond_meet_partner(int t, int type, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
+    double expected_value_cond_meet_partner(int t, int type, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
         // unpack
         double* V_single_to_single = sol->Vw_single_to_single;
         double* V_single_to_couple = sol->Vw_single_to_couple;
@@ -765,8 +765,8 @@ namespace single {
 
         // loop over potential partners conditional on meeting a partner
         double Ev_cond = 0.0;
-        for (int iL = 0; iL < par->num_love; iL++) {
-            const double prob_love = par->prob_partner_love[iL];
+        for (int iL_shock = 0; iL_shock < par->num_shock_love; iL_shock++) {
+            const double prob_love = par->grid_weight_love[iL_shock];
             if (prob_love <= 0.0) continue;
 
             for (int type_p = 0; type_p < par->num_types; type_p++) { // partner's type
@@ -779,14 +779,13 @@ namespace single {
                     const double prob_K = prob_partner_K[idx_Kgrid];
                     if (prob_K <= 0.0) continue;
 
-                    const double love = par->grid_love[iL];
                     for (int iAp = 0; iAp < par->num_A; iAp++) { // partner's wealth
                         auto idx_Agrid = index::index2(iA, iAp, par->num_A, par->num_A);
                         const double prob_A = prob_partner_A[idx_Agrid];
                         if (prob_A <= 0.0) continue;
-
-                        const double prob = prob_A * prob_K * prob_love;
-
+                        
+                        const double prob = prob_A * prob_K * prob_type * prob_love;
+                        
                         // only calculate if match has positive probability of happening
                         if (prob>0.0) {
                             int iAw = iA;
@@ -803,19 +802,20 @@ namespace single {
                                 type_w = type_p;
                                 type_m = type;
                             }
-
+                            
                             // meet person with same level of wealth and human capital
                             const double Aw = grid_A[iAw];
                             const double Am = grid_A[iAm];
                             const double Kw = grid_K[iKw]; 
                             const double Km = grid_K[iKm];
-
-                            double power = calc_initial_bargaining_weight(t, type_w, type_m, love, Kw, Km, Aw, Am, sol, par, iL);
+                            
+                            const double love = par->grid_shock_love[iL_shock] + par->mean_love;
+                            double power = calc_initial_bargaining_weight(t, type_w, type_m, love, Kw, Km, Aw, Am, sol, par, -1);
 
                             double val;
                             if (power >= 0.0) {
                                 double A_tot = Aw + Am;
-                                auto idx_interp_couple = index::couple(t, type_w, type_m, 0, iL, 0, 0, 0, par); 
+                                auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par); 
                                 val = tools::_interp_5d(
                                     par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                                     par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,

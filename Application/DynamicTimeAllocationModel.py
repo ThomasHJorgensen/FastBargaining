@@ -1,5 +1,6 @@
 import numpy as np
 import numba as nb
+from scipy.stats import norm, multivariate_normal
 import scipy.optimize as optimize
 import polars as pl
 from collections import OrderedDict
@@ -110,7 +111,9 @@ class HouseholdModelClass(EconModelClass):
         par.num_love = 11
         par.max_love = 100.0
         par.sigma_love = 0.1
+        par.mean_love = 0.0
         par.num_shock_love = 5  # cannot be 1 due to interpolation
+        par.type_corr = 0.45
 
         # types
         par.num_types = 3
@@ -201,7 +204,49 @@ class HouseholdModelClass(EconModelClass):
             out.append(idx % dim)
             idx //= dim
         return tuple(reversed(out)) 
-   
+
+    def assortative_matrix(self, num, corr):
+        """
+        Construct assortative matching matrix P(partner_state | own_state)
+
+        Parameters
+        ----------
+        num : int
+            Number of discrete states
+        corr : float
+            Correlation between latent partner states
+
+        Returns
+        -------
+        numpy.ndarray
+            (num x num) matrix where rows sum to 1
+        """
+
+        cuts = norm.ppf(np.linspace(0, 1, num + 1))
+        cuts[0] = -10
+        cuts[-1] = 10
+
+        cov = [[1, corr], [corr, 1]]
+        joint = np.zeros((num, num))
+
+        for i in range(num):
+            for j in range(num):
+                lower = [cuts[i], cuts[j]]
+                upper = [cuts[i+1], cuts[j+1]]
+
+                p = (
+                    multivariate_normal.cdf(upper, cov=cov)
+                    - multivariate_normal.cdf([lower[0], upper[1]], cov=cov)
+                    - multivariate_normal.cdf([upper[0], lower[1]], cov=cov)
+                    + multivariate_normal.cdf(lower, cov=cov)
+                )
+
+                joint[i, j] = p
+
+        # convert to conditional probabilities
+        return joint / joint.sum(axis=1, keepdims=True)
+
+
     def setup_grids(self):
         par = self.par
 
@@ -237,7 +282,7 @@ class HouseholdModelClass(EconModelClass):
         par.grid_power_flip = np.flip(par.grid_power)
 
         # 3.4 love
-        par.grid_love = np.linspace(-par.max_love, par.max_love, par.num_love) if par.num_love > 1 else np.array([0.0])
+        par.grid_love = np.linspace(-par.max_love, par.max_love, par.num_love) if par.num_love > 1 else np.array([par.mean_love])
 
         # ---------- 4) shocks ----------
         par.grid_shock_Kw, par.grid_weight_Kw = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
@@ -277,9 +322,11 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_Km = _use_eye_if_nan(par.prob_partner_Km, par.num_K)
         par.prob_partner_A_w = _use_eye_if_nan(par.prob_partner_A_w, par.num_A)
         par.prob_partner_A_m = _use_eye_if_nan(par.prob_partner_A_m, par.num_A)
-        par.prob_partner_type_w = _use_eye_if_nan(par.prob_partner_type_w, par.num_types)
-        par.prob_partner_type_m = _use_eye_if_nan(par.prob_partner_type_m, par.num_types)
-          
+        if np.isnan(par.prob_partner_type_w[0, 0]):
+            par.prob_partner_type_w = self.assortative_matrix(par.num_types, corr=par.type_corr)
+        if np.isnan(par.prob_partner_type_m[0, 0]):
+            par.prob_partner_type_m = self.assortative_matrix(par.num_types, corr=par.type_corr)
+     
         par.cdf_partner_Kw = np.cumsum(par.prob_partner_Kw,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
         par.cdf_partner_Aw = np.cumsum(par.prob_partner_A_w,axis=1) # cumulative distribution to be used in simulation
@@ -291,7 +338,7 @@ class HouseholdModelClass(EconModelClass):
         if par.sigma_love <= 1.0e-6:
             love_cdf = np.where(par.grid_love >= 0.0,1.0,0.0)
         else:
-            love_cdf = stats.norm.cdf(par.grid_love,0.0,par.sigma_love)
+            love_cdf = stats.norm.cdf(par.grid_love,par.mean_love,par.sigma_love)
         par.prob_partner_love = np.append(np.diff(love_cdf, 1), 0.0)
         
         
@@ -496,6 +543,8 @@ class HouseholdModelClass(EconModelClass):
         # ints (do NOT allocate as float)
         _alloc(sim, "type_w", shape_sim, dtype=np.int_)
         _alloc(sim, "type_m", shape_sim, dtype=np.int_)
+        
+        _alloc(sim, "divorces", shape_sim, dtype=np.int_)
 
         _alloc(sim, "util", (par.simN, par.simT))
         _alloc(sim, "mean_lifetime_util", (1,))
@@ -522,6 +571,7 @@ class HouseholdModelClass(EconModelClass):
         _alloc(sim, "init_Am", (par.simN,))
         _alloc(sim, "init_couple", (par.simN,), dtype=np.bool_)
         _alloc(sim, "init_power_idx", (par.simN,), dtype=np.int_)
+        _alloc(sim, "init_divorces", (par.simN,), dtype=np.int_)
 
         # --- e. other
         # timing
@@ -642,7 +692,7 @@ class HouseholdModelClass(EconModelClass):
         ), np.nan)
 
         # ========= d. simulation =========
-        # d.1 simulated outcomes (floats -> nan, ints -> 0)
+        # d.1 simulated outcomes
         _fill(sim, (
             "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
             "Cw_inter", "Cm_inter", "Qw", "Qm",
@@ -650,12 +700,15 @@ class HouseholdModelClass(EconModelClass):
             "Kw", "Km", "A", "Aw", "Am",
             "couple", "power", "love",
             "wage_inc_w", "wage_inc_m", "after_tax_inc_w", "after_tax_inc_m",
-            "leisure_w", "leisure_m",
+            "leisure_w", "leisure_m", 
             "util",
         ), np.nan)
 
         sim.type_w[...] = -1000
         sim.type_m[...] = -1000
+        
+        sim.divorces[...] = 0
+        
         sim.mean_lifetime_util[...] = np.nan
 
         # d.2 shocks (seed -> draws)
@@ -674,7 +727,7 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_uniform_partner_type_w[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_m[...] = np.random.uniform(size=shape_sim)
 
-        sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
+        sim.draw_repartner_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=shape_sim)
 
 
         # d.3 initial distribution
@@ -685,10 +738,17 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx[...] = (par.num_power // 2)
-        sim.init_love[...] = 0.0
+        # sim.init_love[...] = 0.0
+        sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
-
+        sim.init_divorces[...] = 0
+        
+        # allow for correlation in types of couples
+        probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
+        draws = np.random.rand(probs.shape[0])
+        sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
+        
         # ========= e. timing =========
         sol.solution_time[...] = 0.0
 
@@ -839,8 +899,10 @@ class HouseholdModelClass(EconModelClass):
         # moms['consumption_sd'] = np.nanstd(np.log(sim.C_tot * money_metric)) * 100.0
         
         # marriage
+        moms['marriage_rate_25_34'] = np.nanmean(sim.couple[age_25_to_34_mask]) * 100.0
         moms['marriage_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask]) * 100.0
-        moms['divorce_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask & ever_couple_mask]==0) * 100.0
+        moms['divorce_rate_25_34'] = np.nanmean(sim.divorces[age_25_to_34_mask]>0) * 100.0
+        moms['divorce_rate_35_41'] = np.nanmean(sim.divorces[age_35_to_41_mask]>0) * 100.0
         
         # inequality
         adults = np.where(sim.couple == 1, 2.0, 1.0)
