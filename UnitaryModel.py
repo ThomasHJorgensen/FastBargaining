@@ -660,7 +660,7 @@ class UnitaryModelClass(EconModelClass):
         
         if true_model is not None:
             diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
-            return abs(diff * true_model.sim.mean_lifetime_util) * 100.0
+            return abs(diff / true_model.sim.mean_lifetime_util) * 100.0
         
         
     def wealth_compensation(self,HH_util,true_model):
@@ -670,7 +670,7 @@ class UnitaryModelClass(EconModelClass):
         def obj_func(a_init):
             a_init_orig = sim.a_init.copy()
             
-            sim.a_init += a_init/200.0 # measure is in percent relative to expected income 
+            sim.a_init += 2*a_init/100.0 # measure is in percent relative to expected income 
             self.simulate()
             self.lifetime_utility(HH_util=HH_util)
                         
