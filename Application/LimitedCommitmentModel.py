@@ -292,8 +292,8 @@ class HouseholdModelClass(EconModelClass):
 
         # power. non-linear grid with more mass in both tails.
         odd_num = np.mod(par.num_power,2)
-        first_part = nonlinspace(0.0,0.5,(par.num_power+odd_num)//2,1.3)
-        last_part = np.flip(1.0 - nonlinspace(0.0,0.5,(par.num_power-odd_num)//2 + 1,1.3))[1:]
+        first_part = nonlinspace(0.005,0.5,(par.num_power+odd_num)//2,1.3)
+        last_part = np.flip(0.995 - nonlinspace(0.0,0.5,(par.num_power-odd_num)//2 + 1,1.3))[1:]
         par.grid_power = np.append(first_part,last_part)
         par.grid_power_flip = np.flip(par.grid_power) # flip for men
 

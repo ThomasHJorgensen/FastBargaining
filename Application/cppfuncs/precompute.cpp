@@ -462,19 +462,22 @@ namespace precompute{
             double lm = par->grid_l[ilm];
             double power = par->grid_power[iP];
             
-            double start_hw = (1 - (lw-1e-6))/2.0;
-            double start_hm = (1 - (lm-1e-6))/2.0;
+            double start_hw = (1.0 - lw)/2.0;
+            double start_hm = (1.0 - lm)/2.0;
             
             for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
                 
                 double C_tot = par->grid_Ctot[iC];
-                double start_Cw_priv = C_tot/3.0;
-                double start_Cm_priv = C_tot/3.0;
+                double start_Cw_priv = (power+0.1)*C_tot/3.0;
+                double start_Cm_priv = (1-power+0.1)*C_tot/3.0;
 
+                if(iC<(par->num_Ctot - 1)){ // update starting values for private consumption based on previous solution
+                    auto idx_last = index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+                    start_Cw_priv = sol->pre_Cwd_priv_couple[idx_last];
+                    start_Cm_priv = sol->pre_Cmd_priv_couple[idx_last];
 
-                if(C_tot<1.0){ // reuse staring values when Ctot is low
-                    start_hw = sol->pre_hwd_couple[index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot)];
-                    start_hm = sol->pre_hmd_couple[index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot)];
+                    start_hw = sol->pre_hwd_couple[idx_last];
+                    start_hm = sol->pre_hmd_couple[idx_last];
                 }
 
                 auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
