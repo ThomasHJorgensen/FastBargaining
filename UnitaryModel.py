@@ -153,7 +153,8 @@ class UnitaryModelClass(EconModelClass):
         
         if par.restricted_model:
             par.rho_m = par.rho_w
-            par.phi_m = par.phi_w
+            par.phi_w = 1.0
+            par.phi_m = 1.0
             
             par.alpha=1.0 # no public consumption
             
@@ -659,7 +660,7 @@ class UnitaryModelClass(EconModelClass):
         
         if true_model is not None:
             diff = sim.mean_lifetime_util - true_model.sim.mean_lifetime_util
-            return abs(diff/true_model.sim.mean_lifetime_util) * 100.0
+            return abs(diff * true_model.sim.mean_lifetime_util) * 100.0
         
         
     def wealth_compensation(self,HH_util,true_model):
