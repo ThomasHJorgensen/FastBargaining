@@ -24,17 +24,63 @@ namespace couple {
     // Multistart factor in first multistart run
     static constexpr double MULTISTART_FACTOR = 0.5;
 
+    double tax_couple(double income, par_struct* par) {
 
-    double resources_couple(int type_w, int type_m, double labor_w, double labor_m, double Kw, double Km, double A, par_struct* par) {
+        // Define brackets and their rates in one place
+        // Each row: {bracket top, rate applied up to that top}
+        int    num_brackets     = 5;
+        double bracket_tops[5]  = {43850.0, 105950.0, 161450.0, 288350.0, 1e308};
+        // double bracket_rates[5] = {20.0, 20.0, 20.0, 20.0, 20.0};
+        double bracket_rates[5] = {15.0, 28.0, 31.0, 36.0, 39.6};
+
+        double money_metric = 10000.0;
+        double percent = 100.0;
+        for (int i = 0; i < num_brackets; i++) {
+            bracket_tops[i] = bracket_tops[i] / money_metric;
+            bracket_rates[i] = bracket_rates[i] / percent;
+        }
+
+        double tax        = 0.0;
+        double prev_top   = 0.0;
+
+        for (int i = 0; i < num_brackets; i++) {
+            double bracket_income = 0.0;
+            if (income <= bracket_tops[i]) {
+                bracket_income = income - prev_top;
+                tax += bracket_income * bracket_rates[i];
+                return tax;
+            }
+            bracket_income = bracket_tops[i] - prev_top;
+            tax += bracket_income * bracket_rates[i];
+            prev_top = bracket_tops[i];
+        }
+
+        return tax;
+
+    }
+
+
+    double after_tax_income_couple(int type_w, int type_m, double labor_w, double labor_m, double Kw, double Km, double A, par_struct* par) {
         // If no labor income, return asset income plus small epsilon to avoid zero
         if ((labor_w == 0.0) && (labor_m == 0.0)) {
-            return par->R * A + 1.0e-4;
+            return 1.0e-4;
         }
 
         double wage_w = utils::wage(type_w, Kw, woman, par);
         double wage_m = utils::wage(type_m, Km, man, par);
+        double gross_wage_income = wage_w * labor_w * par->available_hours + wage_m * labor_m * par->available_hours;
 
-        return par->R * A + wage_w * labor_w * par->available_hours * (1.0 - par->tax_rate) + wage_m * labor_m * par->available_hours * (1.0 - par->tax_rate);
+        // income floor
+        if (gross_wage_income < 0.0001) {
+            gross_wage_income = 0.0001;
+        }
+        double tax = tax_couple(gross_wage_income, par);
+        return gross_wage_income - tax + (par->R - 1.0) * A;
+    }
+
+    double resources_couple(int type_w, int type_m, double labor_w, double labor_m, double Kw, double Km, double A, par_struct* par) {
+        double after_tax_income = after_tax_income_couple(type_w, type_m, labor_w, labor_m, Kw, Km, A, par);
+        return A + after_tax_income; // note that interest rates of A are included in after_tax_income
     }
 
     double value_of_choice_couple_to_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm,
@@ -531,25 +577,26 @@ namespace couple {
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            long long tmp = idx;
+            // long long tmp = idx;
+            // const int iKm = tmp % nK;
+            // tmp /= nK;
+            // const int iKw = tmp % nK;
+            // tmp /= nK;
+            // const int iL  = tmp % nL;
+            // tmp /= nL;
+            // const int iP  = tmp % nP;
+            // tmp /= nP;
+            // const int type_m = tmp % ntypes;
+            // tmp /= ntypes;
+            // const int type_w = tmp;
 
-            const int iKm = tmp % nK;
-            tmp /= nK;
+            const auto type_w = (int)par->idx_couple_type_w[idx];
+            const auto type_m = (int)par->idx_couple_type_m[idx];
+            const auto iP = (int)par->idx_couple_power[idx];
+            const auto iL = (int)par->idx_couple_love[idx];
+            const auto iKw = (int)par->idx_couple_Kw[idx];
+            const auto iKm = (int)par->idx_couple_Km[idx];
 
-            const int iKw = tmp % nK;
-            tmp /= nK;
-            
-            const int iL  = tmp % nL;
-            tmp /= nL;
-            
-            const int iP  = tmp % nP;
-            tmp /= nP;
-
-            const int type_m = tmp % ntypes;
-            tmp /= ntypes;
-
-            const int type_w = tmp;
-            
             // Note: important to have discrete choice as inner loop
             //       to allow parallelization over outer loops while
             //       making the optimal choice of discrete choice
@@ -564,6 +611,19 @@ namespace couple {
 
     double calc_marital_surplus(double Vd_couple_to_couple, double V_couple_to_single) {
         return Vd_couple_to_couple - V_couple_to_single;
+    }
+
+    void solve_start_as_couple_full_commit(
+        int t, int type_w, int type_m, int iL, int iKw, int iKm, int iA,
+        sol_struct* sol, par_struct* par)
+    {
+        for (int iP = 0; iP < par->num_power; ++iP) {
+            auto idx_couple = index::couple(t, type_w, type_m, iP, iL, iKw, iKm, iA, par);
+            sol->Vw_start_as_couple[idx_couple] = sol->Vw_couple_to_couple[idx_couple];
+            sol->Vm_start_as_couple[idx_couple] = sol->Vm_couple_to_couple[idx_couple];
+            sol->power_idx[idx_couple] = iP;
+            sol->power[idx_couple] = par->grid_power[iP];
+        }
     }
 
     void solve_start_as_couple_powergrid(
@@ -691,24 +751,32 @@ namespace couple {
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            long long tmp = idx;
+            // long long tmp = idx;
+            // const int iKm = tmp % nK;
+            // tmp /= nK;
+            // const int iKw = tmp % nK;
+            // tmp /= nK;
+            // const int iL  = tmp % nL;
+            // tmp /= nL;
+            // const int type_m = tmp % ntypes;
+            // tmp /= ntypes;
+            // const int type_w = tmp;
 
-            const int iKm = tmp % nK;
-            tmp /= nK;
-
-            const int iKw = tmp % nK;
-            tmp /= nK;
-
-            const int iL  = tmp % nL;
-            tmp /= nL;
-
-            const int type_m = tmp % ntypes;
-            tmp /= ntypes;
-
-            const int type_w = tmp;
+            const auto type_w = (int)par->idx_couple_barg_type_w[idx];
+            const auto type_m = (int)par->idx_couple_barg_type_m[idx];
+            const auto iL = (int)par->idx_couple_barg_love[idx];
+            const auto iKw = (int)par->idx_couple_barg_Kw[idx];
+            const auto iKm = (int)par->idx_couple_barg_Km[idx];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
-                solve_start_as_couple_powergrid(t, type_w, type_m, iL, iKw, iKm, iA, sol, par);
+                if (strcmp(par->bargaining, "limited") == 0) {
+                    solve_start_as_couple_powergrid(t, type_w, type_m, iL, iKw, iKm, iA, sol, par);
+                } else if (strcmp(par->bargaining, "full") == 0) {
+                    solve_start_as_couple_full_commit(t, type_w, type_m, iL, iKw, iKm, iA, sol, par);
+                } else {
+                    logs::write("error_log.txt", 1, "Error: Invalid bargaining type '%s'\n", par->bargaining);
+                    exit(1);
+                }
             }
         }
 
@@ -718,24 +786,25 @@ namespace couple {
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            long long tmp = idx;
+            // long long tmp = idx;
+            // const int iKm = tmp % nK;
+            // tmp /= nK;
+            // const int iKw = tmp % nK;
+            // tmp /= nK;
+            // const int iL  = tmp % nL;
+            // tmp /= nL;
+            // const int iP  = tmp % nP;
+            // tmp /= nP;
+            // const int type_m = tmp % ntypes;
+            // tmp /= ntypes;
+            // const int type_w = tmp;
 
-            const int iKm = tmp % nK;
-            tmp /= nK;
-
-            const int iKw = tmp % nK;
-            tmp /= nK;
-            
-            const int iL  = tmp % nL;
-            tmp /= nL;
-            
-            const int iP  = tmp % nP;
-            tmp /= nP;
-            
-            const int type_m = tmp % ntypes;
-            tmp /= ntypes;
-
-            const int type_w = tmp;
+            const auto type_w = (int)par->idx_couple_type_w[idx];
+            const auto type_m = (int)par->idx_couple_type_m[idx];
+            const auto iP = (int)par->idx_couple_power[idx];
+            const auto iL = (int)par->idx_couple_love[idx];
+            const auto iKw = (int)par->idx_couple_Kw[idx];
+            const auto iKm = (int)par->idx_couple_Km[idx];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
                 calc_expected_value_couple(
@@ -770,24 +839,25 @@ namespace couple {
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            long long tmp = idx;
+            // long long tmp = idx;
+            // const int iKm = tmp % nK;
+            // tmp /= nK;
+            // const int iKw = tmp % nK;
+            // tmp /= nK;
+            // const int iL  = tmp % nL;
+            // tmp /= nL;
+            // const int iP  = tmp % nP;
+            // tmp /= nP;
+            // const int type_m = tmp % ntypes;
+            // tmp /= ntypes;
+            // const int type_w = tmp;
 
-            const int iKm = tmp % nK;
-            tmp /= nK;
-
-            const int iKw = tmp % nK;
-            tmp /= nK;
-            
-            const int iL  = tmp % nL;
-            tmp /= nL;
-            
-            const int iP  = tmp % nP;
-            tmp /= nP;
-            
-            const int type_m = tmp % ntypes;
-            tmp /= ntypes;
-
-            const int type_w = tmp;
+            const auto type_w = (int)par->idx_couple_type_w[idx];
+            const auto type_m = (int)par->idx_couple_type_m[idx];
+            const auto iP = (int)par->idx_couple_power[idx];
+            const auto iL = (int)par->idx_couple_love[idx];
+            const auto iKw = (int)par->idx_couple_Kw[idx];
+            const auto iKm = (int)par->idx_couple_Km[idx];
 
             auto idx_A = index::couple(t, type_w, type_m, iP, iL, iKw, iKm, 0, par);
 
@@ -795,16 +865,10 @@ namespace couple {
             double* Vm_single_to_couple = &sol->Vm_single_to_couple[idx_A];
             double* Vw_couple_to_couple = &sol->Vw_couple_to_couple[idx_A];
             double* Vm_couple_to_couple = &sol->Vm_couple_to_couple[idx_A];
-            double* lw_single_to_couple = &sol->lw_single_to_couple[idx_A];
-            double* lm_single_to_couple = &sol->lm_single_to_couple[idx_A];
-            double* lw_couple_to_couple = &sol->lw_couple_to_couple[idx_A];
-            double* lm_couple_to_couple = &sol->lm_couple_to_couple[idx_A];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
                 Vw_single_to_couple[iA] = Vw_couple_to_couple[iA];
                 Vm_single_to_couple[iA] = Vm_couple_to_couple[iA];
-                lw_single_to_couple[iA] = lw_couple_to_couple[iA];
-                lm_single_to_couple[iA] = lm_couple_to_couple[iA];
             }
         }
     }

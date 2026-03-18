@@ -7,7 +7,7 @@
 
 namespace sim {
 
-    double update_power(int t, int type_w, int type_m, double power_lag, double love, double Kw_lag, double Km_lag, double A_lag,double Aw_lag,double Am_lag,sim_struct* sim, sol_struct* sol, par_struct* par){
+    double update_power(int t, int type_w, int type_m, double power_lag, double love, double Kw_lag, double Km_lag, double A_lag,double Aw_lag,double Am_lag, sol_struct* sol, par_struct* par){
         
         // a. value of remaining a couple at current power
         double power = 1000.0; // nonsense value
@@ -175,8 +175,8 @@ namespace sim {
             }
         }
 
-        // c. return asset value
-        return grid_A[par->num_A-1]; // OBS: Is this right? Returning highest value if not found?
+        logs::write("error_log.txt", 1, "Error: No partner asset value found for random draw %f at A=%f for gender %d (index_iA=%d)\n", random, A, gender, index_iA);
+        exit(1);
 
     }
 
@@ -206,8 +206,8 @@ namespace sim {
             }
         }
 
-        // c. return human capital value
-        return grid_Kp[par->num_K-1]; // OBS: Is this right? Returning highest value if not found?
+        logs::write("error_log.txt", 1, "Error: No partner human capital value found for random draw %f at K=%f for gender %d (index_iK=%d)\n", random, K, gender, index_iK);
+        exit(1);
 
     }
 
@@ -266,6 +266,7 @@ namespace sim {
                     sim->love[it] = love;
                     type_w = sim->init_type_w[i];
                     type_m = sim->init_type_m[i];
+                    sim->divorces[it] = sim->init_divorces[i];
                 } else {
                     int it_1 = index::index2(i,t-1,par->simN,par->simT);
                     Kw_lag = sim->Kw[it_1];
@@ -276,15 +277,22 @@ namespace sim {
                     couple_lag = sim->couple[it_1];
                     power_lag = sim->power[it_1];
                     love = sim->love[it];
-                    type_w = sim->type_w[it_1];
-                    type_m = sim->type_m[it_1];
+                    type_w = sim->init_type_w[i];
+                    type_m = sim->init_type_m[i];
+                    sim->divorces[it] = sim->divorces[it_1];
                 } 
                 
                 // a) Find transitions in couple/single status and calculate power 
                 double power = 1000.0; // nonsense value
                 if (couple_lag) { // if start as couple
-
-                    power = update_power(t,type_w, type_m, power_lag,love, Kw_lag, Km_lag, A_lag, Aw_lag, Am_lag, sim, sol, par);
+                    if (strcmp(par->bargaining, "limited") == 0) {
+                        power = update_power(t,type_w, type_m, power_lag,love, Kw_lag, Km_lag, A_lag, Aw_lag, Am_lag, sol, par);
+                    } else if (strcmp(par->bargaining, "full") == 0) {
+                        power = power_lag;
+                    } else {
+                        logs::write("error_log.txt", 1, "Error: Invalid bargaining type '%s'\n", par->bargaining);
+                        exit(1);
+                    }
     
                     if (power < 0.0) { // divorce is coded as -1
                         sim->couple[it] = false;
@@ -342,13 +350,10 @@ namespace sim {
                         par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                         par->num_power,par->num_love,par->num_K, par->num_K, par->num_A,
                         &sol->Cd_tot_couple_to_couple[idx_sol],
-                        power,love,Kw_lag,Km_lag,A_lag);
-
-                    double M_resources = couple::resources_couple(type_w, type_m, labor_w,labor_m, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)
-                    if (C_tot > M_resources){ 
-                        C_tot = M_resources;
-                    }
-                    sim->C_tot[it] = C_tot;
+                        power,love,Kw_lag,Km_lag,A_lag
+                    );
+                    double M_resources = couple::resources_couple(type_w, type_m, labor_w,labor_m, Kw_lag,Km_lag,A_lag,par); // enforce ressource constraint (may be slightly broken due to approximation error)                  
+                    C_tot = tools::max(0, tools::min(C_tot, M_resources));
 
                     // consumpton allocation
                     double C_inter = 0.0; // placeholder for public consumption
@@ -361,21 +366,20 @@ namespace sim {
                     sim->Cm_inter[it] = C_inter;
                     sim->Qw[it] = Q;
                     sim->Qm[it] = Q;
+                    sim->C_tot[it] = sim->Cw_priv[it] + sim->Cm_priv[it] + C_inter;
 
                     // update end-of-period states
                     sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
                     sim->Kw[it] = tools::max(par->grid_Kw[0], tools::min(sim->Kw[it], par->grid_Kw[par->num_K-1]));
                     sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                     sim->Km[it] = tools::max(par->grid_Km[0], tools::min(sim->Km[it], par->grid_Km[par->num_K-1]));
-                    sim->A[it] = M_resources - sim->Cw_priv[it] - sim->Cm_priv[it] - C_inter;
+                    sim->A[it] = M_resources - sim->C_tot[it];
                     sim->Aw[it] = par->div_A_share * sim->A[it];
                     sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
-                    sim->type_w[it] = type_w;
-                    sim->type_m[it] = type_m;
                     sim->power[it] = power;
                     if(t<par->simT-1){
                         int it1 = index::index2(i,t+1,par->simN,par->simT);
-                        sim->love[it1] = love + par->sigma_love*sim->draw_love[it1];
+                        sim->love[it1] = love + sim->draw_love[it1];
                         sim->love[it1] = tools::max(par->grid_love[0], tools::min(sim->love[it1], par->grid_love[par->num_love-1]));
                     }
 
@@ -399,36 +403,49 @@ namespace sim {
                     double Cm_tot = tools::interp_2d(par->grid_Km,par->grid_Am,par->num_K,par->num_A,sol_single_m,Km_lag,Am_lag);
                     double Mw = single::resources_single(type_w, labor_w, Kw_lag, Aw_lag, woman, par); // enforce ressource constraint (may be slightly broken due to approximation error)
                     double Mm = single::resources_single(type_m, labor_m, Km_lag, Am_lag, man, par);
-                    if (Cw_tot > Mw){
-                        Cw_tot = Mw;
-                    }
-                    if (Cm_tot > Mm){
-                        Cm_tot = Mm;
-                    }
-                    sim->Cw_tot[it] = Cw_tot;
-                    sim->Cm_tot[it] = Cm_tot;
-
+                    
+                    Cw_tot = tools::max(0, tools::min(Cw_tot, Mw));
+                    Cm_tot = tools::max(0, tools::min(Cm_tot, Mm));
+                    
                     // consumption allocation
                     precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);
                     precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
+                    sim->Cw_tot[it] = sim->Cw_priv[it] + sim->Cw_inter[it];
+                    sim->Cm_tot[it] = sim->Cm_priv[it] + sim->Cm_inter[it];
 
                     // update end-of-period states  
                     sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
                     sim->Kw[it] = tools::max(par->grid_Kw[0], tools::min(sim->Kw[it], par->grid_Kw[par->num_K-1]));
                     sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
                     sim->Km[it] = tools::max(par->grid_Km[0], tools::min(sim->Km[it], par->grid_Km[par->num_K-1]));
-                    sim->Aw[it] = Mw - sim->Cw_priv[it] - sim->Cw_inter[it];
-                    sim->Am[it] = Mm - sim->Cm_priv[it] - sim->Cm_inter[it];
-                    sim->type_w[it] = type_w;
-                    sim->type_m[it] = type_m;
+                    sim->Aw[it] = Mw - sim->Cw_tot[it];
+                    sim->Am[it] = Mm - sim->Cm_tot[it];
                     // sim->power[it] = -1.0;
 
-                }
+                } // couple / single
 
                 // c) variables for moment simulation
                 // i) wages
-                sim->wage_w[it] = utils::wage(type_w, Kw_lag, woman, par);
-                sim->wage_m[it] = utils::wage(type_m, Km_lag, man, par);
+                if (sim->lw[it] > 1e-6){
+                    sim->wage_inc_w[it] = utils::wage(type_w, Kw_lag, woman, par) * sim->lw[it] * par->available_hours;
+                }
+                if (sim->lm[it] > 1e-6){
+                    sim->wage_inc_m[it] = utils::wage(type_m, Km_lag, man, par) * sim->lm[it] * par->available_hours;
+                }
+
+                // after tax income
+                if (sim->couple[it]){
+                    sim->after_tax_inc_w[it] = couple::after_tax_income_couple(type_w, type_m, sim->lw[it], sim->lm[it], Kw_lag, Km_lag, A_lag, par);
+                    sim->after_tax_inc_m[it] = couple::after_tax_income_couple(type_w, type_m, sim->lw[it], sim->lm[it], Kw_lag, Km_lag, A_lag, par);
+                } else {
+                    sim->after_tax_inc_w[it] = single::after_tax_income_single(type_w, sim->lw[it], Kw_lag, Aw_lag, woman, par);
+                    sim->after_tax_inc_m[it] = single::after_tax_income_single(type_m, sim->lm[it], Km_lag, Am_lag, man, par);
+                }
+
+                // divorces
+                if (couple_lag & (!sim->couple[it])){
+                    sim->divorces[it] += 1;
+                }
 
                 // ii) leisure
                 sim->leisure_w[it] = (1.0 - sim->hw[it] - sim->lw[it]);
@@ -440,7 +457,9 @@ namespace sim {
                     love_now = sim->love[it];
                 }
                 double lh_w = (sim->lw[it] + sim->hw[it]);
-                sim->util[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
+                sim->util_w[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
+                double lh_m = (sim->lm[it] + sim->hm[it]);
+                sim->util_m[it] = pow(par->beta , t) * utils::util(sim->Cm_priv[it], lh_m, sim->Qm[it],man,par,love_now);
 
             } // t
         } // i

@@ -414,15 +414,23 @@ namespace precompute{
             
             double start_hw = (1 - (l-1e-6))/2.0;
             double start_hm = (1 - (l-1e-6))/2.0;
-            
+            double start_Cw_priv = par->grid_Ctot[par->num_Ctot - 1]/2.0;
+            double start_Cm_priv = par->grid_Ctot[par->num_Ctot - 1]/2.0;
+
             for (int iC=par->num_Ctot - 1; iC>=0; iC--){  //solve in descending order to have correct starting values for h in first grid point
                 double C_tot = par->grid_Ctot[iC];
                 auto idx = index::index2(il,iC,par->num_l,par->num_Ctot);
 
-                double start_C_priv = C_tot/2.0;
+                if (iC < par->num_Ctot - 1){ // reuse starting values when Ctot is low
+                    auto idx_last = index::index2(il, iC+1, par->num_l, par->num_Ctot);
+                    start_Cw_priv = sol->pre_Cwd_priv_single[idx_last];
+                    start_Cm_priv = sol->pre_Cmd_priv_single[idx_last];
+                    start_hw = sol->pre_hwd_single[idx_last];
+                    start_hm = sol->pre_hmd_single[idx_last];
+                }
 
-                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_C_priv, &start_hm, man, par);
-                solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_C_priv, &start_hw, woman, par);
+                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_Cw_priv, &start_hm, man, par);
+                solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_Cm_priv, &start_hw, woman, par);
 
                 // start_hw = sol->pre_hmd_single[idx]; //update starting values for h
                 // start_hm = sol->pre_hmd_single[idx];
@@ -439,45 +447,46 @@ namespace precompute{
         } // labor supply
 
         // precompute optimal allocation for couples
-        const int nL = par->num_l;
+        const int nl = par->num_l;
         const int nP = par->num_power;
 
         // total number of iterations
-        const long long total = (long long)nL * nL * nP;
+        const long long total = (long long)nl * nl * nP;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            long long tmp = idx;
+            // long long tmp = idx;
+            // const int iP  = tmp % nP;
+            // tmp /= nP;
+            // const int ilm = tmp % nl;
+            // tmp /= nl;
+            // const int ilw = tmp;
 
-            const int iP  = tmp % nP;
-            tmp /= nP;
+            const auto ilw = (int)par->idx_pre_couple_lw[idx];
+            const auto ilm = (int)par->idx_pre_couple_lm[idx];
+            const auto iP = (int)par->idx_pre_couple_power[idx];
 
-            const int ilm = tmp % nL;
-            tmp /= nL;
-
-            const int ilw = tmp;
                     
             double lw = par->grid_l[ilw];
             double lm = par->grid_l[ilm];
             double power = par->grid_power[iP];
             
-            double start_hw = (1.0 - lw)/2.0;
-            double start_hm = (1.0 - lm)/2.0;
+            double start_hw = (1 - (lw-1e-6))/2.0;
+            double start_hm = (1 - (lm-1e-6))/2.0;
+            double start_Cw_priv = (power+0.1) * par->grid_Ctot[par->num_Ctot - 1]/3.0;
+            double start_Cm_priv = (1-power+0.1) * par->grid_Ctot[par->num_Ctot - 1]/3.0;
             
             for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
                 
                 double C_tot = par->grid_Ctot[iC];
-                double start_Cw_priv = (power+0.1)*C_tot/3.0;
-                double start_Cm_priv = (1-power+0.1)*C_tot/3.0;
 
-                if(iC<(par->num_Ctot - 1)){ // update starting values for private consumption based on previous solution
+                if(iC < par->num_Ctot - 1){  // update starting values for private consumption based on previous solution
                     auto idx_last = index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot);
-                    start_Cw_priv = sol->pre_Cwd_priv_couple[idx_last];
-                    start_Cm_priv = sol->pre_Cmd_priv_couple[idx_last];
-
                     start_hw = sol->pre_hwd_couple[idx_last];
                     start_hm = sol->pre_hmd_couple[idx_last];
+                    start_Cw_priv = sol->pre_Cwd_priv_couple[idx_last];
+                    start_Cm_priv = sol->pre_Cmd_priv_couple[idx_last];
                 }
 
                 auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);

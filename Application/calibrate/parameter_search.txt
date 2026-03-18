@@ -1,25 +1,40 @@
 
 guess 0 of 5
- available_hours        = 2500.5000
- full_time_hours        =   0.6700
- obj. = 156669552566.16714478 (best :10000000000.000000)
+ mu                     =   2.2500
+ mu_mult                =   2.3333
+ gamma                  =   0.4002
+ gamma_mult             =   2.7143
+ sigma_mu               =   0.9092
+ obj. = nan (best :10000000000.000000)
 
 guess 1 of 5
- available_hours        = 3750.2500
- full_time_hours        =   0.3400
- obj. = 352557287182.15844727 (best :10000000000.000000)
+ mu                     =   2.6250
+ mu_mult                =   1.6667
+ gamma                  =   0.3004
+ gamma_mult             =   2.4286
+ sigma_mu               =   0.8184
+ obj. = nan (best :10000000000.000000)
 
 guess 2 of 5
- available_hours        = 1250.7500
- full_time_hours        =   0.8900
- obj. = 39150461086.15844727 (best :10000000000.000000)
+ mu                     =   1.8750
+ mu_mult                =   2.7778
+ gamma                  =   0.2006
+ gamma_mult             =   2.1429
+ sigma_mu               =   0.7275
+ obj. = nan (best :10000000000.000000)
 
 guess 3 of 5
- available_hours        = 4375.1250
- full_time_hours        =   0.5600
- obj. = 479889395666.15838623 (best :10000000000.000000)
+ mu                     =   2.8125
+ mu_mult                =   2.1111
+ gamma                  =   0.1008
+ gamma_mult             =   1.8571
+ sigma_mu               =   0.6367
+ obj. = nan (best :10000000000.000000)
 
 guess 4 of 5
- available_hours        = 1875.6250
- full_time_hours        =   0.2300
- obj. = 88113926434.15844727 (best :10000000000.000000)
+ mu                     =   2.0625
+ mu_mult                =   1.4444
+ gamma                  =   0.4800
+ gamma_mult             =   1.5714
+ sigma_mu               =   0.5459
+ obj. = nan (best :10000000000.000000)

@@ -66,11 +66,60 @@ namespace single {
         return best_Ctot;
     };
 
-    double resources_single(int type, double labor, double K, double A, int gender, par_struct* par) {
-        if (labor == 0.0) return par->R * A + RESOURCES_EPS;
+    
+    double tax_single(double income, par_struct* par) {
+
+        // Define brackets and their rates in one place
+        // Each row: {bracket top, rate applied up to that top}
+        int    num_brackets     = 5;
+        double bracket_tops[5]  = {26250.0, 63550.0, 132600.0, 288350.0, 1e308};
+        // double bracket_rates[5] = {20.0, 20.0, 20.0, 20.0, 20.0};
+        double bracket_rates[5] = {15.0, 28.0, 31.0, 36.0, 39.6};
+        
+        double money_metric = 10000.0;
+        double percent = 100.0;
+        for (int i = 0; i < num_brackets; i++) {
+            bracket_tops[i] = bracket_tops[i] / money_metric;
+            bracket_rates[i] = bracket_rates[i] / percent;
+        }
+
+
+        double tax        = 0.0;
+        double prev_top   = 0.0;
+
+        for (int i = 0; i < num_brackets; i++) {
+            double bracket_income = 0.0;
+            if (income <= bracket_tops[i]) {
+                bracket_income = income - prev_top;
+                tax += bracket_income * bracket_rates[i];
+                return tax;
+            }
+            bracket_income = bracket_tops[i] - prev_top;
+            tax += bracket_income * bracket_rates[i];
+            prev_top = bracket_tops[i];
+        }
+
+        return tax;
+
+    }
+
+    double after_tax_income_single(int type, double labor, double K, double A, int gender, par_struct* par) {
+        if (labor == 0.0) return RESOURCES_EPS;
 
         double w = utils::wage(type, K, gender, par);
-        return par->R * A + w * labor * par->available_hours * (1.0 - par->tax_rate);
+        double gross_wage_income = w * labor * par->available_hours;
+        
+        // income floor
+        if (gross_wage_income < 0.0001) { 
+            gross_wage_income = 0.0001;
+        }
+        double tax = tax_single(gross_wage_income, par);
+        return gross_wage_income - tax + (par->R - 1.0) * A;
+    }
+
+    double resources_single(int type, double labor, double K, double A, int gender, par_struct* par) {
+        double after_tax_income = after_tax_income_single(type, labor, K, A, gender, par);
+        return A + after_tax_income; // note that interest rates of A are included in after_tax_income
     }
 
     double value_of_choice_single_to_single(double* C_priv, double* h, double* C_inter, double* Q,
@@ -555,12 +604,13 @@ namespace single {
         #pragma omp for schedule(static)
         for (int idx = 0; idx < total; ++idx) {
 
-            int tmp = idx;
+            // int tmp = idx;
+            // const int iK  = tmp % nK;
+            // tmp /= nK;
+            // const int type  = tmp;
 
-            const int iK  = tmp % nK;
-            tmp /= nK;
-
-            const int type  = tmp;
+            const auto type = (int)par->idx_single_type[idx];
+            const auto iK = (int)par->idx_single_K[idx];
 
             for (int il = 0; il < par->num_l; il++) {
                 solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par); // CHANGED
@@ -693,7 +743,7 @@ namespace single {
     
     }
     
-        double expected_value_cond_meet_partner(int t, int type, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
+    double expected_value_cond_meet_partner(int t, int type, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
         // unpack
         double* V_single_to_single = sol->Vw_single_to_single;
         double* V_single_to_couple = sol->Vw_single_to_couple;
@@ -716,8 +766,8 @@ namespace single {
 
         // loop over potential partners conditional on meeting a partner
         double Ev_cond = 0.0;
-        for (int iL = 0; iL < par->num_love; iL++) {
-            const double prob_love = par->prob_partner_love[iL];
+        for (int iL_shock = 0; iL_shock < par->num_shock_love; iL_shock++) {
+            const double prob_love = par->grid_weight_love[iL_shock];
             if (prob_love <= 0.0) continue;
 
             for (int type_p = 0; type_p < par->num_types; type_p++) { // partner's type
@@ -730,14 +780,13 @@ namespace single {
                     const double prob_K = prob_partner_K[idx_Kgrid];
                     if (prob_K <= 0.0) continue;
 
-                    const double love = par->grid_love[iL];
                     for (int iAp = 0; iAp < par->num_A; iAp++) { // partner's wealth
                         auto idx_Agrid = index::index2(iA, iAp, par->num_A, par->num_A);
                         const double prob_A = prob_partner_A[idx_Agrid];
                         if (prob_A <= 0.0) continue;
-
-                        const double prob = prob_A * prob_K * prob_love;
-
+                        
+                        const double prob = prob_A * prob_K * prob_type * prob_love;
+                        
                         // only calculate if match has positive probability of happening
                         if (prob>0.0) {
                             int iAw = iA;
@@ -754,19 +803,20 @@ namespace single {
                                 type_w = type_p;
                                 type_m = type;
                             }
-
+                            
                             // meet person with same level of wealth and human capital
                             const double Aw = grid_A[iAw];
                             const double Am = grid_A[iAm];
                             const double Kw = grid_K[iKw]; 
                             const double Km = grid_K[iKm];
-
-                            double power = calc_initial_bargaining_weight(t, type_w, type_m, love, Kw, Km, Aw, Am, sol, par, iL);
+                            
+                            const double love = par->grid_shock_love[iL_shock] + par->mean_love;
+                            double power = calc_initial_bargaining_weight(t, type_w, type_m, love, Kw, Km, Aw, Am, sol, par, -1);
 
                             double val;
                             if (power >= 0.0) {
                                 double A_tot = Aw + Am;
-                                auto idx_interp_couple = index::couple(t, type_w, type_m, 0, iL, 0, 0, 0, par); 
+                                auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par); 
                                 val = tools::_interp_5d(
                                     par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
                                     par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
@@ -788,34 +838,34 @@ namespace single {
     }
 
 
-    void expected_value_start_single_Agrid(int t, int type, int iK, int gender, sol_struct* sol,par_struct* par){
-        auto idx_A = index::single(t, type, iK, 0, par);
-        // get variables
-        double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
-        double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
-        double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
-        double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
+    // void expected_value_start_single_Agrid(int t, int type, int iK, int gender, sol_struct* sol,par_struct* par){
+    //     auto idx_A = index::single(t, type, iK, 0, par);
+    //     // get variables
+    //     double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
+    //     double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
+    //     double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
+    //     double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
 
-        const double p_meet = par->prob_repartner[t];
-        const bool no_meet = (par->p_meet == 0.0);
-        for (int iA = 0; iA < par->num_A; iA++) {
-            if (no_meet) {
-                // expected value of starting single is just value of remaining single
-                EV_start_as_single[iA] = V_single_to_single[iA];
-                EV_cond_meet_partner[iA] = V_single_to_single[iA];
-                continue;
-            }
+    //     const double p_meet = par->prob_repartner[t];
+    //     const bool no_meet = (par->p_meet == 0.0);
+    //     for (int iA = 0; iA < par->num_A; iA++) {
+    //         if (no_meet) {
+    //             // expected value of starting single is just value of remaining single
+    //             EV_start_as_single[iA] = V_single_to_single[iA];
+    //             EV_cond_meet_partner[iA] = V_single_to_single[iA];
+    //             continue;
+    //         }
 
-            // Value conditional on meeting partner
-            double EV_cond = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
+    //         // Value conditional on meeting partner
+    //         double EV_cond = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
 
-            // expected value of starting single
-            EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
-            EV_cond_meet_partner[iA] = EV_cond;
-        }
+    //         // expected value of starting single
+    //         EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
+    //         EV_cond_meet_partner[iA] = EV_cond;
+    //     }
 
         
-    }
+    // }
 
 
     
@@ -872,12 +922,14 @@ namespace single {
             #pragma omp for schedule(static)
             for (long long int idx = 0; idx < total; ++idx) {
 
-                int tmp = idx;
+                // int tmp = idx;
+                // const int iK  = tmp % nK;
+                // tmp /= nK;
+                // const int type  = tmp;
 
-                const int iK  = tmp % nK;
-                tmp /= nK;
+                const auto type = (int)par->idx_single_type[idx];
+                const auto iK = (int)par->idx_single_K[idx];
 
-                const int type  = tmp;
                 for (int iA = 0; iA < par->num_A; iA++) {
                     auto idx = index::single(t, type, iK, iA, par); // CHANGED
 
@@ -900,12 +952,15 @@ namespace single {
             #pragma omp for schedule(static)
             for (int idx = 0; idx < total; ++idx) {
 
-                int tmp = idx;
+                // int tmp = idx;
+                // const int iK  = tmp % nK;
+                // tmp /= nK;
+                // const int type  = tmp;
 
-                const int iK  = tmp % nK;
-                tmp /= nK;
+                const auto type = (int)par->idx_single_type[idx];
+                const auto iK = (int)par->idx_single_K[idx];
 
-                const int type  = tmp;
+
                 for (int iA = 0; iA < par->num_A; iA++) {
                     calc_expected_value_single(t, type, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par); // CHANGED
                 }
@@ -928,12 +983,14 @@ namespace single {
         #pragma omp for schedule(static)
         for (int idx = 0; idx < total; ++idx) {
 
-            int tmp = idx;
-
-            const int iK  = tmp % nK;
-            tmp /= nK;
-
-            const int type  = tmp;
+            // int tmp = idx;
+            // const int iK  = tmp % nK;
+            // tmp /= nK;
+            // const int type  = tmp;
+            
+            const auto type = (int)par->idx_single_type[idx];
+            const auto iK = (int)par->idx_single_K[idx];
+            
             
             auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
 
@@ -941,16 +998,10 @@ namespace single {
             double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
             double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
             double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
-            double* lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
-            double* lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
-            double* lw_single_to_single = &sol->lw_single_to_single[idx_A];
-            double* lm_single_to_single = &sol->lm_single_to_single[idx_A];
 
             for (int iA = 0; iA < par->num_A; iA++) {
                 Vw_couple_to_single[iA] = Vw_single_to_single[iA] - div_cost;
                 Vm_couple_to_single[iA] = Vm_single_to_single[iA] - div_cost;
-                lw_couple_to_single[iA] = lw_single_to_single[iA];
-                lm_couple_to_single[iA] = lm_single_to_single[iA];
             }
         }
     }
