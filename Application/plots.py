@@ -32,7 +32,7 @@ class model_plotter():
                 'iP': 'grid_power', 
                 'iL': 'grid_love', 
                 'iA': 'grid_A',
-                'iA_pd': 'grid_A_pd',
+                # 'iA_pd': 'grid_A_pd',
                 'il': 'grid_l',
             }
         elif isinstance(grid_names, dict):
@@ -500,22 +500,22 @@ class model_plotter():
     
     def plot_sim_female_single(self, ax, agg_fct='mean', **kwargs):
         singles_mask = 'couple == 0'
-        variables = ['Aw','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util']
+        variables = ['Aw','Cw_tot','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util_w']
         return self.plot_simulated_vars(ax, variables, where=singles_mask, agg_fct=agg_fct, **kwargs)
     
     def plot_sim_male_single(self, ax, agg_fct='mean', **kwargs):
         singles_mask = 'couple == 0'
-        variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm']
+        variables = ['Am','Cm_tot','Cm_priv', 'Cm_inter', 'lm','hm','Qm', 'util_m']
         return self.plot_simulated_vars(ax, variables, where=singles_mask, agg_fct=agg_fct, **kwargs)
         
     def plot_sim_female_couple(self, ax, agg_fct='mean', **kwargs):
         couples_mask = 'couple == 1'
-        variables = ['A','Kw','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util']
+        variables = ['A','Kw','Cw_priv', 'Cw_inter', 'lw','hw','Qw','util_w']
         return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
 
     def plot_sim_male_couple(self, ax, agg_fct='mean', **kwargs):
         couples_mask = 'couple == 1'
-        variables = ['A','Km','Cm_priv', 'Cm_inter', 'lm','hm','Qm', 'util']
+        variables = ['A','Km','Cm_priv', 'Cm_inter', 'lm','hm','Qm', 'util_m']
         return self.plot_simulated_vars(ax, variables, where=couples_mask, agg_fct=agg_fct, **kwargs)
 
     def plot_sim_couple(self, ax, agg_fct='mean', **kwargs):

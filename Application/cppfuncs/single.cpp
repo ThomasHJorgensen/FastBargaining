@@ -604,12 +604,13 @@ namespace single {
         #pragma omp for schedule(static)
         for (int idx = 0; idx < total; ++idx) {
 
-            int tmp = idx;
+            // int tmp = idx;
+            // const int iK  = tmp % nK;
+            // tmp /= nK;
+            // const int type  = tmp;
 
-            const int iK  = tmp % nK;
-            tmp /= nK;
-
-            const int type  = tmp;
+            const auto type = (int)par->idx_single_type[idx];
+            const auto iK = (int)par->idx_single_K[idx];
 
             for (int il = 0; il < par->num_l; il++) {
                 solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par); // CHANGED
@@ -921,12 +922,14 @@ namespace single {
             #pragma omp for schedule(static)
             for (long long int idx = 0; idx < total; ++idx) {
 
-                int tmp = idx;
+                // int tmp = idx;
+                // const int iK  = tmp % nK;
+                // tmp /= nK;
+                // const int type  = tmp;
 
-                const int iK  = tmp % nK;
-                tmp /= nK;
+                const auto type = (int)par->idx_single_type[idx];
+                const auto iK = (int)par->idx_single_K[idx];
 
-                const int type  = tmp;
                 for (int iA = 0; iA < par->num_A; iA++) {
                     auto idx = index::single(t, type, iK, iA, par); // CHANGED
 
@@ -949,12 +952,15 @@ namespace single {
             #pragma omp for schedule(static)
             for (int idx = 0; idx < total; ++idx) {
 
-                int tmp = idx;
+                // int tmp = idx;
+                // const int iK  = tmp % nK;
+                // tmp /= nK;
+                // const int type  = tmp;
 
-                const int iK  = tmp % nK;
-                tmp /= nK;
+                const auto type = (int)par->idx_single_type[idx];
+                const auto iK = (int)par->idx_single_K[idx];
 
-                const int type  = tmp;
+
                 for (int iA = 0; iA < par->num_A; iA++) {
                     calc_expected_value_single(t, type, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par); // CHANGED
                 }
@@ -977,12 +983,14 @@ namespace single {
         #pragma omp for schedule(static)
         for (int idx = 0; idx < total; ++idx) {
 
-            int tmp = idx;
-
-            const int iK  = tmp % nK;
-            tmp /= nK;
-
-            const int type  = tmp;
+            // int tmp = idx;
+            // const int iK  = tmp % nK;
+            // tmp /= nK;
+            // const int type  = tmp;
+            
+            const auto type = (int)par->idx_single_type[idx];
+            const auto iK = (int)par->idx_single_K[idx];
+            
             
             auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
 
@@ -990,16 +998,10 @@ namespace single {
             double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];
             double* Vw_single_to_single = &sol->Vw_single_to_single[idx_A];
             double* Vm_single_to_single = &sol->Vm_single_to_single[idx_A];
-            double* lw_couple_to_single = &sol->lw_couple_to_single[idx_A];
-            double* lm_couple_to_single = &sol->lm_couple_to_single[idx_A];
-            double* lw_single_to_single = &sol->lw_single_to_single[idx_A];
-            double* lm_single_to_single = &sol->lm_single_to_single[idx_A];
 
             for (int iA = 0; iA < par->num_A; iA++) {
                 Vw_couple_to_single[iA] = Vw_single_to_single[iA] - div_cost;
                 Vm_couple_to_single[iA] = Vm_single_to_single[iA] - div_cost;
-                lw_couple_to_single[iA] = lw_single_to_single[iA];
-                lm_couple_to_single[iA] = lm_single_to_single[iA];
             }
         }
     }
