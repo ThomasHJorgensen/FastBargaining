@@ -264,8 +264,10 @@ class HouseholdModelClass(EconModelClass):
 
         par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u)
         if par.interp_inverse:
-            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
+            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u        
         
+        # TJ: numerical
+        par.grid_Wpre = nonlinspace(1.0e-6, 0.8, par.num_Ctot, 1.1)
         
         
         # ---------- 6) repartnering ----------
@@ -476,11 +478,12 @@ class HouseholdModelClass(EconModelClass):
             "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
             "pre_Cd_inter_couple", "pre_Qd_couple",
             "pre_hwd_couple", "pre_hmd_couple",
-            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
-            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
-            "pre_Qwd_single", "pre_Qmd_single",
-            "pre_hwd_single", "pre_hmd_single",
+            # "pre_Cwd_priv_single", "pre_Cmd_priv_single",
+            # "pre_Cwd_inter_single", "pre_Cmd_inter_single",
+            # "pre_Qwd_single", "pre_Qmd_single",
+            # "pre_hwd_single", "pre_hmd_single",
             "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
+            "grid_Cinterp_couple",
         ):
             _alloc(sol, name, shape_pre_couple)
 
@@ -527,7 +530,7 @@ class HouseholdModelClass(EconModelClass):
 
         # --- e. other
         # timing
-        _alloc(sol, "solution_time", (1,))
+        # _alloc(sol, "solution_time", (1,))
 
     def fill_allocations(self):
         """Fill all allocated arrays with their initial values (nan/inf/zeros) and draws/init states."""
@@ -691,7 +694,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
 
         # ========= e. timing =========
-        sol.solution_time[...] = 0.0
+        # sol.solution_time[...] = 0.0
 
     def solve(self):
 
