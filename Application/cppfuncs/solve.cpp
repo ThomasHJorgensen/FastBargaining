@@ -67,7 +67,7 @@ EXPORT double calc_init_mu(int t, double love, double Aw, double Am, sol_struct*
 }
 
 
-EXPORT void random_C_points(double* labor_w, double* labor_m, double* divorce, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
+EXPORT void random_C_points(double* labor_w, double* labor_m, double* power_diff, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
 
     int t = 0;
 
@@ -103,15 +103,16 @@ EXPORT void random_C_points(double* labor_w, double* labor_m, double* divorce, d
                                 labor_w[idx] = ilw_update;
                                 labor_m[idx] = ilm_update;
                                 
-                                // divorce
+                                // power
                                 double Aw = par->div_A_share * A;
                                 double Am = (1.0 - par->div_A_share) * A;
                                 double power_update = sim::update_power(t,type_w, type_m, power, love, Kw, Km, A, Aw, Am, sol, par);
-                                if (power_update < 0.0) {
-                                    divorce[idx] = 1.0;
-                                } else {
-                                    divorce[idx] = 0.0;
-                                }
+                                // if (power_update < 0.0) {
+                                //     divorce[idx] = 1.0;
+                                // } else {
+                                //     divorce[idx] = 0.0;
+                                // }
+                                power_diff[idx] = power_update - power;
 
                                 // consumption points
                                 for (int ilw = 0; ilw < par->num_l; ilw++){

@@ -486,10 +486,10 @@ class HouseholdModelClass(EconModelClass):
             "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
             "pre_Cd_inter_couple", "pre_Qd_couple",
             "pre_hwd_couple", "pre_hmd_couple",
-            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
-            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
-            "pre_Qwd_single", "pre_Qmd_single",
-            "pre_hwd_single", "pre_hmd_single",
+            # "pre_Cwd_priv_single", "pre_Cmd_priv_single",
+            # "pre_Cwd_inter_single", "pre_Cmd_inter_single",
+            # "pre_Qwd_single", "pre_Qmd_single",
+            # "pre_hwd_single", "pre_hmd_single",
             "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
         ):
             _alloc(sol, name, shape_pre_couple)
@@ -1000,16 +1000,17 @@ class HouseholdModelClass(EconModelClass):
             pickle.dump(par_dict, f)
             
             
-    def MAD_consumption(self,true_model):
+    def MAD_consumption(self,true_model, num=13):
         par = self.par
         sol = self.sol
         
         # grids
-        num_P = 7
-        num_love = 7
-        num_Kw = 7
-        num_Km = 7
-        num_A = 7
+        num = 13
+        num_P = num
+        num_love = num
+        num_Kw = num
+        num_Km = num
+        num_A = num
         
         # shapes for allocation
         shape = (par.num_types, par.num_types, num_P, num_love, num_Kw, num_Km, num_A)
@@ -1018,24 +1019,31 @@ class HouseholdModelClass(EconModelClass):
         # local model
         lw = np.empty(shape, dtype=np.float64)
         lm = np.empty(shape, dtype=np.float64)
-        divorce = np.empty(shape, dtype=np.float64)
+        power_diff = np.empty(shape, dtype=np.float64)
         C = np.empty(shape_d, dtype=np.float64)
-        self.cpp.random_C_points(lw, lm, divorce, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
+        self.cpp.random_C_points(lw, lm, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
         
         # true model
         lw_true = np.empty(shape, dtype=np.float64)
         lm_true = np.empty(shape, dtype=np.float64)
-        divorce_true = np.empty(shape, dtype=np.float64)
+        power_diff_true = np.empty(shape, dtype=np.float64)
         C_true = np.empty(shape_d, dtype=np.float64)
-        true_model.cpp.random_C_points(lw_true, lm_true, divorce_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
+        true_model.cpp.random_C_points(lw_true, lm_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
 
         # deviations
-        lw_MAD = np.mean(lw != lw_true)
-        lm_MAD = np.mean(lm != lm_true)
-        divorce_MAD = ((divorce_true == 1.0) & (divorce == 0.0)).sum() / (divorce_true == 1.0).sum() # false negatives among true divorces
+        l_MAD = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
+ 
+        divorced = (power_diff<-1.0)
+        divorced_true = (power_diff_true<-1.0)
+        divorce_MAD = np.mean((divorced) != (divorced_true))
+        
+        power_updated = (power_diff != 0.0) & (power_diff>-1.0)
+        power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
+        power_MAD = np.mean(np.abs(power_diff[power_updated_true & (~divorced)] - power_diff_true[power_updated_true & (~divorced)]))
+        
         C_MAD = np.mean(np.abs(C - C_true))
         
-        return lw_MAD, lm_MAD, divorce_MAD, C_MAD
+        return l_MAD, divorce_MAD, power_MAD, C_MAD
             
     def wealth_compensation(self,true_model):
         # search for level of initial wealth that makes mean lifetime utility similar with true model
