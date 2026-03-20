@@ -261,12 +261,13 @@ namespace sim {
                     Aw_lag = sim->init_Aw[i];
                     Am_lag = sim->init_Am[i];
                     couple_lag = sim->init_couple[i];
-                    power_lag = par->grid_power[sim->init_power_idx[i]];
                     love = sim->init_love[i];
                     sim->love[it] = love;
                     type_w = sim->init_type_w[i];
                     type_m = sim->init_type_m[i];
                     sim->divorces[it] = sim->init_divorces[i];
+                    // power_lag = par->grid_power[sim->init_power_idx[i]];
+                    power_lag = single::calc_initial_bargaining_weight(t, type_w, type_m, love, Kw_lag, Km_lag, Aw_lag, Am_lag, sol, par); 
                 } else {
                     int it_1 = index::index2(i,t-1,par->simN,par->simT);
                     Kw_lag = sim->Kw[it_1];
