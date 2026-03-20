@@ -312,8 +312,10 @@ class HouseholdModelClass(EconModelClass):
 
         par.grid_inv_marg_u = np.flip(par.grid_C_for_marg_u)
         if par.interp_inverse:
-            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u
+            par.grid_inv_marg_u = 1.0/par.grid_inv_marg_u        
         
+        # TJ: numerical
+        par.grid_Wpre = nonlinspace(1.0e-6, 0.8, par.num_Ctot, 1.1)
         
         
         # ---------- 6) repartnering ----------
@@ -491,6 +493,7 @@ class HouseholdModelClass(EconModelClass):
             # "pre_Qwd_single", "pre_Qmd_single",
             # "pre_hwd_single", "pre_hmd_single",
             "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
+            "grid_Cinterp_couple",
         ):
             _alloc(sol, name, shape_pre_couple)
 
@@ -557,6 +560,7 @@ class HouseholdModelClass(EconModelClass):
         par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=dtype_int)
         # OBS: shape_pre_single should not be used for iEGM where i_u_marg is important and not iC.
         
+        # _alloc(sol, "solution_time", (1,))
 
     def fill_allocations(self):
         """Fill all allocated arrays with their initial values (nan/inf/zeros) and draws/init states."""
@@ -720,7 +724,23 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_uniform_partner_type_w[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_m[...] = np.random.uniform(size=shape_sim)
 
-        sim.draw_repartner_love[...] = np.random.normal(size=shape_sim, loc=par.mean_love, scale=par.sigma_love)
+        sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
+
+
+        # d.3 initial distribution
+        sim.init_A[...] = 0.0
+        sim.init_Kw[...] = 0.0
+        sim.init_Km[...] = 0.0
+        sim.init_Aw[...] = sim.init_A * par.div_A_share
+        sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
+        sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
+        sim.init_power_idx[...] = (par.num_power // 2)
+        sim.init_love[...] = 0.0
+        sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
+        sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
+
+        # ========= e. timing =========
+        # sol.solution_time[...] = 0.0
 
     def solve(self):
 

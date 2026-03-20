@@ -331,6 +331,72 @@ namespace couple {
         return C_tot;
     }
 
+    void precompute_couple(sol_struct* sol, par_struct* par){
+        
+        // precompute optimal allocation for couples
+        const int nL = par->num_l;
+        const int nP = par->num_power;
+
+        // total number of iterations
+        const long long total = (long long)nL * nL * nP;
+
+        #pragma omp for schedule(static)
+        for (long long idx = 0; idx < total; ++idx) {
+
+            long long tmp = idx;
+
+            const int iP  = tmp % nP;
+            tmp /= nP;
+
+            const int ilm = tmp % nL;
+            tmp /= nL;
+
+            const int ilw = tmp;
+                    
+            double lw = par->grid_l[ilw];
+            double lm = par->grid_l[ilm];
+            double power = par->grid_power[iP];
+            
+            double start_hw = (1.0 - lw)/2.0;
+            double start_hm = (1.0 - lm)/2.0;
+            
+            // uncomment if used instead
+            // for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
+                
+            //     double C_tot = par->grid_Ctot[iC];
+            //     double start_Cw_priv = (power+0.1)*C_tot/3.0;
+            //     double start_Cm_priv = (1-power+0.1)*C_tot/3.0;
+
+            //     if(iC<(par->num_Ctot - 1)){ // update starting values for private consumption based on previous solution
+            //         auto idx_last = index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+            //         start_Cw_priv = sol->pre_Cwd_priv_couple[idx_last];
+            //         start_Cm_priv = sol->pre_Cmd_priv_couple[idx_last];
+
+            //         start_hw = sol->pre_hwd_couple[idx_last];
+            //         start_hm = sol->pre_hmd_couple[idx_last];
+            //     }
+
+            //     auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+            //     precompute::solve_intraperiod_couple(&sol->pre_Cwd_priv_couple[idx], &sol->pre_Cmd_priv_couple[idx], &sol->pre_hwd_couple[idx], &sol->pre_hmd_couple[idx], 
+            //         &sol->pre_Cd_inter_couple[idx], &sol->pre_Qd_couple[idx],
+            //         C_tot, lw, lm, power, par,
+            //         start_Cw_priv, start_Cm_priv, start_hw, start_hm,
+            //         1.0e-8, 1.0e-7);
+            // } // iC
+
+            if(strcmp(par->interp_method,"numerical")!=0){
+                for(int i_marg_u=0; i_marg_u<par->num_Ctot; i_marg_u++){
+                    double margU = par->grid_Wpre[i_marg_u];
+                    auto idx = index::index4(ilw, ilm, iP, i_marg_u, par->num_l, par->num_l, par->num_power, par->num_Ctot);
+                    
+                    double guess_Ctot=0.2, guess_Cw_priv=0.2, guess_Cm_priv=0.2;
+                    sol->grid_Cinterp_couple[idx] = inv_marg_util_couple(margU, ilw, ilm, iP, par, sol,
+                    guess_Ctot, guess_Cw_priv, guess_Cm_priv, false);    
+                } // i_marg_u
+            } // interp method
+        } // idx
+    } // precompute
+
     //////////////////
     // EGM solution
     void interpolate_to_exogenous_grid_couple(
