@@ -904,6 +904,8 @@ class HouseholdModelClass(EconModelClass):
         moms["consumption_50_10_ratio"] = np.nanpercentile(equivalence_consumption, 50) / np.nanpercentile(equivalence_consumption, 10)
         moms["consumption_90_50_ratio"] = np.nanpercentile(equivalence_consumption, 90) / np.nanpercentile(equivalence_consumption, 50)
         
+        moms['female_consumption_share'] = np.nanmean(np.where(sim.couple, sim.Cw_priv, np.nan) / np.where(sim.couple, sim.Cw_priv + sim.Cm_priv, np.nan))
+        
         # t_level = 0
         # for dt in (5,10,15):
         #     Iw = (~np.isnan(sim.wage_w[:,t_level+dt])) & (~np.isnan(sim.wage_w[:,t_level+dt-1]))
