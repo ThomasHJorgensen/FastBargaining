@@ -488,10 +488,6 @@ class HouseholdModelClass(EconModelClass):
             "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
             "pre_Cd_inter_couple", "pre_Qd_couple",
             "pre_hwd_couple", "pre_hmd_couple",
-            # "pre_Cwd_priv_single", "pre_Cmd_priv_single",
-            # "pre_Cwd_inter_single", "pre_Cmd_inter_single",
-            # "pre_Qwd_single", "pre_Qmd_single",
-            # "pre_hwd_single", "pre_hmd_single",
             "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
             "grid_Cinterp_couple",
         ):
@@ -750,14 +746,14 @@ class HouseholdModelClass(EconModelClass):
         # always ensure sizes/grids are up-to-date (needed for shape checks)
         self.setup_gender_parameters()
         self.setup_grids()
+        self.fill_allocations()
 
         # allocate once (or when shapes changed), otherwise just reset values
-        shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
-        if (not hasattr(sol, "Vwd_single_to_single")) or (sol.Vwd_single_to_single.shape != shape_single_d):
-            self.allocate()
-        else:
-            self.fill_allocations()
-            self.draw_shocks()
+        # shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
+        # if (not hasattr(sol, "Vwd_single_to_single")) or (sol.Vwd_single_to_single.shape != shape_single_d):
+        #     self.allocate()
+        # else:
+            # self.draw_shocks()
 
         self.cpp.solve(sol, par)
 

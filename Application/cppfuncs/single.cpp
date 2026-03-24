@@ -36,32 +36,32 @@ namespace single {
         double best_Ctot = x[0];
 
         // setup RNG for additional random starts if needed
-        if (num_starts > 1) {
-        static const int seed_rng = []() {
-            std::srand(123456789u);
-            return 0;
-        }();
-        (void)seed_rng;
-        }
+        // if (num_starts > 1) {
+        // static const int seed_rng = []() {
+        //     std::srand(123456789u);
+        //     return 0;
+        // }();
+        // (void)seed_rng;
+        // }
 
         // setup placeholder for local minimum
-        double minf_local = 0.0;
+        // double minf_local = 0.0;
 
-        // additional starts
-        for (int s = 0; s < num_starts; ++s) {
-        if (s == 0) {
-            x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
-        } else {
-            double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-            x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
-        }
+        // // additional starts
+        // for (int s = 0; s < num_starts; ++s) {
+        // if (s == 0) {
+        //     x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
+        // } else {
+        //     double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
+        //     x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
+        // }
 
-        nlopt_optimize(optimizer_handle, x, &minf_local);
-        if (minf_local < minf_global) {
-            best_Ctot = x[0];
-            minf_global = minf_local;
-        }
-        }
+        // nlopt_optimize(optimizer_handle, x, &minf_local);
+        // if (minf_local < minf_global) {
+        //     best_Ctot = x[0];
+        //     minf_global = minf_local;
+        // }
+        // }
 
         return best_Ctot;
     };
@@ -712,6 +712,7 @@ namespace single {
         state_single_w->K = Kw;
         state_single_w->A = Aw;
         state_single_w->iA = tools::binary_search(0, par->num_A, par->grid_Aw, Aw);
+        state_single_w->iK = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
 
         // single man
         state_single_m->t = t;
@@ -719,6 +720,7 @@ namespace single {
         state_single_m->K = Km;
         state_single_m->A = Am;
         state_single_m->iA = tools::binary_search(0, par->num_A, par->grid_Am, Am);
+        state_single_m->iK = tools::binary_search(0, par->num_K, par->grid_Km, Km);
 
         // solver input
         bargaining::nash_solver_struct* nash_struct = new bargaining::nash_solver_struct();

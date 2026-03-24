@@ -77,7 +77,7 @@ namespace precompute{
         solver_data->C_tot = C_tot;
         solver_data->l = labor;
         solver_data->par = par;
-        solver_data->gender;
+        solver_data->gender = gender; // NOTE!!!!
         nlopt_set_min_objective(opt, objfunc_precompute_single, solver_data);
         nlopt_set_maxeval(opt, 2000);
         nlopt_set_ftol_rel(opt, 1.0e-6);

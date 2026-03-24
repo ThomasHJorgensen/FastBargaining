@@ -18,7 +18,7 @@ EXPORT void solve(sol_struct *sol, par_struct *par){
         precompute::precompute(sol,par);
 
         // TJ:
-        couple::precompute_couple(sol,par);
+        // couple::precompute_couple(sol,par);
 
         // loop backwards
         for (int t = par->T-1; t >= 0; t--){
