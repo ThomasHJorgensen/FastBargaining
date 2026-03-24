@@ -665,7 +665,13 @@ namespace single {
         //interpolate V_single_to_single
         auto idx_interp_single = index::single(t, type, 0, 0, par);
         // double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
-        double Vsts = tools::_interp_2d(grid_K_single, grid_A_single, par->num_K, par->num_A, &V_single_to_single[idx_interp_single], K, A, iK_single, iA_single);
+        double Vsts = tools::_interp_2d(
+            grid_K_single, grid_A_single, 
+            par->num_K, par->num_A, 
+            &V_single_to_single[idx_interp_single], 
+            K, A, 
+            iK_single, iA_single
+        );
         // interpolate couple V_single_to_couple
         auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par); // OBS: can we do something else than interpolating over all dimensions here? Does this even work with S?
         double Vstc = tools::_interp_5d_index(

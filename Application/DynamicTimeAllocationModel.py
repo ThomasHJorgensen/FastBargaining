@@ -798,6 +798,7 @@ class HouseholdModelClass(EconModelClass):
         self.solve()
 
         # b. simulate
+        self.draw_shocks()
         self.simulate()
 
         # c. calculate moments
