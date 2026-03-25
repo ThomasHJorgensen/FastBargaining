@@ -146,8 +146,8 @@ class FigureManager:
         self,
         ax: Axes,
         filename: str | Path,
-        padding: float = 0.05,
         include_title: bool = True,
+        padding: float = 0.05,
     ) -> None:
         """Save individual subplot with precise cropping."""
         try:
@@ -189,7 +189,7 @@ class FigureManager:
         fig.set_size_inches(usable_width, subplot_height * n_rows)
 
     def create_figure(
-        self, n_rows: int, n_cols: int, n_subplots: int, horizontal: bool = False
+        self, n_rows: int, n_cols: int, n_subplots: int, horizontal: bool = False, projection: str | None = None
     ) -> tuple[Figure, list[Axes]]:
         """Create a figure with subplots and apply formatting."""
         if n_subplots > n_rows * n_cols:
@@ -198,7 +198,7 @@ class FigureManager:
         # Apply custom style settings
         self._apply_custom_style()
 
-        fig, axes_array = plt.subplots(n_rows, n_cols, squeeze=False)
+        fig, axes_array = plt.subplots(n_rows, n_cols, squeeze=False, subplot_kw={'projection': projection})
         axes: list[Axes] = axes_array.flatten().tolist()  # pyright: ignore[reportAssignmentType]
 
         # Deactivate unused subplots
@@ -221,7 +221,7 @@ class FigureManager:
 
         return fig, axes[:n_subplots]
 
-    def save_figure(self, filename: str = "figure", include_title: bool = True) -> None:
+    def save_figure(self, filename: str = "figure", include_title: bool = True, subplot_settings: dict = {}) -> None:
         """Save the full figure and individual subplots."""
         # Ensure create_figure has been called
         if self.fig is None or self.axes is None:
@@ -254,4 +254,4 @@ class FigureManager:
             subplot_path = (
                 self.output_dir / f"{filename}_subplot_{i + 1}{self.file_ext}"
             )
-            self._save_subplot(ax, subplot_path, include_title=include_title)
+            self._save_subplot(ax, subplot_path, include_title=include_title, **subplot_settings)
