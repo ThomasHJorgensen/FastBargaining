@@ -146,8 +146,8 @@ class FigureManager:
         self,
         ax: Axes,
         filename: str | Path,
-        include_title: bool = True,
         padding: float = 0.05,
+        include_title: bool = True,
     ) -> None:
         """Save individual subplot with precise cropping."""
         try:
@@ -155,11 +155,25 @@ class FigureManager:
                 raise RuntimeError(
                     "Figure is not initialized or dpi_scale_trans is unavailable."
                 )
+
+            # Store original visibility of all axes
+            all_axes = self.fig.axes
+            original_visibility = [a.get_visible() for a in all_axes]
+
+            # Hide all other axes so their labels don't affect the bbox
+            for other_ax in all_axes:
+                if other_ax is not ax:
+                    other_ax.set_visible(False)
+
+            original_title = ax.get_title()
             if not include_title:
                 ax.set_title("")
+
+            self.fig.canvas.draw()
             bbox = self._get_axis_extent(ax, padding).transformed(
                 self.fig.dpi_scale_trans.inverted()
             )
+
             self.fig.savefig(
                 filename,
                 dpi=self.dpi,
@@ -167,7 +181,17 @@ class FigureManager:
                 format=self.file_ext.strip("."),
                 transparent=True,
             )
+
+            # Restore title
+            if not include_title:
+                ax.set_title(original_title)
+
+            # Restore visibility
+            for other_ax, vis in zip(all_axes, original_visibility):
+                other_ax.set_visible(vis)
+
             print(f"Saved subplot to {filename}")
+
         except Exception as e:
             print(f"Error saving subplot {filename}: {e}")
 
