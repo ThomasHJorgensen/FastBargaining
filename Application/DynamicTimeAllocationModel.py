@@ -1038,16 +1038,18 @@ class HouseholdModelClass(EconModelClass):
         # local model
         lw = np.empty(shape, dtype=np.float64)
         lm = np.empty(shape, dtype=np.float64)
+        power = np.empty(shape, dtype=np.float64)
         power_diff = np.empty(shape, dtype=np.float64)
         C = np.empty(shape_d, dtype=np.float64)
-        self.cpp.random_C_points(lw, lm, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
+        self.cpp.random_C_points(lw, lm, power, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
         
         # true model
         lw_true = np.empty(shape, dtype=np.float64)
         lm_true = np.empty(shape, dtype=np.float64)
+        power_true = np.empty(shape, dtype=np.float64)
         power_diff_true = np.empty(shape, dtype=np.float64)
         C_true = np.empty(shape_d, dtype=np.float64)
-        true_model.cpp.random_C_points(lw_true, lm_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
+        true_model.cpp.random_C_points(lw_true, lm_true, power_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
 
         # deviations
         l_MAD = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
@@ -1058,7 +1060,7 @@ class HouseholdModelClass(EconModelClass):
         
         power_updated = (power_diff != 0.0) & (power_diff>-1.0)
         power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
-        power_MAD = np.mean(np.abs(power_diff[power_updated_true & (~divorced)] - power_diff_true[power_updated_true & (~divorced)]))
+        power_MAD = np.mean(np.abs(power[power_updated_true & (~divorced)] - power_true[power_updated_true & (~divorced)]))
         
         C_MAD = np.mean(np.abs(C - C_true))
         
