@@ -70,28 +70,36 @@ EXPORT double calc_init_mu(int t, double love, double Aw, double Am, sol_struct*
 }
 
 
-EXPORT void random_C_points(double* labor_w, double* labor_m, double* power_diff, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
+EXPORT void random_C_points(double* labor_w, double* labor_m, double* power_update, double* power_diff, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
 
     int t = 0;
+
+    double trunc_min = 0.2;
+    double trunc_max = 0.8; 
 
     int num_total = par->num_types * par->num_types * par->num_l * par->num_l * num_P * num_love * num_Kw * num_Km * num_A;
 
     for (int type_w = 0; type_w < par->num_types; type_w++){
         for (int type_m = 0; type_m < par->num_types; type_m++){
             for (int iP = 0; iP < num_P; iP++){
-                double power = par->grid_power[0] + (par->grid_power[par->num_power-1] - par->grid_power[0]) * (iP+1) / (num_P+1);
+                double len_power = par->grid_power[par->num_power-1] - par->grid_power[0];
+                double power = par->grid_power[0] + trunc_min * len_power + trunc_max * len_power * (iP / (num_P-1));
                 int iP_left = tools::binary_search(0, par->num_power, par->grid_power, power);
                 for (int iL = 0; iL < num_love; iL++){
-                    double love = par->grid_love[0] + (par->grid_love[par->num_love-1] - par->grid_love[0]) * (iL+1) / (num_love+1);
+                    double len_love = par->grid_love[par->num_love-1] - par->grid_love[0];
+                    double love = par->grid_love[0] + trunc_min * len_love + trunc_max * len_love * (iL / (num_love-1));
                     int iL_left = tools::binary_search(0, par->num_love, par->grid_love, love);
                     for (int iKw = 0; iKw < num_Kw; iKw++){
-                        double Kw = par->grid_Kw[0] + (par->grid_Kw[par->num_K-1] - par->grid_Kw[0]) * (iKw+1) / (num_Kw+1);
+                        double len_Kw = par->grid_Kw[par->num_K-1] - par->grid_Kw[0];
+                        double Kw = par->grid_Kw[0] + trunc_min * len_Kw + trunc_max * len_Kw * (iKw / (num_Kw-1));
                         int iKw_left = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
                         for (int iKm = 0; iKm < num_Km; iKm++){
-                            double Km = par->grid_Km[0] + (par->grid_Km[par->num_K-1] - par->grid_Km[0]) * (iKm+1) / (num_Km+1);
+                            double len_Km = par->grid_Km[par->num_K-1] - par->grid_Km[0];
+                            double Km = par->grid_Km[0] + trunc_min * len_Km + trunc_max * len_Km * (iKm / (num_Km-1));
                             int iKm_left = tools::binary_search(0, par->num_K, par->grid_Km, Km);
                             for (int iA = 0; iA < num_A; iA++){
-                                double A = par->grid_A[0] + (par->grid_A[par->num_A-1] - par->grid_A[0]) * (iA+1) / (num_A+1);
+                                double len_A = par->grid_A[par->num_A-1] - par->grid_A[0];
+                                double A = par->grid_A[0] + trunc_min * len_A + trunc_max * len_A * (iA / (num_A-1));
                                 int iA_left = tools::binary_search(0, par->num_A, par->grid_A, A);
                                 
                                 auto idx = index::index7(
@@ -109,13 +117,8 @@ EXPORT void random_C_points(double* labor_w, double* labor_m, double* power_diff
                                 // power
                                 double Aw = par->div_A_share * A;
                                 double Am = (1.0 - par->div_A_share) * A;
-                                double power_update = sim::update_power(t,type_w, type_m, power, love, Kw, Km, A, Aw, Am, sol, par);
-                                // if (power_update < 0.0) {
-                                //     divorce[idx] = 1.0;
-                                // } else {
-                                //     divorce[idx] = 0.0;
-                                // }
-                                power_diff[idx] = power_update - power;
+                                power_update[idx] = sim::update_power(t,type_w, type_m, power, love, Kw, Km, A, Aw, Am, sol, par);
+                                power_diff[idx] = power_update[idx] - power;
 
                                 // consumption points
                                 for (int ilw = 0; ilw < par->num_l; ilw++){
