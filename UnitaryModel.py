@@ -178,7 +178,7 @@ class UnitaryModelClass(EconModelClass):
         sol = self.sol
         
         # precomputations
-        if par.method == 'iegm':
+        if (par.method == 'iegm') & (par.interp_method != 'numerical'):
             self.precompute_C()
             
         if par.precompute_intra:
