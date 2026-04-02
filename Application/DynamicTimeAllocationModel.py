@@ -114,7 +114,8 @@ class HouseholdModelClass(EconModelClass):
         par.num_love = 11
         par.max_love = 100.0
         par.sigma_love = 0.1
-        par.mean_love = 0.0
+        par.mean_love_shock = 0.0
+        par.mean_init_love = 0.0
         par.num_shock_love = 5  # cannot be 1 due to interpolation
         par.type_corr = 0.45
 
@@ -288,7 +289,7 @@ class HouseholdModelClass(EconModelClass):
         par.grid_power_flip = np.flip(par.grid_power)
 
         # 3.4 love
-        par.grid_love = np.linspace(-par.max_love, par.max_love, par.num_love) if par.num_love > 1 else np.array([par.mean_love])
+        par.grid_love = np.linspace(-par.max_love, par.max_love, par.num_love) if par.num_love > 1 else np.array([par.mean_init_love])
 
         # ---------- 4) shocks ----------
         par.grid_shock_Kw, par.grid_weight_Kw = quadrature.log_normal_gauss_hermite(par.sigma_Kw, par.num_shock_K)
@@ -296,9 +297,9 @@ class HouseholdModelClass(EconModelClass):
 
         if par.sigma_love <= 1.0e-6:
             par.num_shock_love = 1
-            par.grid_shock_love, par.grid_weight_love = np.array([0.0]), np.array([1.0])
+            par.grid_shock_love, par.grid_weight_love = np.array([par.mean_love_shock]), np.array([1.0])
         else:
-            par.grid_shock_love, par.grid_weight_love = quadrature.normal_gauss_hermite(par.sigma_love, par.num_shock_love)
+            par.grid_shock_love, par.grid_weight_love = quadrature.normal_gauss_hermite(par.sigma_love, par.num_shock_love, par.mean_love_shock)
 
         # ---------- 5) EGM / iEGM grids ----------
         # post-decision assets
@@ -346,7 +347,7 @@ class HouseholdModelClass(EconModelClass):
         if par.sigma_love <= 1.0e-6:
             love_cdf = np.where(par.grid_love >= 0.0,1.0,0.0)
         else:
-            love_cdf = stats.norm.cdf(par.grid_love,par.mean_love,par.sigma_love)
+            love_cdf = stats.norm.cdf(par.grid_love,par.mean_init_love,par.sigma_love)
         par.prob_partner_love = np.append(np.diff(love_cdf, 1), 0.0)
 
 
@@ -686,7 +687,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx[...] = (par.num_power // 2)
         sim.init_love[...] = 0.0
-        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
+        # sim.init_love[...] = np.random.normal(par.mean_init_love, par.sigma_love, size=par.simN)
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
         sim.init_divorces[...] = 0.0
@@ -710,7 +711,7 @@ class HouseholdModelClass(EconModelClass):
         
         sim.draw_shock_Kw[...] = np.random.lognormal(size=shape_sim, mean=-0.5 * par.sigma_Kw**2, sigma=par.sigma_Kw)
         sim.draw_shock_Km[...] = np.random.lognormal(size=shape_sim, mean=-0.5 * par.sigma_Km**2, sigma=par.sigma_Km)
-        sim.draw_love[...] = np.random.normal(size=shape_sim, loc=0.0, scale=par.sigma_love)
+        sim.draw_love[...] = np.random.normal(size=shape_sim, loc=par.mean_love_shock, scale=par.sigma_love)
         sim.draw_meet[...] = np.random.uniform(size=shape_sim)
 
         sim.draw_uniform_partner_Kw[...] = np.random.uniform(size=shape_sim)
@@ -720,7 +721,7 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_uniform_partner_type_w[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_m[...] = np.random.uniform(size=shape_sim)
 
-        sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
+        sim.draw_repartner_love[...] =  np.random.normal(par.mean_init_love, par.sigma_love, size=shape_sim)
 
 
         # d.3 initial distribution

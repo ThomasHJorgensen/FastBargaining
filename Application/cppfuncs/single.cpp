@@ -774,8 +774,8 @@ namespace single {
 
         // loop over potential partners conditional on meeting a partner
         double Ev_cond = 0.0;
-        for (int iL_shock = 0; iL_shock < par->num_shock_love; iL_shock++) {
-            const double prob_love = par->grid_weight_love[iL_shock];
+        for (int iL = 0; iL < par->num_love; iL++) {
+            const double prob_love = par->prob_partner_love[iL];
             if (prob_love <= 0.0) continue;
 
             for (int type_p = 0; type_p < par->num_types; type_p++) { // partner's type
@@ -818,7 +818,7 @@ namespace single {
                             const double Kw = grid_K[iKw]; 
                             const double Km = grid_K[iKm];
                             
-                            const double love = par->grid_shock_love[iL_shock] + par->mean_love;
+                            const double love = par->grid_love[iL];
                             double power = calc_initial_bargaining_weight(t, type_w, type_m, love, Kw, Km, Aw, Am, sol, par, -1);
 
                             double val;
