@@ -101,9 +101,11 @@ namespace couple {
             double A_next = M_resources - C_tot;
             double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
             double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
-            // obs: maybe use _interp_3d_2out here
-            double EVw_plus = tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, Kw_next, Km_next, A_next);
-            double EVm_plus = tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVm_next, Kw_next, Km_next, A_next);
+            
+            double EVw_plus = 0;
+            double EVm_plus = 0;
+            tools::interp_3d_2out(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, EVm_next, Kw_next, Km_next, A_next, &EVw_plus, &EVm_plus);
+            
             Vw[0] += par->beta * EVw_plus;
             Vm[0] += par->beta * EVm_plus;
         }
