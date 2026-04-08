@@ -438,7 +438,7 @@ class model_plotter():
         df = pd.DataFrame(data)
         return df
 
-    def plot_simulated_vars(self, ax, variables, where=None, agg_fct="mean", **kwargs):
+    def plot_simulated_vars(self, ax, variables, sample_size = 1000, where=None, agg_fct="mean", **kwargs):
 
         # check if ax has enough axes
         if len(ax) < len(variables):
@@ -451,6 +451,11 @@ class model_plotter():
             if not mask.any():
                 raise ValueError(f"No data points match the condition: {where}")
             df = df[mask]
+        
+        # choose random ids if there are more than the specified sample size
+        if df['id'].nunique() > sample_size:
+            sampled_ids = np.random.choice(df['id'].unique(), size=sample_size, replace=False)
+            df = df[df['id'].isin(sampled_ids)]
 
         # Get time grid
         x = np.arange(self.model.par.simT)

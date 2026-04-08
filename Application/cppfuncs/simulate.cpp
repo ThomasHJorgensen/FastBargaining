@@ -278,8 +278,8 @@ namespace sim {
                     couple_lag = sim->couple[it_1];
                     power_lag = sim->power[it_1];
                     love = sim->love[it];
-                    type_w = sim->init_type_w[i];
-                    type_m = sim->init_type_m[i];
+                    type_w = sim->type_w[it_1];
+                    type_m = sim->type_m[it_1];
                     sim->divorces[it] = sim->divorces[it_1];
                 } 
                 
@@ -370,6 +370,8 @@ namespace sim {
                     sim->C_tot[it] = sim->Cw_priv[it] + sim->Cm_priv[it] + C_inter;
 
                     // update end-of-period states
+                    sim->type_w[it] = type_w;
+                    sim->type_m[it] = type_m;
                     sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
                     sim->Kw[it] = tools::max(par->grid_Kw[0], tools::min(sim->Kw[it], par->grid_Kw[par->num_K-1]));
                     sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];
@@ -415,6 +417,8 @@ namespace sim {
                     sim->Cm_tot[it] = sim->Cm_priv[it] + sim->Cm_inter[it];
 
                     // update end-of-period states  
+                    sim->type_w[it] = type_w;
+                    sim->type_m[it] = type_m;
                     sim->Kw[it] = utils::human_capital_transition(Kw_lag, labor_w, par) * sim->draw_shock_Kw[it];
                     sim->Kw[it] = tools::max(par->grid_Kw[0], tools::min(sim->Kw[it], par->grid_Kw[par->num_K-1]));
                     sim->Km[it] = utils::human_capital_transition(Km_lag, labor_m, par) * sim->draw_shock_Km[it];

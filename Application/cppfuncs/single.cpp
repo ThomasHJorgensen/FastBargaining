@@ -939,16 +939,16 @@ namespace single {
                 const auto iK = (int)par->idx_single_K[idx];
 
                 for (int iA = 0; iA < par->num_A; iA++) {
-                    auto idx = index::single(t, type, iK, iA, par); // CHANGED
+                    auto idx_A = index::single(t, type, iK, iA, par); // CHANGED
 
                     double EV_cond_not_meet = expected_value_cond_not_meet_partner(t, type, iK, iA, gender, sol, par); // CHANGED
 
                     if (repartnering) {
                         double EV_cond_meet = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par); // CHANGED
-                        EV_cond_meet_partner[idx] = EV_cond_meet;
-                        EV_uncond_meet_partner[idx] = p_meet * EV_cond_meet + (1.0 - p_meet) * EV_cond_not_meet;
+                        EV_cond_meet_partner[idx_A] = EV_cond_meet;
+                        EV_uncond_meet_partner[idx_A] = p_meet * EV_cond_meet + (1.0 - p_meet) * EV_cond_not_meet;
                     } else {
-                        EV_uncond_meet_partner[idx] = EV_cond_not_meet;
+                        EV_uncond_meet_partner[idx_A] = EV_cond_not_meet;
                     }
                 }
             }

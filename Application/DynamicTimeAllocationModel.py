@@ -131,12 +131,12 @@ class HouseholdModelClass(EconModelClass):
 
         # -------- (re-)partnering --------
         par.p_meet = 0.0
-        par.prob_partner_Kw = np.array([[np.nan]])
-        par.prob_partner_Km = np.array([[np.nan]])
-        par.prob_partner_A_w = np.array([[np.nan]])
-        par.prob_partner_A_m = np.array([[np.nan]])
-        par.prob_partner_type_w = np.array([[np.nan]])
-        par.prob_partner_type_m = np.array([[np.nan]])
+        par.prob_partner_Kw = None
+        par.prob_partner_Km = None
+        par.prob_partner_A_w = None
+        par.prob_partner_A_m = None
+        par.prob_partner_type_w = None
+        par.prob_partner_type_m = None
 
 
         # -------- precomputation controls --------
@@ -324,17 +324,23 @@ class HouseholdModelClass(EconModelClass):
         # re-partering probabilities
         par.prob_repartner = par.p_meet*np.ones(par.T) # likelihood of meeting a partner
         
-        def _use_eye_if_nan(arr, n):
-            return np.eye(n) if np.isnan(arr[0, 0]) else arr
+        def _use_eye_if_None(arr, n):
+            # if any element is NaN, return identity matrix; otherwise, return the original array
+            if arr is None:
+                return np.eye(n)
+            else:
+                # check if arr is 2D and has shape (n, n)
+                if arr.shape != (n, n):
+                    raise ValueError(f"Input array must be of shape ({n}, {n}). Got {arr.shape} instead.")
+                return arr
             
-        par.prob_partner_Kw = _use_eye_if_nan(par.prob_partner_Kw, par.num_K)
-        par.prob_partner_Km = _use_eye_if_nan(par.prob_partner_Km, par.num_K)
-        par.prob_partner_A_w = _use_eye_if_nan(par.prob_partner_A_w, par.num_A)
-        par.prob_partner_A_m = _use_eye_if_nan(par.prob_partner_A_m, par.num_A)
-        if np.isnan(par.prob_partner_type_w[0, 0]):
-            par.prob_partner_type_w = self.assortative_matrix(par.num_types, corr=par.type_corr)
-        if np.isnan(par.prob_partner_type_m[0, 0]):
-            par.prob_partner_type_m = self.assortative_matrix(par.num_types, corr=par.type_corr)
+            
+        par.prob_partner_Kw = _use_eye_if_None(par.prob_partner_Kw, par.num_K)
+        par.prob_partner_Km = _use_eye_if_None(par.prob_partner_Km, par.num_K)
+        par.prob_partner_A_w = _use_eye_if_None(par.prob_partner_A_w, par.num_A)
+        par.prob_partner_A_m = _use_eye_if_None(par.prob_partner_A_m, par.num_A)
+        par.prob_partner_type_w = self.assortative_matrix(par.num_types, corr=par.type_corr)
+        par.prob_partner_type_m = self.assortative_matrix(par.num_types, corr=par.type_corr)
      
         par.cdf_partner_Kw = np.cumsum(par.prob_partner_Kw,axis=1) # cumulative distribution to be used in simulation
         par.cdf_partner_Km = np.cumsum(par.prob_partner_Km,axis=1)
@@ -507,6 +513,8 @@ class HouseholdModelClass(EconModelClass):
         ):
             _alloc(sim, name, shape_sim)
 
+        _alloc(sim, "type_w", shape_sim, dtype=np.int_)
+        _alloc(sim, "type_m", shape_sim, dtype=np.int_)
         _alloc(sim, "util_w", (par.simN, par.simT))
         _alloc(sim, "util_m", (par.simN, par.simT))
         _alloc(sim, "mean_lifetime_util", (1,))
@@ -668,7 +676,7 @@ class HouseholdModelClass(EconModelClass):
             "leisure_w", "leisure_m", 
             "util_w", "util_m",
         ), np.nan)
-        
+        _fill(sim, ("type_w","type_m"), -1)
         sim.divorces[...] = 0.0
         
         sim.mean_lifetime_util[...] = np.nan
@@ -686,13 +694,13 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx[...] = (par.num_power // 2)
-        sim.init_love[...] = 0.0
-        # sim.init_love[...] = np.random.normal(par.mean_init_love, par.sigma_love, size=par.simN)
+        # sim.init_love[...] = 0.0
+        sim.init_love[...] = np.random.normal(par.mean_init_love, par.sigma_love, size=par.simN)
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
         sim.init_divorces[...] = 0.0
         
-        # # allow for correlation in types of couples
+        # allow for correlation in types of couples
         # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
         # draws = np.random.rand(probs.shape[0])
         # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
@@ -732,7 +740,8 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx[...] = (par.num_power // 2)
-        sim.init_love[...] = 0.0
+        # sim.init_love[...] = 0.0
+        sim.init_love[...] = np.random.normal(par.mean_init_love, par.sigma_love, size=par.simN)
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
 

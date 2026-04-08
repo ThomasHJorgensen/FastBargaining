@@ -1,40 +1,2450 @@
 
-guess 0 of 5
- mu                     =   2.2500
- mu_mult                =   2.3333
- gamma                  =   0.4002
- gamma_mult             =   2.7143
- sigma_mu               =   0.9092
- obj. = nan (best :10000000000.000000)
+guess 0 of 350
+ mean_init_love         =   0.0000
+ mean_love_shock        =   0.0000
+ sigma_love             =  16.4020
+ div_cost               =  85.7143
+ obj. = 3168.54202579 (best :3168.542026)
 
-guess 1 of 5
- mu                     =   2.6250
- mu_mult                =   1.6667
- gamma                  =   0.3004
- gamma_mult             =   2.4286
- sigma_mu               =   0.8184
- obj. = nan (best :10000000000.000000)
+guess 1 of 350
+ mean_init_love         =  25.0000
+ mean_love_shock        =  -5.0000
+ sigma_love             =  12.3040
+ div_cost               =  71.4286
+ obj. = 6934.51447570 (best :3168.542026)
 
-guess 2 of 5
- mu                     =   1.8750
- mu_mult                =   2.7778
- gamma                  =   0.2006
- gamma_mult             =   2.1429
- sigma_mu               =   0.7275
- obj. = nan (best :10000000000.000000)
+guess 2 of 350
+ mean_init_love         = -25.0000
+ mean_love_shock        =   3.3333
+ sigma_love             =   8.2060
+ div_cost               =  57.1429
+ obj. = 2222.36778237 (best :2222.367782)
 
-guess 3 of 5
- mu                     =   2.8125
- mu_mult                =   2.1111
- gamma                  =   0.1008
- gamma_mult             =   1.8571
- sigma_mu               =   0.6367
- obj. = nan (best :10000000000.000000)
+guess 3 of 350
+ mean_init_love         =  37.5000
+ mean_love_shock        =  -1.6667
+ sigma_love             =   4.1080
+ div_cost               =  42.8571
+ obj. = 4620.65156734 (best :2222.367782)
 
-guess 4 of 5
- mu                     =   2.0625
- mu_mult                =   1.4444
- gamma                  =   0.4800
- gamma_mult             =   1.5714
- sigma_mu               =   0.5459
- obj. = nan (best :10000000000.000000)
+guess 4 of 350
+ mean_init_love         = -12.5000
+ mean_love_shock        =  -6.6667
+ sigma_love             =  19.6804
+ div_cost               =  28.5714
+ obj. = 7480.76020620 (best :2222.367782)
+
+guess 5 of 350
+ mean_init_love         =  12.5000
+ mean_love_shock        =   1.6667
+ sigma_love             =  15.5824
+ div_cost               =  14.2857
+ obj. = 3407.91556988 (best :2222.367782)
+
+guess 6 of 350
+ mean_init_love         = -37.5000
+ mean_love_shock        =  -3.3333
+ sigma_love             =  11.4844
+ div_cost               =  97.9592
+ obj. = 8167.73218797 (best :2222.367782)
+
+guess 7 of 350
+ mean_init_love         =  43.7500
+ mean_love_shock        =  -8.3333
+ sigma_love             =   7.3864
+ div_cost               =  83.6735
+ obj. = 9744.21216096 (best :2222.367782)
+
+guess 8 of 350
+ mean_init_love         =  -6.2500
+ mean_love_shock        =   4.4444
+ sigma_love             =   3.2884
+ div_cost               =  69.3878
+ obj. = 2674.99220001 (best :2222.367782)
+
+guess 9 of 350
+ mean_init_love         =  18.7500
+ mean_love_shock        =  -0.5556
+ sigma_love             =  18.8608
+ div_cost               =  55.1020
+ obj. = 4137.26783327 (best :2222.367782)
+
+guess 10 of 350
+ mean_init_love         = -31.2500
+ mean_love_shock        =  -5.5556
+ sigma_love             =  14.7628
+ div_cost               =  40.8163
+ obj. = 5597.66397510 (best :2222.367782)
+
+guess 11 of 350
+ mean_init_love         =  31.2500
+ mean_love_shock        =   2.7778
+ sigma_love             =  10.6648
+ div_cost               =  26.5306
+ obj. = 2321.17664971 (best :2222.367782)
+
+guess 12 of 350
+ mean_init_love         = -18.7500
+ mean_love_shock        =  -2.2222
+ sigma_love             =   6.5668
+ div_cost               =  12.2449
+ obj. = 8123.65968870 (best :2222.367782)
+
+guess 13 of 350
+ mean_init_love         =   6.2500
+ mean_love_shock        =  -7.2222
+ sigma_love             =   2.4688
+ div_cost               =  95.9184
+ obj. = 9163.73529944 (best :2222.367782)
+
+guess 14 of 350
+ mean_init_love         = -43.7500
+ mean_love_shock        =   1.1111
+ sigma_love             =  18.0412
+ div_cost               =  81.6327
+ obj. = 2309.22214590 (best :2222.367782)
+
+guess 15 of 350
+ mean_init_love         =  46.8750
+ mean_love_shock        =  -3.8889
+ sigma_love             =  13.9432
+ div_cost               =  67.3469
+ obj. = 6006.04816298 (best :2222.367782)
+
+guess 16 of 350
+ mean_init_love         =  -3.1250
+ mean_love_shock        =  -8.8889
+ sigma_love             =   9.8452
+ div_cost               =  53.0612
+ obj. = 6935.82055248 (best :2222.367782)
+
+guess 17 of 350
+ mean_init_love         =  21.8750
+ mean_love_shock        =   3.8889
+ sigma_love             =   5.7472
+ div_cost               =  38.7755
+ obj. = 2608.90973167 (best :2222.367782)
+
+guess 18 of 350
+ mean_init_love         = -28.1250
+ mean_love_shock        =  -1.1111
+ sigma_love             =   1.6492
+ div_cost               =  24.4898
+ obj. = nan (best :2222.367782)
+
+guess 19 of 350
+ mean_init_love         =  34.3750
+ mean_love_shock        =  -6.1111
+ sigma_love             =  17.2216
+ div_cost               =  10.2041
+ obj. = 8678.04212799 (best :2222.367782)
+
+guess 20 of 350
+ mean_init_love         = -15.6250
+ mean_love_shock        =   2.2222
+ sigma_love             =  13.1236
+ div_cost               =  93.8776
+ obj. = 2166.37922513 (best :2166.379225)
+
+guess 21 of 350
+ mean_init_love         =   9.3750
+ mean_love_shock        =  -2.7778
+ sigma_love             =   9.0256
+ div_cost               =  79.5918
+ obj. = 5015.60316357 (best :2166.379225)
+
+guess 22 of 350
+ mean_init_love         = -40.6250
+ mean_love_shock        =  -7.7778
+ sigma_love             =   4.9276
+ div_cost               =  65.3061
+ obj. = nan (best :2166.379225)
+
+guess 23 of 350
+ mean_init_love         =  40.6250
+ mean_love_shock        =   0.5556
+ sigma_love             =   0.8296
+ div_cost               =  51.0204
+ obj. = 2674.99220001 (best :2166.379225)
+
+guess 24 of 350
+ mean_init_love         =  -9.3750
+ mean_love_shock        =  -4.4444
+ sigma_love             =  20.3361
+ div_cost               =  36.7347
+ obj. = 6226.34438161 (best :2166.379225)
+
+guess 25 of 350
+ mean_init_love         =  15.6250
+ mean_love_shock        =  -9.4444
+ sigma_love             =  16.2381
+ div_cost               =  22.4490
+ obj. = 10077.22434726 (best :2166.379225)
+
+guess 26 of 350
+ mean_init_love         = -34.3750
+ mean_love_shock        =   4.8148
+ sigma_love             =  12.1401
+ div_cost               =   8.1633
+ obj. = 2238.36959238 (best :2166.379225)
+
+guess 27 of 350
+ mean_init_love         =  28.1250
+ mean_love_shock        =  -0.1852
+ sigma_love             =   8.0421
+ div_cost               =  91.8367
+ obj. = 2593.35528019 (best :2166.379225)
+
+guess 28 of 350
+ mean_init_love         = -21.8750
+ mean_love_shock        =  -5.1852
+ sigma_love             =   3.9441
+ div_cost               =  77.5510
+ obj. = 8675.00000000 (best :2166.379225)
+
+guess 29 of 350
+ mean_init_love         =   3.1250
+ mean_love_shock        =   3.1481
+ sigma_love             =  19.5165
+ div_cost               =  63.2653
+ obj. = 2487.33982470 (best :2166.379225)
+
+guess 30 of 350
+ mean_init_love         = -46.8750
+ mean_love_shock        =  -1.8519
+ sigma_love             =  15.4185
+ div_cost               =  48.9796
+ obj. = 3824.71383115 (best :2166.379225)
+
+guess 31 of 350
+ mean_init_love         =  48.4375
+ mean_love_shock        =  -6.8519
+ sigma_love             =  11.3205
+ div_cost               =  34.6939
+ obj. = 9458.87735054 (best :2166.379225)
+
+guess 32 of 350
+ mean_init_love         =  -1.5625
+ mean_love_shock        =   1.4815
+ sigma_love             =   7.2225
+ div_cost               =  20.4082
+ obj. = 2457.21672285 (best :2166.379225)
+
+guess 33 of 350
+ mean_init_love         =  23.4375
+ mean_love_shock        =  -3.5185
+ sigma_love             =   3.1245
+ div_cost               =   6.1224
+ obj. = 10063.19673288 (best :2166.379225)
+
+guess 34 of 350
+ mean_init_love         = -26.5625
+ mean_love_shock        =  -8.5185
+ sigma_love             =  18.6969
+ div_cost               =  89.7959
+ obj. = 5281.95836925 (best :2166.379225)
+
+guess 35 of 350
+ mean_init_love         =  35.9375
+ mean_love_shock        =   4.2593
+ sigma_love             =  14.5989
+ div_cost               =  75.5102
+ obj. = 2198.54315467 (best :2166.379225)
+
+guess 36 of 350
+ mean_init_love         = -14.0625
+ mean_love_shock        =  -0.7407
+ sigma_love             =  10.5009
+ div_cost               =  61.2245
+ obj. = 3463.92170363 (best :2166.379225)
+
+guess 37 of 350
+ mean_init_love         =  10.9375
+ mean_love_shock        =  -5.7407
+ sigma_love             =   6.4029
+ div_cost               =  46.9388
+ obj. = 9592.23745370 (best :2166.379225)
+
+guess 38 of 350
+ mean_init_love         = -39.0625
+ mean_love_shock        =   2.5926
+ sigma_love             =   2.3049
+ div_cost               =  32.6531
+ obj. = 2595.50123422 (best :2166.379225)
+
+guess 39 of 350
+ mean_init_love         =  42.1875
+ mean_love_shock        =  -2.4074
+ sigma_love             =  17.8773
+ div_cost               =  18.3673
+ obj. = 6100.08794124 (best :2166.379225)
+
+guess 40 of 350
+ mean_init_love         =  -7.8125
+ mean_love_shock        =  -7.4074
+ sigma_love             =  13.7793
+ div_cost               =   4.0816
+ obj. = 10385.01289269 (best :2166.379225)
+
+guess 41 of 350
+ mean_init_love         =  17.1875
+ mean_love_shock        =   0.9259
+ sigma_love             =   9.6813
+ div_cost               =  87.7551
+ obj. = 2552.30345686 (best :2166.379225)
+
+guess 42 of 350
+ mean_init_love         = -32.8125
+ mean_love_shock        =  -4.0741
+ sigma_love             =   5.5833
+ div_cost               =  73.4694
+ obj. = 8675.00000000 (best :2166.379225)
+
+guess 43 of 350
+ mean_init_love         =  29.6875
+ mean_love_shock        =  -9.0741
+ sigma_love             =   1.4853
+ div_cost               =  59.1837
+ obj. = 10819.84674862 (best :2166.379225)
+
+guess 44 of 350
+ mean_init_love         = -20.3125
+ mean_love_shock        =   3.7037
+ sigma_love             =  17.0577
+ div_cost               =  44.8980
+ obj. = 2392.06881682 (best :2166.379225)
+
+guess 45 of 350
+ mean_init_love         =   4.6875
+ mean_love_shock        =  -1.2963
+ sigma_love             =  12.9597
+ div_cost               =  30.6122
+ obj. = 4712.10700327 (best :2166.379225)
+
+guess 46 of 350
+ mean_init_love         = -45.3125
+ mean_love_shock        =  -6.2963
+ sigma_love             =   8.8617
+ div_cost               =  16.3265
+ obj. = 9341.39242595 (best :2166.379225)
+
+guess 47 of 350
+ mean_init_love         =  45.3125
+ mean_love_shock        =   2.0370
+ sigma_love             =   4.7637
+ div_cost               =   2.0408
+ obj. = 2568.56545058 (best :2166.379225)
+
+guess 48 of 350
+ mean_init_love         =  -4.6875
+ mean_love_shock        =  -2.9630
+ sigma_love             =   0.6657
+ div_cost               =  99.7085
+ obj. = 8675.00000000 (best :2166.379225)
+
+guess 49 of 350
+ mean_init_love         =  20.3125
+ mean_love_shock        =  -7.9630
+ sigma_love             =  20.1722
+ div_cost               =  85.4227
+ obj. = 6712.06236514 (best :2166.379225)
+
+guess 50 of 350
+ mean_init_love         = -29.6875
+ mean_love_shock        =   0.3704
+ sigma_love             =  16.0742
+ div_cost               =  71.1370
+ obj. = 2998.38548202 (best :2166.379225)
+
+guess 51 of 350
+ mean_init_love         =  32.8125
+ mean_love_shock        =  -4.6296
+ sigma_love             =  11.9762
+ div_cost               =  56.8513
+ obj. = 6933.49455350 (best :2166.379225)
+
+guess 52 of 350
+ mean_init_love         = -17.1875
+ mean_love_shock        =  -9.6296
+ sigma_love             =   7.8782
+ div_cost               =  42.5656
+ obj. = 8476.84049588 (best :2166.379225)
+
+guess 53 of 350
+ mean_init_love         =   7.8125
+ mean_love_shock        =   4.6296
+ sigma_love             =   3.7802
+ div_cost               =  28.2799
+ obj. = 2674.22930610 (best :2166.379225)
+
+guess 54 of 350
+ mean_init_love         = -42.1875
+ mean_love_shock        =  -0.3704
+ sigma_love             =  19.3526
+ div_cost               =  13.9942
+ obj. = 4542.93667914 (best :2166.379225)
+
+guess 55 of 350
+ mean_init_love         =  39.0625
+ mean_love_shock        =  -5.3704
+ sigma_love             =  15.2546
+ div_cost               =  97.6676
+ obj. = 6108.18814302 (best :2166.379225)
+
+guess 56 of 350
+ mean_init_love         = -10.9375
+ mean_love_shock        =   2.9630
+ sigma_love             =  11.1566
+ div_cost               =  83.3819
+ obj. = 2143.24669205 (best :2143.246692)
+
+guess 57 of 350
+ mean_init_love         =  14.0625
+ mean_love_shock        =  -2.0370
+ sigma_love             =   7.0586
+ div_cost               =  69.0962
+ obj. = 4928.19150494 (best :2143.246692)
+
+guess 58 of 350
+ mean_init_love         = -35.9375
+ mean_love_shock        =  -7.0370
+ sigma_love             =   2.9606
+ div_cost               =  54.8105
+ obj. = nan (best :2143.246692)
+
+guess 59 of 350
+ mean_init_love         =  26.5625
+ mean_love_shock        =   1.2963
+ sigma_love             =  18.5330
+ div_cost               =  40.5248
+ obj. = 3283.14344970 (best :2143.246692)
+
+guess 60 of 350
+ mean_init_love         = -23.4375
+ mean_love_shock        =  -3.7037
+ sigma_love             =  14.4350
+ div_cost               =  26.2391
+ obj. = 6072.58517694 (best :2143.246692)
+
+guess 61 of 350
+ mean_init_love         =   1.5625
+ mean_love_shock        =  -8.7037
+ sigma_love             =  10.3370
+ div_cost               =  11.9534
+ obj. = 11086.85719710 (best :2143.246692)
+
+guess 62 of 350
+ mean_init_love         = -48.4375
+ mean_love_shock        =   4.0741
+ sigma_love             =   6.2390
+ div_cost               =  95.6268
+ obj. = 2599.81212616 (best :2143.246692)
+
+guess 63 of 350
+ mean_init_love         =  49.2188
+ mean_love_shock        =  -0.9259
+ sigma_love             =   2.1410
+ div_cost               =  81.3411
+ obj. = 2445.38584658 (best :2143.246692)
+
+guess 64 of 350
+ mean_init_love         =  -0.7812
+ mean_love_shock        =  -5.9259
+ sigma_love             =  17.7134
+ div_cost               =  67.0554
+ obj. = 6139.84548490 (best :2143.246692)
+
+guess 65 of 350
+ mean_init_love         =  24.2188
+ mean_love_shock        =   2.4074
+ sigma_love             =  13.6154
+ div_cost               =  52.7697
+ obj. = 2488.26134620 (best :2143.246692)
+
+guess 66 of 350
+ mean_init_love         = -25.7812
+ mean_love_shock        =  -2.5926
+ sigma_love             =   9.5174
+ div_cost               =  38.4840
+ obj. = 4204.15316151 (best :2143.246692)
+
+guess 67 of 350
+ mean_init_love         =  36.7188
+ mean_love_shock        =  -7.5926
+ sigma_love             =   5.4194
+ div_cost               =  24.1983
+ obj. = 10685.20607226 (best :2143.246692)
+
+guess 68 of 350
+ mean_init_love         = -13.2812
+ mean_love_shock        =   0.7407
+ sigma_love             =   1.3214
+ div_cost               =   9.9125
+ obj. = 2673.13688242 (best :2143.246692)
+
+guess 69 of 350
+ mean_init_love         =  11.7188
+ mean_love_shock        =  -4.2593
+ sigma_love             =  16.8938
+ div_cost               =  93.5860
+ obj. = 4998.83342786 (best :2143.246692)
+
+guess 70 of 350
+ mean_init_love         = -38.2812
+ mean_love_shock        =  -9.2593
+ sigma_love             =  12.7958
+ div_cost               =  79.3003
+ obj. = 8640.70589584 (best :2143.246692)
+
+guess 71 of 350
+ mean_init_love         =  42.9688
+ mean_love_shock        =   3.5185
+ sigma_love             =   8.6978
+ div_cost               =  65.0146
+ obj. = 2391.58545058 (best :2143.246692)
+
+guess 72 of 350
+ mean_init_love         =  -7.0312
+ mean_love_shock        =  -1.4815
+ sigma_love             =   4.5998
+ div_cost               =  50.7289
+ obj. = 5854.50229702 (best :2143.246692)
+
+guess 73 of 350
+ mean_init_love         =  17.9688
+ mean_love_shock        =  -6.4815
+ sigma_love             =   0.5018
+ div_cost               =  36.4431
+ obj. = 10190.18107605 (best :2143.246692)
+
+guess 74 of 350
+ mean_init_love         = -32.0312
+ mean_love_shock        =   1.8519
+ sigma_love             =  20.0082
+ div_cost               =  22.1574
+ obj. = 3502.21751846 (best :2143.246692)
+
+guess 75 of 350
+ mean_init_love         =  30.4688
+ mean_love_shock        =  -3.1481
+ sigma_love             =  15.9102
+ div_cost               =   7.8717
+ obj. = 6882.79462713 (best :2143.246692)
+
+guess 76 of 350
+ mean_init_love         = -19.5312
+ mean_love_shock        =  -8.1481
+ sigma_love             =  11.8122
+ div_cost               =  91.5452
+ obj. = 8024.94567432 (best :2143.246692)
+
+guess 77 of 350
+ mean_init_love         =   5.4688
+ mean_love_shock        =   0.1852
+ sigma_love             =   7.7142
+ div_cost               =  77.2595
+ obj. = 2485.10164234 (best :2143.246692)
+
+guess 78 of 350
+ mean_init_love         = -44.5312
+ mean_love_shock        =  -4.8148
+ sigma_love             =   3.6162
+ div_cost               =  62.9738
+ obj. = nan (best :2143.246692)
+
+guess 79 of 350
+ mean_init_love         =  46.0938
+ mean_love_shock        =  -9.8148
+ sigma_love             =  19.1886
+ div_cost               =  48.6880
+ obj. = 9032.09502216 (best :2143.246692)
+
+guess 80 of 350
+ mean_init_love         =  -3.9062
+ mean_love_shock        =   4.9383
+ sigma_love             =  15.0906
+ div_cost               =  34.4023
+ obj. = 2247.05573753 (best :2143.246692)
+
+guess 81 of 350
+ mean_init_love         =  21.0938
+ mean_love_shock        =  -0.0617
+ sigma_love             =  10.9926
+ div_cost               =  20.1166
+ obj. = 3971.89006863 (best :2143.246692)
+
+guess 82 of 350
+ mean_init_love         = -28.9062
+ mean_love_shock        =  -5.0617
+ sigma_love             =   6.8946
+ div_cost               =   5.8309
+ obj. = 8815.61789258 (best :2143.246692)
+
+guess 83 of 350
+ mean_init_love         =  33.5938
+ mean_love_shock        =   3.2716
+ sigma_love             =   2.7966
+ div_cost               =  89.5044
+ obj. = 2675.00000000 (best :2143.246692)
+
+guess 84 of 350
+ mean_init_love         = -16.4062
+ mean_love_shock        =  -1.7284
+ sigma_love             =  18.3690
+ div_cost               =  75.2187
+ obj. = 3735.86666100 (best :2143.246692)
+
+guess 85 of 350
+ mean_init_love         =   8.5938
+ mean_love_shock        =  -6.7284
+ sigma_love             =  14.2710
+ div_cost               =  60.9329
+ obj. = 7395.70157510 (best :2143.246692)
+
+guess 86 of 350
+ mean_init_love         = -41.4062
+ mean_love_shock        =   1.6049
+ sigma_love             =  10.1730
+ div_cost               =  46.6472
+ obj. = 2239.80137858 (best :2143.246692)
+
+guess 87 of 350
+ mean_init_love         =  39.8438
+ mean_love_shock        =  -3.3951
+ sigma_love             =   6.0750
+ div_cost               =  32.3615
+ obj. = 8249.96426826 (best :2143.246692)
+
+guess 88 of 350
+ mean_init_love         = -10.1562
+ mean_love_shock        =  -8.3951
+ sigma_love             =   1.9770
+ div_cost               =  18.0758
+ obj. = 9161.28513117 (best :2143.246692)
+
+guess 89 of 350
+ mean_init_love         =  14.8438
+ mean_love_shock        =   4.3827
+ sigma_love             =  17.5494
+ div_cost               =   3.7901
+ obj. = 2694.56902518 (best :2143.246692)
+
+guess 90 of 350
+ mean_init_love         = -35.1562
+ mean_love_shock        =  -0.6173
+ sigma_love             =  13.4514
+ div_cost               =  87.4636
+ obj. = 2368.58616065 (best :2143.246692)
+
+guess 91 of 350
+ mean_init_love         =  27.3438
+ mean_love_shock        =  -5.6173
+ sigma_love             =   9.3534
+ div_cost               =  73.1778
+ obj. = 8044.90461236 (best :2143.246692)
+
+guess 92 of 350
+ mean_init_love         = -22.6562
+ mean_love_shock        =   2.7160
+ sigma_love             =   5.2554
+ div_cost               =  58.8921
+ obj. = 2479.71399598 (best :2143.246692)
+
+guess 93 of 350
+ mean_init_love         =   2.3438
+ mean_love_shock        =  -2.2840
+ sigma_love             =   1.1574
+ div_cost               =  44.6064
+ obj. = 8951.86830105 (best :2143.246692)
+
+guess 94 of 350
+ mean_init_love         = -47.6562
+ mean_love_shock        =  -7.2840
+ sigma_love             =  16.7298
+ div_cost               =  30.3207
+ obj. = 8089.66954385 (best :2143.246692)
+
+guess 95 of 350
+ mean_init_love         =  47.6562
+ mean_love_shock        =   1.0494
+ sigma_love             =  12.6318
+ div_cost               =  16.0350
+ obj. = 3104.41899445 (best :2143.246692)
+
+guess 96 of 350
+ mean_init_love         =  -2.3438
+ mean_love_shock        =  -3.9506
+ sigma_love             =   8.5338
+ div_cost               =   1.7493
+ obj. = 9999.72704605 (best :2143.246692)
+
+guess 97 of 350
+ mean_init_love         =  22.6562
+ mean_love_shock        =  -8.9506
+ sigma_love             =   4.4358
+ div_cost               =  99.4169
+ obj. = 9111.83583058 (best :2143.246692)
+
+guess 98 of 350
+ mean_init_love         = -27.3438
+ mean_love_shock        =   3.8272
+ sigma_love             =   0.3378
+ div_cost               =  85.1312
+ obj. = 2675.00000000 (best :2143.246692)
+
+guess 99 of 350
+ mean_init_love         =  35.1562
+ mean_love_shock        =  -1.1728
+ sigma_love             =  19.8443
+ div_cost               =  70.8455
+ obj. = 3953.60360300 (best :2143.246692)
+
+guess 100 of 350
+ mean_init_love         = -14.8438
+ mean_love_shock        =  -6.1728
+ sigma_love             =  15.7463
+ div_cost               =  56.5598
+ obj. = 5925.38880038 (best :2143.246692)
+
+guess 101 of 350
+ mean_init_love         =  10.1562
+ mean_love_shock        =   2.1605
+ sigma_love             =  11.6483
+ div_cost               =  42.2741
+ obj. = 2404.95100093 (best :2143.246692)
+
+guess 102 of 350
+ mean_init_love         = -39.8438
+ mean_love_shock        =  -2.8395
+ sigma_love             =   7.5503
+ div_cost               =  27.9883
+ obj. = 9776.93442474 (best :2143.246692)
+
+guess 103 of 350
+ mean_init_love         =  41.4062
+ mean_love_shock        =  -7.8395
+ sigma_love             =   3.4523
+ div_cost               =  13.7026
+ obj. = 11506.30448442 (best :2143.246692)
+
+guess 104 of 350
+ mean_init_love         =  -8.5938
+ mean_love_shock        =   0.4938
+ sigma_love             =  19.0247
+ div_cost               =  97.3761
+ obj. = 2807.27597986 (best :2143.246692)
+
+guess 105 of 350
+ mean_init_love         =  16.4062
+ mean_love_shock        =  -4.5062
+ sigma_love             =  14.9267
+ div_cost               =  83.0904
+ obj. = 5668.55520995 (best :2143.246692)
+
+guess 106 of 350
+ mean_init_love         = -33.5938
+ mean_love_shock        =  -9.5062
+ sigma_love             =  10.8287
+ div_cost               =  68.8047
+ obj. = 9130.10853152 (best :2143.246692)
+
+guess 107 of 350
+ mean_init_love         =  28.9062
+ mean_love_shock        =   4.7531
+ sigma_love             =   6.7307
+ div_cost               =  54.5190
+ obj. = 2636.98997934 (best :2143.246692)
+
+guess 108 of 350
+ mean_init_love         = -21.0938
+ mean_love_shock        =  -0.2469
+ sigma_love             =   2.6327
+ div_cost               =  40.2332
+ obj. = 3388.66310504 (best :2143.246692)
+
+guess 109 of 350
+ mean_init_love         =   3.9062
+ mean_love_shock        =  -5.2469
+ sigma_love             =  18.2051
+ div_cost               =  25.9475
+ obj. = 7243.65979554 (best :2143.246692)
+
+guess 110 of 350
+ mean_init_love         = -46.0938
+ mean_love_shock        =   3.0864
+ sigma_love             =  14.1071
+ div_cost               =  11.6618
+ obj. = 2763.76626751 (best :2143.246692)
+
+guess 111 of 350
+ mean_init_love         =  44.5312
+ mean_love_shock        =  -1.9136
+ sigma_love             =  10.0091
+ div_cost               =  95.3353
+ obj. = 4003.44940830 (best :2143.246692)
+
+guess 112 of 350
+ mean_init_love         =  -5.4688
+ mean_love_shock        =  -6.9136
+ sigma_love             =   5.9111
+ div_cost               =  81.0496
+ obj. = 8402.92871028 (best :2143.246692)
+
+guess 113 of 350
+ mean_init_love         =  19.5312
+ mean_love_shock        =   1.4198
+ sigma_love             =   1.8131
+ div_cost               =  66.7638
+ obj. = 2675.00000000 (best :2143.246692)
+
+guess 114 of 350
+ mean_init_love         = -30.4688
+ mean_love_shock        =  -3.5802
+ sigma_love             =  17.3855
+ div_cost               =  52.4781
+ obj. = 4343.15395726 (best :2143.246692)
+
+guess 115 of 350
+ mean_init_love         =  32.0312
+ mean_love_shock        =  -8.5802
+ sigma_love             =  13.2875
+ div_cost               =  38.1924
+ obj. = 9668.79567014 (best :2143.246692)
+
+guess 116 of 350
+ mean_init_love         = -17.9688
+ mean_love_shock        =   4.1975
+ sigma_love             =   9.1895
+ div_cost               =  23.9067
+ obj. = 2264.85930895 (best :2143.246692)
+
+guess 117 of 350
+ mean_init_love         =   7.0312
+ mean_love_shock        =  -0.8025
+ sigma_love             =   5.0915
+ div_cost               =   9.6210
+ obj. = 3808.91432726 (best :2143.246692)
+
+guess 118 of 350
+ mean_init_love         = -42.9688
+ mean_love_shock        =  -5.8025
+ sigma_love             =   0.9935
+ div_cost               =  93.2945
+ obj. = nan (best :2143.246692)
+
+guess 119 of 350
+ mean_init_love         =  38.2812
+ mean_love_shock        =   2.5309
+ sigma_love             =  16.5659
+ div_cost               =  79.0087
+ obj. = 2344.32504333 (best :2143.246692)
+
+guess 120 of 350
+ mean_init_love         = -11.7188
+ mean_love_shock        =  -2.4691
+ sigma_love             =  12.4679
+ div_cost               =  64.7230
+ obj. = 4648.47872499 (best :2143.246692)
+
+guess 121 of 350
+ mean_init_love         =  13.2812
+ mean_love_shock        =  -7.4691
+ sigma_love             =   8.3699
+ div_cost               =  50.4373
+ obj. = 9377.21505573 (best :2143.246692)
+
+guess 122 of 350
+ mean_init_love         = -36.7188
+ mean_love_shock        =   0.8642
+ sigma_love             =   4.2719
+ div_cost               =  36.1516
+ obj. = 1897.52190693 (best :1897.521907)
+
+guess 123 of 350
+ mean_init_love         =  25.7812
+ mean_love_shock        =  -4.1358
+ sigma_love             =   0.1739
+ div_cost               =  21.8659
+ obj. = 10072.08054370 (best :1897.521907)
+
+guess 124 of 350
+ mean_init_love         = -24.2188
+ mean_love_shock        =  -9.1358
+ sigma_love             =  20.4672
+ div_cost               =   7.5802
+ obj. = 9217.62801270 (best :1897.521907)
+
+guess 125 of 350
+ mean_init_love         =   0.7812
+ mean_love_shock        =   3.6420
+ sigma_love             =  16.3692
+ div_cost               =  91.2536
+ obj. = 2157.75312181 (best :1897.521907)
+
+guess 126 of 350
+ mean_init_love         = -49.2188
+ mean_love_shock        =  -1.3580
+ sigma_love             =  12.2712
+ div_cost               =  76.9679
+ obj. = 6952.48470332 (best :1897.521907)
+
+guess 127 of 350
+ mean_init_love         =  49.6094
+ mean_love_shock        =  -6.3580
+ sigma_love             =   8.1732
+ div_cost               =  62.6822
+ obj. = 8950.84645697 (best :1897.521907)
+
+guess 128 of 350
+ mean_init_love         =  -0.3906
+ mean_love_shock        =   1.9753
+ sigma_love             =   4.0752
+ div_cost               =  48.3965
+ obj. = 2587.86575998 (best :1897.521907)
+
+guess 129 of 350
+ mean_init_love         =  24.6094
+ mean_love_shock        =  -3.0247
+ sigma_love             =  19.6476
+ div_cost               =  34.1108
+ obj. = 5833.26623364 (best :1897.521907)
+
+guess 130 of 350
+ mean_init_love         = -25.3906
+ mean_love_shock        =  -8.0247
+ sigma_love             =  15.5496
+ div_cost               =  19.8251
+ obj. = 8193.94408669 (best :1897.521907)
+
+guess 131 of 350
+ mean_init_love         =  37.1094
+ mean_love_shock        =   0.3086
+ sigma_love             =  11.4516
+ div_cost               =   5.5394
+ obj. = 3955.08174115 (best :1897.521907)
+
+guess 132 of 350
+ mean_init_love         = -12.8906
+ mean_love_shock        =  -4.6914
+ sigma_love             =   7.3536
+ div_cost               =  89.2128
+ obj. = 7194.68279897 (best :1897.521907)
+
+guess 133 of 350
+ mean_init_love         =  12.1094
+ mean_love_shock        =  -9.6914
+ sigma_love             =   3.2556
+ div_cost               =  74.9271
+ obj. = 6327.41517646 (best :1897.521907)
+
+guess 134 of 350
+ mean_init_love         = -37.8906
+ mean_love_shock        =   4.5679
+ sigma_love             =  18.8280
+ div_cost               =  60.6414
+ obj. = 2096.20128831 (best :1897.521907)
+
+guess 135 of 350
+ mean_init_love         =  43.3594
+ mean_love_shock        =  -0.4321
+ sigma_love             =  14.7300
+ div_cost               =  46.3557
+ obj. = 4032.67368166 (best :1897.521907)
+
+guess 136 of 350
+ mean_init_love         =  -6.6406
+ mean_love_shock        =  -5.4321
+ sigma_love             =  10.6320
+ div_cost               =  32.0700
+ obj. = 7935.80584982 (best :1897.521907)
+
+guess 137 of 350
+ mean_init_love         =  18.3594
+ mean_love_shock        =   2.9012
+ sigma_love             =   6.5340
+ div_cost               =  17.7843
+ obj. = 2410.85261375 (best :1897.521907)
+
+guess 138 of 350
+ mean_init_love         = -31.6406
+ mean_love_shock        =  -2.0988
+ sigma_love             =   2.4360
+ div_cost               =   3.4985
+ obj. = nan (best :1897.521907)
+
+guess 139 of 350
+ mean_init_love         =  30.8594
+ mean_love_shock        =  -7.0988
+ sigma_love             =  18.0084
+ div_cost               =  87.1720
+ obj. = 6928.74198514 (best :1897.521907)
+
+guess 140 of 350
+ mean_init_love         = -19.1406
+ mean_love_shock        =   1.2346
+ sigma_love             =  13.9104
+ div_cost               =  72.8863
+ obj. = 2563.19703195 (best :1897.521907)
+
+guess 141 of 350
+ mean_init_love         =   5.8594
+ mean_love_shock        =  -3.7654
+ sigma_love             =   9.8124
+ div_cost               =  58.6006
+ obj. = 6427.85061475 (best :1897.521907)
+
+guess 142 of 350
+ mean_init_love         = -44.1406
+ mean_love_shock        =  -8.7654
+ sigma_love             =   5.7144
+ div_cost               =  44.3149
+ obj. = nan (best :1897.521907)
+
+guess 143 of 350
+ mean_init_love         =  46.4844
+ mean_love_shock        =   4.0123
+ sigma_love             =   1.6164
+ div_cost               =  30.0292
+ obj. = 2675.00000000 (best :1897.521907)
+
+guess 144 of 350
+ mean_init_love         =  -3.5156
+ mean_love_shock        =  -0.9877
+ sigma_love             =  17.1888
+ div_cost               =  15.7434
+ obj. = 5161.73275350 (best :1897.521907)
+
+guess 145 of 350
+ mean_init_love         =  21.4844
+ mean_love_shock        =  -5.9877
+ sigma_love             =  13.0908
+ div_cost               =   1.4577
+ obj. = 9924.95225913 (best :1897.521907)
+
+guess 146 of 350
+ mean_init_love         = -28.5156
+ mean_love_shock        =   2.3457
+ sigma_love             =   8.9928
+ div_cost               =  99.1254
+ obj. = 2063.48228443 (best :1897.521907)
+
+guess 147 of 350
+ mean_init_love         =  33.9844
+ mean_love_shock        =  -2.6543
+ sigma_love             =   4.8948
+ div_cost               =  84.8397
+ obj. = 4709.54464138 (best :1897.521907)
+
+guess 148 of 350
+ mean_init_love         = -16.0156
+ mean_love_shock        =  -7.6543
+ sigma_love             =   0.7968
+ div_cost               =  70.5539
+ obj. = nan (best :1897.521907)
+
+guess 149 of 350
+ mean_init_love         =   8.9844
+ mean_love_shock        =   0.6790
+ sigma_love             =  20.3033
+ div_cost               =  56.2682
+ obj. = 3290.00121938 (best :1897.521907)
+
+guess 150 of 350
+ mean_init_love         = -41.0156
+ mean_love_shock        =  -4.3210
+ sigma_love             =  16.2053
+ div_cost               =  41.9825
+ obj. = 4811.43656952 (best :1897.521907)
+
+guess 151 of 350
+ mean_init_love         =  40.2344
+ mean_love_shock        =  -9.3210
+ sigma_love             =  12.1073
+ div_cost               =  27.6968
+ obj. = 10502.76227075 (best :1897.521907)
+
+guess 152 of 350
+ mean_init_love         =  -9.7656
+ mean_love_shock        =   3.4568
+ sigma_love             =   8.0093
+ div_cost               =  13.4111
+ obj. = 2317.88392100 (best :1897.521907)
+
+guess 153 of 350
+ mean_init_love         =  15.2344
+ mean_love_shock        =  -1.5432
+ sigma_love             =   3.9113
+ div_cost               =  97.0845
+ obj. = 3052.01330839 (best :1897.521907)
+
+guess 154 of 350
+ mean_init_love         = -34.7656
+ mean_love_shock        =  -6.5432
+ sigma_love             =  19.4837
+ div_cost               =  82.7988
+ obj. = 4569.53204312 (best :1897.521907)
+
+guess 155 of 350
+ mean_init_love         =  27.7344
+ mean_love_shock        =   1.7901
+ sigma_love             =  15.3857
+ div_cost               =  68.5131
+ obj. = 2583.07401762 (best :1897.521907)
+
+guess 156 of 350
+ mean_init_love         = -22.2656
+ mean_love_shock        =  -3.2099
+ sigma_love             =  11.2877
+ div_cost               =  54.2274
+ obj. = 4178.45141049 (best :1897.521907)
+
+guess 157 of 350
+ mean_init_love         =   2.7344
+ mean_love_shock        =  -8.2099
+ sigma_love             =   7.1897
+ div_cost               =  39.9417
+ obj. = 9411.06152888 (best :1897.521907)
+
+guess 158 of 350
+ mean_init_love         = -47.2656
+ mean_love_shock        =   0.1235
+ sigma_love             =   3.0917
+ div_cost               =  25.6560
+ obj. = 2675.00000000 (best :1897.521907)
+
+guess 159 of 350
+ mean_init_love         =  48.0469
+ mean_love_shock        =  -4.8765
+ sigma_love             =  18.6641
+ div_cost               =  11.3703
+ obj. = 7810.60077065 (best :1897.521907)
+
+guess 160 of 350
+ mean_init_love         =  -1.9531
+ mean_love_shock        =  -9.8765
+ sigma_love             =  14.5661
+ div_cost               =  95.0437
+ obj. = 5118.45502434 (best :1897.521907)
+
+guess 161 of 350
+ mean_init_love         =  23.0469
+ mean_love_shock        =   4.8765
+ sigma_love             =  10.4681
+ div_cost               =  80.7580
+ obj. = 2337.03691985 (best :1897.521907)
+
+guess 162 of 350
+ mean_init_love         = -26.9531
+ mean_love_shock        =  -0.1235
+ sigma_love             =   6.3701
+ div_cost               =  66.4723
+ obj. = 1750.42311219 (best :1750.423112)
+
+guess 163 of 350
+ mean_init_love         =  35.5469
+ mean_love_shock        =  -5.1235
+ sigma_love             =   2.2721
+ div_cost               =  52.1866
+ obj. = 9414.95800509 (best :1750.423112)
+
+guess 164 of 350
+ mean_init_love         = -14.4531
+ mean_love_shock        =   3.2099
+ sigma_love             =  17.8445
+ div_cost               =  37.9009
+ obj. = 2554.27101494 (best :1750.423112)
+
+guess 165 of 350
+ mean_init_love         =  10.5469
+ mean_love_shock        =  -1.7901
+ sigma_love             =  13.7465
+ div_cost               =  23.6152
+ obj. = 5534.30592443 (best :1750.423112)
+
+guess 166 of 350
+ mean_init_love         = -39.4531
+ mean_love_shock        =  -6.7901
+ sigma_love             =   9.6485
+ div_cost               =   9.3294
+ obj. = 9079.92387189 (best :1750.423112)
+
+guess 167 of 350
+ mean_init_love         =  41.7969
+ mean_love_shock        =   1.5432
+ sigma_love             =   5.5505
+ div_cost               =  93.0029
+ obj. = 2444.27541522 (best :1750.423112)
+
+guess 168 of 350
+ mean_init_love         =  -8.2031
+ mean_love_shock        =  -3.4568
+ sigma_love             =   1.4525
+ div_cost               =  78.7172
+ obj. = 8675.00000000 (best :1750.423112)
+
+guess 169 of 350
+ mean_init_love         =  16.7969
+ mean_love_shock        =  -8.4568
+ sigma_love             =  17.0249
+ div_cost               =  64.4315
+ obj. = 7812.91642089 (best :1750.423112)
+
+guess 170 of 350
+ mean_init_love         = -33.2031
+ mean_love_shock        =   4.3210
+ sigma_love             =  12.9269
+ div_cost               =  50.1458
+ obj. = 2095.78919818 (best :1750.423112)
+
+guess 171 of 350
+ mean_init_love         =  29.2969
+ mean_love_shock        =  -0.6790
+ sigma_love             =   8.8289
+ div_cost               =  35.8601
+ obj. = 3457.59076958 (best :1750.423112)
+
+guess 172 of 350
+ mean_init_love         = -20.7031
+ mean_love_shock        =  -5.6790
+ sigma_love             =   4.7309
+ div_cost               =  21.5743
+ obj. = 8590.37707270 (best :1750.423112)
+
+guess 173 of 350
+ mean_init_love         =   4.2969
+ mean_love_shock        =   2.6543
+ sigma_love             =   0.6329
+ div_cost               =   7.2886
+ obj. = 2675.00000000 (best :1750.423112)
+
+guess 174 of 350
+ mean_init_love         = -45.7031
+ mean_love_shock        =  -2.3457
+ sigma_love             =  20.1394
+ div_cost               =  90.9621
+ obj. = 2818.43963058 (best :1750.423112)
+
+guess 175 of 350
+ mean_init_love         =  44.9219
+ mean_love_shock        =  -7.3457
+ sigma_love             =  16.0414
+ div_cost               =  76.6764
+ obj. = 7618.13025634 (best :1750.423112)
+
+guess 176 of 350
+ mean_init_love         =  -5.0781
+ mean_love_shock        =   0.9877
+ sigma_love             =  11.9434
+ div_cost               =  62.3907
+ obj. = 2978.09359903 (best :1750.423112)
+
+guess 177 of 350
+ mean_init_love         =  19.9219
+ mean_love_shock        =  -4.0123
+ sigma_love             =   7.8454
+ div_cost               =  48.1050
+ obj. = 8302.09389293 (best :1750.423112)
+
+guess 178 of 350
+ mean_init_love         = -30.0781
+ mean_love_shock        =  -9.0123
+ sigma_love             =   3.7474
+ div_cost               =  33.8192
+ obj. = nan (best :1750.423112)
+
+guess 179 of 350
+ mean_init_love         =  32.4219
+ mean_love_shock        =   3.7654
+ sigma_love             =  19.3198
+ div_cost               =  19.5335
+ obj. = 2737.22512596 (best :1750.423112)
+
+guess 180 of 350
+ mean_init_love         = -17.5781
+ mean_love_shock        =  -1.2346
+ sigma_love             =  15.2218
+ div_cost               =   5.2478
+ obj. = 5681.17334707 (best :1750.423112)
+
+guess 181 of 350
+ mean_init_love         =   7.4219
+ mean_love_shock        =  -6.2346
+ sigma_love             =  11.1238
+ div_cost               =  88.9213
+ obj. = 6281.32154282 (best :1750.423112)
+
+guess 182 of 350
+ mean_init_love         = -42.5781
+ mean_love_shock        =   2.0988
+ sigma_love             =   7.0258
+ div_cost               =  74.6356
+ obj. = 1944.77375487 (best :1750.423112)
+
+guess 183 of 350
+ mean_init_love         =  38.6719
+ mean_love_shock        =  -2.9012
+ sigma_love             =   2.9278
+ div_cost               =  60.3499
+ obj. = 7451.49304374 (best :1750.423112)
+
+guess 184 of 350
+ mean_init_love         = -11.3281
+ mean_love_shock        =  -7.9012
+ sigma_love             =  18.5002
+ div_cost               =  46.0641
+ obj. = 7079.70349172 (best :1750.423112)
+
+guess 185 of 350
+ mean_init_love         =  13.6719
+ mean_love_shock        =   0.4321
+ sigma_love             =  14.4022
+ div_cost               =  31.7784
+ obj. = 3900.53255147 (best :1750.423112)
+
+guess 186 of 350
+ mean_init_love         = -36.3281
+ mean_love_shock        =  -4.5679
+ sigma_love             =  10.3042
+ div_cost               =  17.4927
+ obj. = 8375.72526791 (best :1750.423112)
+
+guess 187 of 350
+ mean_init_love         =  26.1719
+ mean_love_shock        =  -9.5679
+ sigma_love             =   6.2062
+ div_cost               =   3.2070
+ obj. = 12222.77207825 (best :1750.423112)
+
+guess 188 of 350
+ mean_init_love         = -23.8281
+ mean_love_shock        =   4.6914
+ sigma_love             =   2.1082
+ div_cost               =  86.8805
+ obj. = 2675.00000000 (best :1750.423112)
+
+guess 189 of 350
+ mean_init_love         =   1.1719
+ mean_love_shock        =  -0.3086
+ sigma_love             =  17.6806
+ div_cost               =  72.5948
+ obj. = 3459.24121734 (best :1750.423112)
+
+guess 190 of 350
+ mean_init_love         = -48.8281
+ mean_love_shock        =  -5.3086
+ sigma_love             =  13.5826
+ div_cost               =  58.3090
+ obj. = 8955.71585797 (best :1750.423112)
+
+guess 191 of 350
+ mean_init_love         =  48.8281
+ mean_love_shock        =   3.0247
+ sigma_love             =   9.4846
+ div_cost               =  44.0233
+ obj. = 2344.37013369 (best :1750.423112)
+
+guess 192 of 350
+ mean_init_love         =  -1.1719
+ mean_love_shock        =  -1.9753
+ sigma_love             =   5.3866
+ div_cost               =  29.7376
+ obj. = 6501.26725485 (best :1750.423112)
+
+guess 193 of 350
+ mean_init_love         =  23.8281
+ mean_love_shock        =  -6.9753
+ sigma_love             =   1.2886
+ div_cost               =  15.4519
+ obj. = 11799.35873446 (best :1750.423112)
+
+guess 194 of 350
+ mean_init_love         = -26.1719
+ mean_love_shock        =   1.3580
+ sigma_love             =  16.8610
+ div_cost               =   1.1662
+ obj. = 4061.78704801 (best :1750.423112)
+
+guess 195 of 350
+ mean_init_love         =  36.3281
+ mean_love_shock        =  -3.6420
+ sigma_love             =  12.7630
+ div_cost               =  98.8338
+ obj. = 5088.23841865 (best :1750.423112)
+
+guess 196 of 350
+ mean_init_love         = -13.6719
+ mean_love_shock        =  -8.6420
+ sigma_love             =   8.6650
+ div_cost               =  84.5481
+ obj. = 8614.49156085 (best :1750.423112)
+
+guess 197 of 350
+ mean_init_love         =  11.3281
+ mean_love_shock        =   4.1358
+ sigma_love             =   4.5670
+ div_cost               =  70.2624
+ obj. = 2673.77525398 (best :1750.423112)
+
+guess 198 of 350
+ mean_init_love         = -38.6719
+ mean_love_shock        =  -0.8642
+ sigma_love             =   0.4690
+ div_cost               =  55.9767
+ obj. = nan (best :1750.423112)
+
+guess 199 of 350
+ mean_init_love         =  42.5781
+ mean_love_shock        =  -5.8642
+ sigma_love             =  19.9755
+ div_cost               =  41.6910
+ obj. = 7379.86018517 (best :1750.423112)
+
+guess 200 of 350
+ mean_init_love         =  -7.4219
+ mean_love_shock        =   2.4691
+ sigma_love             =  15.8775
+ div_cost               =  27.4052
+ obj. = 3010.66408969 (best :1750.423112)
+
+guess 201 of 350
+ mean_init_love         =  17.5781
+ mean_love_shock        =  -2.5309
+ sigma_love             =  11.7795
+ div_cost               =  13.1195
+ obj. = 6890.05527217 (best :1750.423112)
+
+guess 202 of 350
+ mean_init_love         = -32.4219
+ mean_love_shock        =  -7.5309
+ sigma_love             =   7.6815
+ div_cost               =  96.7930
+ obj. = 8675.00000000 (best :1750.423112)
+
+guess 203 of 350
+ mean_init_love         =  30.0781
+ mean_love_shock        =   0.8025
+ sigma_love             =   3.5835
+ div_cost               =  82.5073
+ obj. = 2649.10337043 (best :1750.423112)
+
+guess 204 of 350
+ mean_init_love         = -19.9219
+ mean_love_shock        =  -4.1975
+ sigma_love             =  19.1559
+ div_cost               =  68.2216
+ obj. = 4632.03135911 (best :1750.423112)
+
+guess 205 of 350
+ mean_init_love         =   5.0781
+ mean_love_shock        =  -9.1975
+ sigma_love             =  15.0579
+ div_cost               =  53.9359
+ obj. = 8243.31768090 (best :1750.423112)
+
+guess 206 of 350
+ mean_init_love         = -44.9219
+ mean_love_shock        =   3.5802
+ sigma_love             =  10.9599
+ div_cost               =  39.6501
+ obj. = 2164.76927090 (best :1750.423112)
+
+guess 207 of 350
+ mean_init_love         =  45.7031
+ mean_love_shock        =  -1.4198
+ sigma_love             =   6.8619
+ div_cost               =  25.3644
+ obj. = 4166.36273037 (best :1750.423112)
+
+guess 208 of 350
+ mean_init_love         =  -4.2969
+ mean_love_shock        =  -6.4198
+ sigma_love             =   2.7639
+ div_cost               =  11.0787
+ obj. = 12628.29112582 (best :1750.423112)
+
+guess 209 of 350
+ mean_init_love         =  20.7031
+ mean_love_shock        =   1.9136
+ sigma_love             =  18.3363
+ div_cost               =  94.7522
+ obj. = 2491.62970980 (best :1750.423112)
+
+guess 210 of 350
+ mean_init_love         = -29.2969
+ mean_love_shock        =  -3.0864
+ sigma_love             =  14.2383
+ div_cost               =  80.4665
+ obj. = 2967.26256888 (best :1750.423112)
+
+guess 211 of 350
+ mean_init_love         =  33.2031
+ mean_love_shock        =  -8.0864
+ sigma_love             =  10.1403
+ div_cost               =  66.1808
+ obj. = 9426.50019969 (best :1750.423112)
+
+guess 212 of 350
+ mean_init_love         = -16.7969
+ mean_love_shock        =   0.2469
+ sigma_love             =   6.0423
+ div_cost               =  51.8950
+ obj. = 2324.66277913 (best :1750.423112)
+
+guess 213 of 350
+ mean_init_love         =   8.2031
+ mean_love_shock        =  -4.7531
+ sigma_love             =   1.9443
+ div_cost               =  37.6093
+ obj. = 10201.83570284 (best :1750.423112)
+
+guess 214 of 350
+ mean_init_love         = -41.7969
+ mean_love_shock        =  -9.7531
+ sigma_love             =  17.5167
+ div_cost               =  23.3236
+ obj. = 7794.58285313 (best :1750.423112)
+
+guess 215 of 350
+ mean_init_love         =  39.4531
+ mean_love_shock        =   4.5062
+ sigma_love             =  13.4187
+ div_cost               =   9.0379
+ obj. = 2337.17251014 (best :1750.423112)
+
+guess 216 of 350
+ mean_init_love         = -10.5469
+ mean_love_shock        =  -0.4938
+ sigma_love             =   9.3207
+ div_cost               =  92.7114
+ obj. = 2879.15377764 (best :1750.423112)
+
+guess 217 of 350
+ mean_init_love         =  14.4531
+ mean_love_shock        =  -5.4938
+ sigma_love             =   5.2227
+ div_cost               =  78.4257
+ obj. = 8579.13815678 (best :1750.423112)
+
+guess 218 of 350
+ mean_init_love         = -35.5469
+ mean_love_shock        =   2.8395
+ sigma_love             =   1.1247
+ div_cost               =  64.1399
+ obj. = 2674.35266889 (best :1750.423112)
+
+guess 219 of 350
+ mean_init_love         =  26.9531
+ mean_love_shock        =  -2.1605
+ sigma_love             =  16.6971
+ div_cost               =  49.8542
+ obj. = 4927.86195502 (best :1750.423112)
+
+guess 220 of 350
+ mean_init_love         = -23.0469
+ mean_love_shock        =  -7.1605
+ sigma_love             =  12.5991
+ div_cost               =  35.5685
+ obj. = 6434.42510233 (best :1750.423112)
+
+guess 221 of 350
+ mean_init_love         =   1.9531
+ mean_love_shock        =   1.1728
+ sigma_love             =   8.5011
+ div_cost               =  21.2828
+ obj. = 2696.18073743 (best :1750.423112)
+
+guess 222 of 350
+ mean_init_love         = -48.0469
+ mean_love_shock        =  -3.8272
+ sigma_love             =   4.4031
+ div_cost               =   6.9971
+ obj. = nan (best :1750.423112)
+
+guess 223 of 350
+ mean_init_love         =  47.2656
+ mean_love_shock        =  -8.8272
+ sigma_love             =   0.3051
+ div_cost               =  90.6706
+ obj. = 10207.57381665 (best :1750.423112)
+
+guess 224 of 350
+ mean_init_love         =  -2.7344
+ mean_love_shock        =   3.9506
+ sigma_love             =  19.8115
+ div_cost               =  76.3848
+ obj. = 2246.68400893 (best :1750.423112)
+
+guess 225 of 350
+ mean_init_love         =  22.2656
+ mean_love_shock        =  -1.0494
+ sigma_love             =  15.7135
+ div_cost               =  62.0991
+ obj. = 4161.35030850 (best :1750.423112)
+
+guess 226 of 350
+ mean_init_love         = -27.7344
+ mean_love_shock        =  -6.0494
+ sigma_love             =  11.6155
+ div_cost               =  47.8134
+ obj. = 7457.68878160 (best :1750.423112)
+
+guess 227 of 350
+ mean_init_love         =  34.7656
+ mean_love_shock        =   2.2840
+ sigma_love             =   7.5175
+ div_cost               =  33.5277
+ obj. = 2367.13407793 (best :1750.423112)
+
+guess 228 of 350
+ mean_init_love         = -15.2344
+ mean_love_shock        =  -2.7160
+ sigma_love             =   3.4195
+ div_cost               =  19.2420
+ obj. = 9120.68302360 (best :1750.423112)
+
+guess 229 of 350
+ mean_init_love         =   9.7656
+ mean_love_shock        =  -7.7160
+ sigma_love             =  18.9919
+ div_cost               =   4.9563
+ obj. = 9553.36324886 (best :1750.423112)
+
+guess 230 of 350
+ mean_init_love         = -40.2344
+ mean_love_shock        =   0.6173
+ sigma_love             =  14.8939
+ div_cost               =  88.6297
+ obj. = 2131.08678935 (best :1750.423112)
+
+guess 231 of 350
+ mean_init_love         =  41.0156
+ mean_love_shock        =  -4.3827
+ sigma_love             =  10.7959
+ div_cost               =  74.3440
+ obj. = 6487.06356677 (best :1750.423112)
+
+guess 232 of 350
+ mean_init_love         =  -8.9844
+ mean_love_shock        =  -9.3827
+ sigma_love             =   6.6979
+ div_cost               =  60.0583
+ obj. = 8584.40285697 (best :1750.423112)
+
+guess 233 of 350
+ mean_init_love         =  16.0156
+ mean_love_shock        =   3.3951
+ sigma_love             =   2.5999
+ div_cost               =  45.7726
+ obj. = 2675.00000000 (best :1750.423112)
+
+guess 234 of 350
+ mean_init_love         = -33.9844
+ mean_love_shock        =  -1.6049
+ sigma_love             =  18.1723
+ div_cost               =  31.4869
+ obj. = 4600.89342305 (best :1750.423112)
+
+guess 235 of 350
+ mean_init_love         =  28.5156
+ mean_love_shock        =  -6.6049
+ sigma_love             =  14.0743
+ div_cost               =  17.2012
+ obj. = 9300.89027582 (best :1750.423112)
+
+guess 236 of 350
+ mean_init_love         = -21.4844
+ mean_love_shock        =   1.7284
+ sigma_love             =   9.9763
+ div_cost               =   2.9155
+ obj. = 3096.77384678 (best :1750.423112)
+
+guess 237 of 350
+ mean_init_love         =   3.5156
+ mean_love_shock        =  -3.2716
+ sigma_love             =   5.8783
+ div_cost               =  86.5889
+ obj. = 6521.96572890 (best :1750.423112)
+
+guess 238 of 350
+ mean_init_love         = -46.4844
+ mean_love_shock        =  -8.2716
+ sigma_love             =   1.7803
+ div_cost               =  72.3032
+ obj. = nan (best :1750.423112)
+
+guess 239 of 350
+ mean_init_love         =  44.1406
+ mean_love_shock        =   0.0617
+ sigma_love             =  17.3527
+ div_cost               =  58.0175
+ obj. = 3667.49006419 (best :1750.423112)
+
+guess 240 of 350
+ mean_init_love         =  -5.8594
+ mean_love_shock        =  -4.9383
+ sigma_love             =  13.2547
+ div_cost               =  43.7318
+ obj. = 6828.82984301 (best :1750.423112)
+
+guess 241 of 350
+ mean_init_love         =  19.1406
+ mean_love_shock        =  -9.9383
+ sigma_love             =   9.1567
+ div_cost               =  29.4461
+ obj. = 11110.23045355 (best :1750.423112)
+
+guess 242 of 350
+ mean_init_love         = -30.8594
+ mean_love_shock        =   4.9794
+ sigma_love             =   5.0587
+ div_cost               =  15.1603
+ obj. = 2651.87314841 (best :1750.423112)
+
+guess 243 of 350
+ mean_init_love         =  31.6406
+ mean_love_shock        =  -0.0206
+ sigma_love             =   0.9607
+ div_cost               =   0.8746
+ obj. = 2673.46758115 (best :1750.423112)
+
+guess 244 of 350
+ mean_init_love         = -18.3594
+ mean_love_shock        =  -5.0206
+ sigma_love             =  16.5331
+ div_cost               =  98.5423
+ obj. = 3515.33286274 (best :1750.423112)
+
+guess 245 of 350
+ mean_init_love         =   6.6406
+ mean_love_shock        =   3.3128
+ sigma_love             =  12.4351
+ div_cost               =  84.2566
+ obj. = 2168.59898792 (best :1750.423112)
+
+guess 246 of 350
+ mean_init_love         = -43.3594
+ mean_love_shock        =  -1.6872
+ sigma_love             =   8.3371
+ div_cost               =  69.9708
+ obj. = 9377.73671262 (best :1750.423112)
+
+guess 247 of 350
+ mean_init_love         =  37.8906
+ mean_love_shock        =  -6.6872
+ sigma_love             =   4.2391
+ div_cost               =  55.6851
+ obj. = 10117.92352463 (best :1750.423112)
+
+guess 248 of 350
+ mean_init_love         = -12.1094
+ mean_love_shock        =   1.6461
+ sigma_love             =   0.1411
+ div_cost               =  41.3994
+ obj. = 2675.00000000 (best :1750.423112)
+
+guess 249 of 350
+ mean_init_love         =  12.8906
+ mean_love_shock        =  -3.3539
+ sigma_love             =  20.4344
+ div_cost               =  27.1137
+ obj. = 6259.77023001 (best :1750.423112)
+
+guess 250 of 350
+ mean_init_love         = -37.1094
+ mean_love_shock        =  -8.3539
+ sigma_love             =  16.3364
+ div_cost               =  12.8280
+ obj. = 7772.19403685 (best :1750.423112)
+
+guess 251 of 350
+ mean_init_love         =  25.3906
+ mean_love_shock        =   4.4239
+ sigma_love             =  12.2384
+ div_cost               =  96.5015
+ obj. = 2221.43936379 (best :1750.423112)
+
+guess 252 of 350
+ mean_init_love         = -24.6094
+ mean_love_shock        =  -0.5761
+ sigma_love             =   8.1404
+ div_cost               =  82.2157
+ obj. = 2002.89686397 (best :1750.423112)
+
+guess 253 of 350
+ mean_init_love         =   0.3906
+ mean_love_shock        =  -5.5761
+ sigma_love             =   4.0424
+ div_cost               =  67.9300
+ obj. = 4969.54194728 (best :1750.423112)
+
+guess 254 of 350
+ mean_init_love         = -49.6094
+ mean_love_shock        =   2.7572
+ sigma_love             =  19.6148
+ div_cost               =  53.6443
+ obj. = 2551.74042211 (best :1750.423112)
+
+guess 255 of 350
+ mean_init_love         =  49.8047
+ mean_love_shock        =  -2.2428
+ sigma_love             =  15.5168
+ div_cost               =  39.3586
+ obj. = 5246.86943084 (best :1750.423112)
+
+guess 256 of 350
+ mean_init_love         =  -0.1953
+ mean_love_shock        =  -7.2428
+ sigma_love             =  11.4188
+ div_cost               =  25.0729
+ obj. = 9380.11688993 (best :1750.423112)
+
+guess 257 of 350
+ mean_init_love         =  24.8047
+ mean_love_shock        =   1.0905
+ sigma_love             =   7.3208
+ div_cost               =  10.7872
+ obj. = 2468.29556067 (best :1750.423112)
+
+guess 258 of 350
+ mean_init_love         = -25.1953
+ mean_love_shock        =  -3.9095
+ sigma_love             =   3.2228
+ div_cost               =  94.4606
+ obj. = nan (best :1750.423112)
+
+guess 259 of 350
+ mean_init_love         =  37.3047
+ mean_love_shock        =  -8.9095
+ sigma_love             =  18.7952
+ div_cost               =  80.1749
+ obj. = 7816.16877663 (best :1750.423112)
+
+guess 260 of 350
+ mean_init_love         = -12.6953
+ mean_love_shock        =   3.8683
+ sigma_love             =  14.6972
+ div_cost               =  65.8892
+ obj. = 2130.02185838 (best :1750.423112)
+
+guess 261 of 350
+ mean_init_love         =  12.3047
+ mean_love_shock        =  -1.1317
+ sigma_love             =  10.5992
+ div_cost               =  51.6035
+ obj. = 4244.39649058 (best :1750.423112)
+
+guess 262 of 350
+ mean_init_love         = -37.6953
+ mean_love_shock        =  -6.1317
+ sigma_love             =   6.5012
+ div_cost               =  37.3178
+ obj. = 8675.00000000 (best :1750.423112)
+
+guess 263 of 350
+ mean_init_love         =  43.5547
+ mean_love_shock        =   2.2016
+ sigma_love             =   2.4032
+ div_cost               =  23.0321
+ obj. = 2674.76902345 (best :1750.423112)
+
+guess 264 of 350
+ mean_init_love         =  -6.4453
+ mean_love_shock        =  -2.7984
+ sigma_love             =  17.9756
+ div_cost               =   8.7464
+ obj. = 6595.63146507 (best :1750.423112)
+
+guess 265 of 350
+ mean_init_love         =  18.5547
+ mean_love_shock        =  -7.7984
+ sigma_love             =  13.8776
+ div_cost               =  92.4198
+ obj. = 7176.47888227 (best :1750.423112)
+
+guess 266 of 350
+ mean_init_love         = -31.4453
+ mean_love_shock        =   0.5350
+ sigma_love             =   9.7796
+ div_cost               =  78.1341
+ obj. = 2528.05355750 (best :1750.423112)
+
+guess 267 of 350
+ mean_init_love         =  31.0547
+ mean_love_shock        =  -4.4650
+ sigma_love             =   5.6816
+ div_cost               =  63.8484
+ obj. = 8408.71435364 (best :1750.423112)
+
+guess 268 of 350
+ mean_init_love         = -18.9453
+ mean_love_shock        =  -9.4650
+ sigma_love             =   1.5836
+ div_cost               =  49.5627
+ obj. = nan (best :1750.423112)
+
+guess 269 of 350
+ mean_init_love         =   6.0547
+ mean_love_shock        =   4.7942
+ sigma_love             =  17.1560
+ div_cost               =  35.2770
+ obj. = 2296.44635631 (best :1750.423112)
+
+guess 270 of 350
+ mean_init_love         = -43.9453
+ mean_love_shock        =  -0.2058
+ sigma_love             =  13.0580
+ div_cost               =  20.9913
+ obj. = 3977.80097511 (best :1750.423112)
+
+guess 271 of 350
+ mean_init_love         =  46.6797
+ mean_love_shock        =  -5.2058
+ sigma_love             =   8.9600
+ div_cost               =   6.7055
+ obj. = 9419.12336874 (best :1750.423112)
+
+guess 272 of 350
+ mean_init_love         =  -3.3203
+ mean_love_shock        =   3.1276
+ sigma_love             =   4.8620
+ div_cost               =  90.3790
+ obj. = 2618.79624269 (best :1750.423112)
+
+guess 273 of 350
+ mean_init_love         =  21.6797
+ mean_love_shock        =  -1.8724
+ sigma_love             =   0.7640
+ div_cost               =  76.0933
+ obj. = 7670.92809426 (best :1750.423112)
+
+guess 274 of 350
+ mean_init_love         = -28.3203
+ mean_love_shock        =  -6.8724
+ sigma_love             =  20.2705
+ div_cost               =  61.8076
+ obj. = 5042.90503479 (best :1750.423112)
+
+guess 275 of 350
+ mean_init_love         =  34.1797
+ mean_love_shock        =   1.4609
+ sigma_love             =  16.1725
+ div_cost               =  47.5219
+ obj. = 2849.45745353 (best :1750.423112)
+
+guess 276 of 350
+ mean_init_love         = -15.8203
+ mean_love_shock        =  -3.5391
+ sigma_love             =  12.0745
+ div_cost               =  33.2362
+ obj. = 6534.45402667 (best :1750.423112)
+
+guess 277 of 350
+ mean_init_love         =   9.1797
+ mean_love_shock        =  -8.5391
+ sigma_love             =   7.9765
+ div_cost               =  18.9504
+ obj. = 11284.13634949 (best :1750.423112)
+
+guess 278 of 350
+ mean_init_love         = -40.8203
+ mean_love_shock        =   4.2387
+ sigma_love             =   3.8785
+ div_cost               =   4.6647
+ obj. = 2647.90938225 (best :1750.423112)
+
+guess 279 of 350
+ mean_init_love         =  40.4297
+ mean_love_shock        =  -0.7613
+ sigma_love             =  19.4509
+ div_cost               =  88.3382
+ obj. = 3529.00388938 (best :1750.423112)
+
+guess 280 of 350
+ mean_init_love         =  -9.5703
+ mean_love_shock        =  -5.7613
+ sigma_love             =  15.3529
+ div_cost               =  74.0525
+ obj. = 5367.24454062 (best :1750.423112)
+
+guess 281 of 350
+ mean_init_love         =  15.4297
+ mean_love_shock        =   2.5720
+ sigma_love             =  11.2549
+ div_cost               =  59.7668
+ obj. = 2289.10215980 (best :1750.423112)
+
+guess 282 of 350
+ mean_init_love         = -34.5703
+ mean_love_shock        =  -2.4280
+ sigma_love             =   7.1569
+ div_cost               =  45.4810
+ obj. = 9703.41233639 (best :1750.423112)
+
+guess 283 of 350
+ mean_init_love         =  27.9297
+ mean_love_shock        =  -7.4280
+ sigma_love             =   3.0589
+ div_cost               =  31.1953
+ obj. = 11087.36017068 (best :1750.423112)
+
+guess 284 of 350
+ mean_init_love         = -22.0703
+ mean_love_shock        =   0.9053
+ sigma_love             =  18.6313
+ div_cost               =  16.9096
+ obj. = 3895.32640978 (best :1750.423112)
+
+guess 285 of 350
+ mean_init_love         =   2.9297
+ mean_love_shock        =  -4.0947
+ sigma_love             =  14.5333
+ div_cost               =   2.6239
+ obj. = 8289.70572308 (best :1750.423112)
+
+guess 286 of 350
+ mean_init_love         = -47.0703
+ mean_love_shock        =  -9.0947
+ sigma_love             =  10.4353
+ div_cost               =  86.2974
+ obj. = 8675.00000000 (best :1750.423112)
+
+guess 287 of 350
+ mean_init_love         =  48.2422
+ mean_love_shock        =   3.6831
+ sigma_love             =   6.3373
+ div_cost               =  72.0117
+ obj. = 2637.74173670 (best :1750.423112)
+
+guess 288 of 350
+ mean_init_love         =  -1.7578
+ mean_love_shock        =  -1.3169
+ sigma_love             =   2.2393
+ div_cost               =  57.7259
+ obj. = 4570.30984098 (best :1750.423112)
+
+guess 289 of 350
+ mean_init_love         =  23.2422
+ mean_love_shock        =  -6.3169
+ sigma_love             =  17.8117
+ div_cost               =  43.4402
+ obj. = 7669.47400155 (best :1750.423112)
+
+guess 290 of 350
+ mean_init_love         = -26.7578
+ mean_love_shock        =   2.0165
+ sigma_love             =  13.7137
+ div_cost               =  29.1545
+ obj. = 2993.30147297 (best :1750.423112)
+
+guess 291 of 350
+ mean_init_love         =  35.7422
+ mean_love_shock        =  -2.9835
+ sigma_love             =   9.6157
+ div_cost               =  14.8688
+ obj. = 6886.00478894 (best :1750.423112)
+
+guess 292 of 350
+ mean_init_love         = -14.2578
+ mean_love_shock        =  -7.9835
+ sigma_love             =   5.5177
+ div_cost               =   0.5831
+ obj. = 13557.38491225 (best :1750.423112)
+
+guess 293 of 350
+ mean_init_love         =  10.7422
+ mean_love_shock        =   0.3498
+ sigma_love             =   1.4197
+ div_cost               =  98.2507
+ obj. = 2675.00000000 (best :1750.423112)
+
+guess 294 of 350
+ mean_init_love         = -39.2578
+ mean_love_shock        =  -4.6502
+ sigma_love             =  16.9921
+ div_cost               =  83.9650
+ obj. = 4743.87942680 (best :1750.423112)
+
+guess 295 of 350
+ mean_init_love         =  41.9922
+ mean_love_shock        =  -9.6502
+ sigma_love             =  12.8941
+ div_cost               =  69.6793
+ obj. = 9375.58275641 (best :1750.423112)
+
+guess 296 of 350
+ mean_init_love         =  -8.0078
+ mean_love_shock        =   4.6091
+ sigma_love             =   8.7961
+ div_cost               =  55.3936
+ obj. = 2410.04336370 (best :1750.423112)
+
+guess 297 of 350
+ mean_init_love         =  16.9922
+ mean_love_shock        =  -0.3909
+ sigma_love             =   4.6981
+ div_cost               =  41.1079
+ obj. = 2974.87542665 (best :1750.423112)
+
+guess 298 of 350
+ mean_init_love         = -33.0078
+ mean_love_shock        =  -5.3909
+ sigma_love             =   0.6001
+ div_cost               =  26.8222
+ obj. = nan (best :1750.423112)
+
+guess 299 of 350
+ mean_init_love         =  29.4922
+ mean_love_shock        =   2.9424
+ sigma_love             =  20.1066
+ div_cost               =  12.5364
+ obj. = 3186.76704065 (best :1750.423112)
+
+guess 300 of 350
+ mean_init_love         = -20.5078
+ mean_love_shock        =  -2.0576
+ sigma_love             =  16.0086
+ div_cost               =  96.2099
+ obj. = 3161.18155449 (best :1750.423112)
+
+guess 301 of 350
+ mean_init_love         =   4.4922
+ mean_love_shock        =  -7.0576
+ sigma_love             =  11.9106
+ div_cost               =  81.9242
+ obj. = 6504.22072697 (best :1750.423112)
+
+guess 302 of 350
+ mean_init_love         = -45.5078
+ mean_love_shock        =   1.2757
+ sigma_love             =   7.8126
+ div_cost               =  67.6385
+ obj. = 1255.41993142 (best :1255.419931)
+
+guess 303 of 350
+ mean_init_love         =  45.1172
+ mean_love_shock        =  -3.7243
+ sigma_love             =   3.7146
+ div_cost               =  53.3528
+ obj. = 8918.97436715 (best :1255.419931)
+
+guess 304 of 350
+ mean_init_love         =  -4.8828
+ mean_love_shock        =  -8.7243
+ sigma_love             =  19.2870
+ div_cost               =  39.0671
+ obj. = 7868.19095849 (best :1255.419931)
+
+guess 305 of 350
+ mean_init_love         =  20.1172
+ mean_love_shock        =   4.0535
+ sigma_love             =  15.1890
+ div_cost               =  24.7813
+ obj. = 2449.13316531 (best :1255.419931)
+
+guess 306 of 350
+ mean_init_love         = -29.8828
+ mean_love_shock        =  -0.9465
+ sigma_love             =  11.0910
+ div_cost               =  10.4956
+ obj. = 5310.21054335 (best :1255.419931)
+
+guess 307 of 350
+ mean_init_love         =  32.6172
+ mean_love_shock        =  -5.9465
+ sigma_love             =   6.9930
+ div_cost               =  94.1691
+ obj. = 8813.71366293 (best :1255.419931)
+
+guess 308 of 350
+ mean_init_love         = -17.3828
+ mean_love_shock        =   2.3868
+ sigma_love             =   2.8950
+ div_cost               =  79.8834
+ obj. = 2643.21783142 (best :1255.419931)
+
+guess 309 of 350
+ mean_init_love         =   7.6172
+ mean_love_shock        =  -2.6132
+ sigma_love             =  18.4674
+ div_cost               =  65.5977
+ obj. = 4661.04996377 (best :1255.419931)
+
+guess 310 of 350
+ mean_init_love         = -42.3828
+ mean_love_shock        =  -7.6132
+ sigma_love             =  14.3694
+ div_cost               =  51.3120
+ obj. = 8534.17947786 (best :1255.419931)
+
+guess 311 of 350
+ mean_init_love         =  38.8672
+ mean_love_shock        =   0.7202
+ sigma_love             =  10.2714
+ div_cost               =  37.0262
+ obj. = 3048.55724788 (best :1255.419931)
+
+guess 312 of 350
+ mean_init_love         = -11.1328
+ mean_love_shock        =  -4.2798
+ sigma_love             =   6.1734
+ div_cost               =  22.7405
+ obj. = 9119.17360157 (best :1255.419931)
+
+guess 313 of 350
+ mean_init_love         =  13.8672
+ mean_love_shock        =  -9.2798
+ sigma_love             =   2.0754
+ div_cost               =   8.4548
+ obj. = 12138.22286370 (best :1255.419931)
+
+guess 314 of 350
+ mean_init_love         = -36.1328
+ mean_love_shock        =   3.4979
+ sigma_love             =  17.6478
+ div_cost               =  92.1283
+ obj. = 1993.42624516 (best :1255.419931)
+
+guess 315 of 350
+ mean_init_love         =  26.3672
+ mean_love_shock        =  -1.5021
+ sigma_love             =  13.5498
+ div_cost               =  77.8426
+ obj. = 3995.37486194 (best :1255.419931)
+
+guess 316 of 350
+ mean_init_love         = -23.6328
+ mean_love_shock        =  -6.5021
+ sigma_love             =   9.4518
+ div_cost               =  63.5569
+ obj. = 8324.38603960 (best :1255.419931)
+
+guess 317 of 350
+ mean_init_love         =   1.3672
+ mean_love_shock        =   1.8313
+ sigma_love             =   5.3538
+ div_cost               =  49.2711
+ obj. = 2405.58960026 (best :1255.419931)
+
+guess 318 of 350
+ mean_init_love         = -48.6328
+ mean_love_shock        =  -3.1687
+ sigma_love             =   1.2558
+ div_cost               =  34.9854
+ obj. = nan (best :1255.419931)
+
+guess 319 of 350
+ mean_init_love         =  49.0234
+ mean_love_shock        =  -8.1687
+ sigma_love             =  16.8282
+ div_cost               =  20.6997
+ obj. = 9563.48464131 (best :1255.419931)
+
+guess 320 of 350
+ mean_init_love         =  -0.9766
+ mean_love_shock        =   0.1646
+ sigma_love             =  12.7302
+ div_cost               =   6.4140
+ obj. = 4482.68198750 (best :1255.419931)
+
+guess 321 of 350
+ mean_init_love         =  24.0234
+ mean_love_shock        =  -4.8354
+ sigma_love             =   8.6322
+ div_cost               =  90.0875
+ obj. = 7055.07383253 (best :1255.419931)
+
+guess 322 of 350
+ mean_init_love         = -25.9766
+ mean_love_shock        =  -9.8354
+ sigma_love             =   4.5342
+ div_cost               =  75.8017
+ obj. = 8675.00000000 (best :1255.419931)
+
+guess 323 of 350
+ mean_init_love         =  36.5234
+ mean_love_shock        =   4.9177
+ sigma_love             =   0.4362
+ div_cost               =  61.5160
+ obj. = 2675.00000000 (best :1255.419931)
+
+guess 324 of 350
+ mean_init_love         = -13.4766
+ mean_love_shock        =  -0.0823
+ sigma_love             =  19.9427
+ div_cost               =  47.2303
+ obj. = 3827.79745266 (best :1255.419931)
+
+guess 325 of 350
+ mean_init_love         =  11.5234
+ mean_love_shock        =  -5.0823
+ sigma_love             =  15.8447
+ div_cost               =  32.9446
+ obj. = 7515.74741242 (best :1255.419931)
+
+guess 326 of 350
+ mean_init_love         = -38.4766
+ mean_love_shock        =   3.2510
+ sigma_love             =  11.7467
+ div_cost               =  18.6589
+ obj. = 2380.23607581 (best :1255.419931)
+
+guess 327 of 350
+ mean_init_love         =  42.7734
+ mean_love_shock        =  -1.7490
+ sigma_love             =   7.6487
+ div_cost               =   4.3732
+ obj. = 5443.90242666 (best :1255.419931)
+
+guess 328 of 350
+ mean_init_love         =  -7.2266
+ mean_love_shock        =  -6.7490
+ sigma_love             =   3.5507
+ div_cost               =  88.0466
+ obj. = 8675.00000000 (best :1255.419931)
+
+guess 329 of 350
+ mean_init_love         =  17.7734
+ mean_love_shock        =   1.5844
+ sigma_love             =  19.1231
+ div_cost               =  73.7609
+ obj. = 2812.07474122 (best :1255.419931)
+
+guess 330 of 350
+ mean_init_love         = -32.2266
+ mean_love_shock        =  -3.4156
+ sigma_love             =  15.0251
+ div_cost               =  59.4752
+ obj. = 3666.43144449 (best :1255.419931)
+
+guess 331 of 350
+ mean_init_love         =  30.2734
+ mean_love_shock        =  -8.4156
+ sigma_love             =  10.9271
+ div_cost               =  45.1895
+ obj. = 9892.16494062 (best :1255.419931)
+
+guess 332 of 350
+ mean_init_love         = -19.7266
+ mean_love_shock        =   4.3621
+ sigma_love             =   6.8291
+ div_cost               =  30.9038
+ obj. = 2460.83647153 (best :1255.419931)
+
+guess 333 of 350
+ mean_init_love         =   5.2734
+ mean_love_shock        =  -0.6379
+ sigma_love             =   2.7311
+ div_cost               =  16.6181
+ obj. = 2812.91313213 (best :1255.419931)
+
+guess 334 of 350
+ mean_init_love         = -44.7266
+ mean_love_shock        =  -5.6379
+ sigma_love             =  18.3035
+ div_cost               =   2.3324
+ obj. = 7486.42321870 (best :1255.419931)
+
+guess 335 of 350
+ mean_init_love         =  45.8984
+ mean_love_shock        =   2.6955
+ sigma_love             =  14.2055
+ div_cost               =  86.0058
+ obj. = 2269.77996054 (best :1255.419931)
+
+guess 336 of 350
+ mean_init_love         =  -4.1016
+ mean_love_shock        =  -2.3045
+ sigma_love             =  10.1075
+ div_cost               =  71.7201
+ obj. = 4737.54784240 (best :1255.419931)
+
+guess 337 of 350
+ mean_init_love         =  20.8984
+ mean_love_shock        =  -7.3045
+ sigma_love             =   6.0095
+ div_cost               =  57.4344
+ obj. = 9957.85218317 (best :1255.419931)
+
+guess 338 of 350
+ mean_init_love         = -29.1016
+ mean_love_shock        =   1.0288
+ sigma_love             =   1.9115
+ div_cost               =  43.1487
+ obj. = 2650.23230658 (best :1255.419931)
+
+guess 339 of 350
+ mean_init_love         =  33.3984
+ mean_love_shock        =  -3.9712
+ sigma_love             =  17.4839
+ div_cost               =  28.8630
+ obj. = 6568.29207690 (best :1255.419931)
+
+guess 340 of 350
+ mean_init_love         = -16.6016
+ mean_love_shock        =  -8.9712
+ sigma_love             =  13.3859
+ div_cost               =  14.5773
+ obj. = 9789.48225559 (best :1255.419931)
+
+guess 341 of 350
+ mean_init_love         =   8.3984
+ mean_love_shock        =   3.8066
+ sigma_love             =   9.2879
+ div_cost               =   0.2915
+ obj. = 2315.13391952 (best :1255.419931)
+
+guess 342 of 350
+ mean_init_love         = -41.6016
+ mean_love_shock        =  -1.1934
+ sigma_love             =   5.1899
+ div_cost               =  99.9584
+ obj. = nan (best :1255.419931)
+
+guess 343 of 350
+ mean_init_love         =  39.6484
+ mean_love_shock        =  -6.1934
+ sigma_love             =   1.0919
+ div_cost               =  85.6726
+ obj. = 9903.56816785 (best :1255.419931)
+
+guess 344 of 350
+ mean_init_love         = -10.3516
+ mean_love_shock        =   2.1399
+ sigma_love             =  16.6643
+ div_cost               =  71.3869
+ obj. = 2473.53301522 (best :1255.419931)
+
+guess 345 of 350
+ mean_init_love         =  14.6484
+ mean_love_shock        =  -2.8601
+ sigma_love             =  12.5663
+ div_cost               =  57.1012
+ obj. = 5589.63496413 (best :1255.419931)
+
+guess 346 of 350
+ mean_init_love         = -35.3516
+ mean_love_shock        =  -7.8601
+ sigma_love             =   8.4683
+ div_cost               =  42.8155
+ obj. = 9103.03021696 (best :1255.419931)
+
+guess 347 of 350
+ mean_init_love         =  27.1484
+ mean_love_shock        =   0.4733
+ sigma_love             =   4.3703
+ div_cost               =  28.5298
+ obj. = 2402.71954270 (best :1255.419931)
+
+guess 348 of 350
+ mean_init_love         = -22.8516
+ mean_love_shock        =  -4.5267
+ sigma_love             =   0.2723
+ div_cost               =  14.2441
+ obj. = nan (best :1255.419931)
+
+guess 349 of 350
+ mean_init_love         =   2.1484
+ mean_love_shock        =  -9.5267
+ sigma_love             =  19.7788
+ div_cost               =  97.9175
+ obj. = 5929.97820595 (best :1255.419931)
