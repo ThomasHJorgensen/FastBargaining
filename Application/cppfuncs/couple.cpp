@@ -21,8 +21,6 @@ namespace couple {
         par_struct* par;
     };
 
-    // Multistart factor in first multistart run
-    static constexpr double MULTISTART_FACTOR = 0.5;
 
     double tax_couple(double income, par_struct* par) {
 
@@ -113,47 +111,29 @@ namespace couple {
         return power * Vw[0] + (1.0 - power) * Vm[0];
     }
 
-    // helper: run 1D multistart optimization given optimizer and bounds
-    double run_multistart_optimizer_1d(nlopt_opt optimizer_handle, double initial_guess,
-                            const double* lower_bounds, const double* upper_bounds,
-                            int num_starts) {
-        
-        // first run from provided initial guess
-        double x[1] = { initial_guess };
+    double run_multistart_optimizer_1d(nlopt_opt opt, double starting_val, const double* lb, const double* ub, bool do_multistart){
+        // first optimization run
+        double x[1] = { starting_val };
         double minf_global = 0.0;
-        nlopt_optimize(optimizer_handle, x, &minf_global);
-        double best_Ctot = x[0];
+        nlopt_optimize(opt, x, &minf_global);
+        double C_tot = x[0];
 
-        // setup RNG for additional random starts if needed
-        // if (num_starts > 1) {
-        // static const int seed_rng = []() {
-        //     std::srand(123456789u);
-        //     return 0;
-        // }();
-        // (void)seed_rng;
-        // }
+        // second optimizatoin run with a different starting value for multistart
+        if (do_multistart) {
+            // multistart: try a lower starting consumption as well
+            double minf_first = minf_global;
+            x[0] = starting_val * 0.5;
+            nlopt_optimize(opt, x, &minf_global);
+            
+            if (minf_global < minf_first) {
+                C_tot = x[0];
+            }
+            
+        }
 
-        // // setup placeholder for local minimum
-        // double minf_local = 0.0;
+        return C_tot;
+    }
 
-        // // additional starts
-        // for (int s = 0; s < num_starts; ++s) {
-        //     if (s == 0) {
-        //         x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
-        //     } else {
-        //         double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-        //         x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
-        //     }
-
-        //     nlopt_optimize(optimizer_handle, x, &minf_local);
-        //     if (minf_local < minf_global) {
-        //         best_Ctot = x[0];
-        //         minf_global = minf_local;
-        //     }
-        // }
-
-        return best_Ctot;
-    };
 
     //////////////////
     // VFI solution
@@ -201,14 +181,8 @@ namespace couple {
             nlopt_set_lower_bounds(opt, lb);
             nlopt_set_upper_bounds(opt, ub);
 
-            // first optimization run
-            double x[dim] = { starting_val };
-            double minf_global = 0.0;
-            nlopt_optimize(opt, x, &minf_global);
-            C_tot = x[0];
-            
-            // multistart: try a lower starting consumption as well
-            C_tot = run_multistart_optimizer_1d(opt, starting_val, lb, ub, par->num_multistart);
+            // call the helper (multistart count kept larger than original)
+            double C_tot = run_multistart_optimizer_1d(opt, starting_val, lb, ub, par->do_multistart);
             
             // cleanup
             nlopt_destroy(opt);
@@ -250,8 +224,8 @@ namespace couple {
                 starting_val = Cwd_priv[iA - 1] + Cmd_priv[iA - 1] + Cd_inter[iA - 1];
             }
 
-                solve_couple_to_couple_step(&Cwd_priv[iA], &Cmd_priv[iA], &hwd[iA], &hmd[iA], &Cd_inter[iA], &Qd[iA],
-                &Vwd[iA], &Vmd[iA], Kw, Km, M_resources, t, ilw, ilm, iL, iP, EVw_next, EVm_next, starting_val, sol, par);
+            solve_couple_to_couple_step(&Cwd_priv[iA], &Cmd_priv[iA], &hwd[iA], &hmd[iA], &Cd_inter[iA], &Qd[iA],
+            &Vwd[iA], &Vmd[iA], Kw, Km, M_resources, t, ilw, ilm, iL, iP, EVw_next, EVm_next, starting_val, sol, par);
 
             Cd_tot[iA] = Cwd_priv[iA] + Cmd_priv[iA] + Cd_inter[iA];
         }
@@ -325,7 +299,7 @@ namespace couple {
         nlopt_set_upper_bounds(opt, ub);
 
         // call the helper (multistart count kept larger than original)
-        double C_tot = run_multistart_optimizer_1d(opt, guess_Ctot, lb, ub, par->num_multistart);
+        double C_tot = run_multistart_optimizer_1d(opt, guess_Ctot, lb, ub, par->do_multistart);
 
         nlopt_destroy(opt);
         delete data;
