@@ -151,9 +151,10 @@ venv.bak/
 *.dll
 
 # Don't track output files
-output/*
-Application/output/*
+output/
+
+# nlopt
+nlopt-2.4.2-dll64/
 
 # Other
-*libnlopt-0.exp
-Application/compile.bat
+*/compile.bat
