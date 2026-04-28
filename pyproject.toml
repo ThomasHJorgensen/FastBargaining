@@ -1,0 +1,23 @@
+[project]
+name = "fastbargaining"
+version = "0.1.0"
+description = "Code for Fast Solution of Dynamic Intra-Household Bargaining Models"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "consav>=0.12",
+    "econmodel",
+    "matplotlib>=3.10.9",
+    "numba>=0.65.1",
+    "numpy>=2.4.4",
+    "scipy>=1.17.1",
+    "seaborn>=0.13.2",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+]
+
+[tool.uv.sources]
+econmodel = { git = "https://github.com/NumEconCopenhagen/EconModel", rev = "367f22048e49cad10cc54c3f09f5f313180cca6f" }

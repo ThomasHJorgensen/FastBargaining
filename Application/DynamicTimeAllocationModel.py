@@ -5,7 +5,6 @@ import numba as nb
 from scipy.stats import norm, multivariate_normal
 import scipy.optimize as optimize
 from scipy.optimize import minimize
-import polars as pl
 from collections import OrderedDict
 
 
@@ -444,7 +443,7 @@ class HouseholdModelClass(EconModelClass):
             _alloc(sol, name, shape_couple_d)
 
         # state-level power objects (must be shape_couple)
-        _alloc(sol, "power_idx", shape_couple, dtype=np.int_)
+        _alloc(sol, "power_idx", shape_couple, dtype=np.int32)
         _alloc(sol, "power", shape_couple)
 
         # --- couple to couple (EGM post-decision) ---
@@ -523,8 +522,8 @@ class HouseholdModelClass(EconModelClass):
 
 
         # --- d.3 initial distribution ---
-        _alloc(sim, "init_type_w", (par.simN,), dtype=np.int_)
-        _alloc(sim, "init_type_m", (par.simN,), dtype=np.int_)
+        _alloc(sim, "init_type_w", (par.simN,), dtype=np.int32)
+        _alloc(sim, "init_type_m", (par.simN,), dtype=np.int32)
         _alloc(sim, "init_love", (par.simN,))
         _alloc(sim, "init_Kw", (par.simN,))
         _alloc(sim, "init_Km", (par.simN,))
@@ -532,7 +531,7 @@ class HouseholdModelClass(EconModelClass):
         _alloc(sim, "init_Aw", (par.simN,))
         _alloc(sim, "init_Am", (par.simN,))
         _alloc(sim, "init_couple", (par.simN,), dtype=np.bool_)
-        _alloc(sim, "init_power_idx", (par.simN,), dtype=np.int_)
+        _alloc(sim, "init_power_idx", (par.simN,), dtype=np.int32)
         _alloc(sim, "init_divorces", (par.simN,))
 
         # --- e. other
