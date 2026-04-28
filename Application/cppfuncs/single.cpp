@@ -143,6 +143,7 @@ namespace single {
 
             constexpr int dim = 1;
             double lb[dim], ub[dim];
+            double x[dim] = { starting_val };
 
             auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
@@ -160,19 +161,18 @@ namespace single {
             if (starting_val > ub[0]) starting_val = ub[0];
 
             // first optimization run
-            double x[dim] = { starting_val };
             double minf_global = 0.0;
             nlopt_optimize(opt, x, &minf_global);
-            double C_tot = x[0];
+            Cd_tot = x[0]; // Obs: do not declare a new variable here, otherwise the optimization run will not update the correct Cd_tot
 
             // second optimizatoin run with a different starting value for multistart
             if (par->do_multistart) {
-                // multistart: try a lower starting consumption as well
-                double minf_first = minf_global;
+                double minf_local = 0.0;
                 x[0] = starting_val * 0.5;
                 nlopt_optimize(opt, x, &minf_global);
-                if (minf_global < minf_first) {
-                    C_tot = x[0];
+                if (minf_local < minf_global) {
+                    Cd_tot = x[0];
+                    minf_global = minf_local;
                 }
                 
             }
@@ -275,10 +275,10 @@ namespace single {
         SolverInvData* data = new SolverInvData{il, margU, gender, par, sol};
 
         constexpr int dim = 1;
-        double lb[dim], ub[dim], x[dim];
+        double lb[dim], ub[dim];
+        double x[dim] = { guess_C_tot };
 
         auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
-        double minf = 0.0;
 
         nlopt_set_min_objective(opt, obj_inv_marg_util_single, data);
         nlopt_set_maxeval(opt, 2000);
@@ -290,13 +290,28 @@ namespace single {
         nlopt_set_lower_bounds(opt, lb);
         nlopt_set_upper_bounds(opt, ub);
 
-        x[0] = guess_C_tot;
-        nlopt_optimize(opt, x, &minf);
-        nlopt_destroy(opt);
+        // first optimization run
+        double minf_global = 0.0;
+        nlopt_optimize(opt, x, &minf_global);
+        double C_tot = x[0];
 
-        double result = x[0];
+        // second optimizatoin run with a different starting value for multistart
+        if (par->do_multistart) {
+            double minf_local = 0.0;
+            x[0] = guess_C_tot * 0.5;
+            nlopt_optimize(opt, x, &minf_global);
+            if (minf_local < minf_global) {
+                C_tot = x[0];
+                minf_global = minf_local;
+            }
+            
+        }
+
+        // cleanup
+        nlopt_destroy(opt);
         delete data;
-        return result;
+
+        return C_tot;
     }
 
 

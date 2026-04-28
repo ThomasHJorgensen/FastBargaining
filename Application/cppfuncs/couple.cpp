@@ -111,30 +111,6 @@ namespace couple {
         return power * Vw[0] + (1.0 - power) * Vm[0];
     }
 
-    double run_multistart_optimizer_1d(nlopt_opt opt, double starting_val, const double* lb, const double* ub, bool do_multistart){
-        // first optimization run
-        double x[1] = { starting_val };
-        double minf_global = 0.0;
-        nlopt_optimize(opt, x, &minf_global);
-        double C_tot = x[0];
-
-        // second optimizatoin run with a different starting value for multistart
-        if (do_multistart) {
-            // multistart: try a lower starting consumption as well
-            double minf_first = minf_global;
-            x[0] = starting_val * 0.5;
-            nlopt_optimize(opt, x, &minf_global);
-            
-            if (minf_global < minf_first) {
-                C_tot = x[0];
-            }
-            
-        }
-
-        return C_tot;
-    }
-
-
     //////////////////
     // VFI solution
     double objfunc_couple_to_couple(unsigned /*n*/, const double* x, double* /*grad*/, void* solver_data_in) {
@@ -157,8 +133,9 @@ namespace couple {
         if (t < (par->T - 1)) {
             const int dim = 1;
             double lb[dim], ub[dim];
+            double x[dim] = { starting_val };
 
-            nlopt_opt opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
+            auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
             auto* data = new SolverData();
             data->t = t;
@@ -181,8 +158,22 @@ namespace couple {
             nlopt_set_lower_bounds(opt, lb);
             nlopt_set_upper_bounds(opt, ub);
 
-            // call the helper (multistart count kept larger than original)
-            double C_tot = run_multistart_optimizer_1d(opt, starting_val, lb, ub, par->do_multistart);
+            // first optimization run
+            double minf_global = 0.0;
+            nlopt_optimize(opt, x, &minf_global);
+            C_tot = x[0]; // Obs: do not declare a new variable here, otherwise the optimization run will not update the correct C_tot
+
+            // second optimizatoin run with a different starting value for multistart
+            if (par->do_multistart) {
+                double minf_local = 0.0;
+                x[0] = starting_val * 0.5;
+                nlopt_optimize(opt, x, &minf_global);
+                if (minf_local < minf_global) {
+                    C_tot = x[0];
+                    minf_global = minf_local;
+                }
+                
+            }
             
             // cleanup
             nlopt_destroy(opt);
@@ -283,8 +274,10 @@ namespace couple {
 
         const int dim = 1;
         double lb[dim], ub[dim];
+        double x[dim] = { guess_Ctot };
 
-        nlopt_opt opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
+
+        auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
         if (do_print) logs::write("inverse_log.txt", 0, "margU: %f\n", margU);
 
@@ -298,9 +291,24 @@ namespace couple {
         nlopt_set_lower_bounds(opt, lb);
         nlopt_set_upper_bounds(opt, ub);
 
-        // call the helper (multistart count kept larger than original)
-        double C_tot = run_multistart_optimizer_1d(opt, guess_Ctot, lb, ub, par->do_multistart);
+        // first optimization run
+        double minf_global = 0.0;
+        nlopt_optimize(opt, x, &minf_global);
+        double C_tot = x[0];
 
+        // second optimizatoin run with a different starting value for multistart
+        if (par->do_multistart) {
+            double minf_local = 0.0;
+            x[0] = guess_Ctot * 0.5;
+            nlopt_optimize(opt, x, &minf_global);
+            if (minf_local < minf_global) {
+                C_tot = x[0];
+                minf_global = minf_local;
+            }
+            
+        }
+
+        // cleanup
         nlopt_destroy(opt);
         delete data;
 
