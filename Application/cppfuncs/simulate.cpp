@@ -169,14 +169,13 @@ namespace sim {
         // b. find first index in asset cdf above uniform draw.
         int index_iA = tools::binary_search(0,par->num_A,grid_A,A);
         for (int iAp=0; iAp<par->num_A; iAp++){
-            double cdf_Ap_cond = tools::interp_1d_index_delta(grid_A,par->num_A,cdf_partner_A,A, index_iA,par->num_A, iAp,1,0); // OBS: is 1,0 correct for interpolation here?
+            double cdf_Ap_cond = tools::interp_1d_index_delta(grid_A,par->num_A,cdf_partner_A,A, index_iA,par->num_A, iAp,1,0); // OBS: Is 1,0 right? We think so, but make sure when implementing remarriage
             if(cdf_Ap_cond >= random){
-                return grid_A[iAp];
+                return grid_A[iAp]; // OBS: should this be grid_Ap (for partner)
             }
         }
 
-        logs::write("error_log.txt", 1, "Error: No partner asset value found for random draw %f at A=%f for gender %d (index_iA=%d)\n", random, A, gender, index_iA);
-        exit(1);
+        return grid_A[par->num_A-1]; // OBS: all cases should be resolved within loop. Ensure that happens when implementing remarriage
 
     }
 
@@ -200,14 +199,13 @@ namespace sim {
         // b. find first index in human capital cdf above uniform draw.
         int index_iK = tools::binary_search(0,par->num_K,grid_K,K);
         for (int iKp=0; iKp<par->num_K; iKp++){
-            double cdf_Kp_cond = tools::interp_1d_index_delta(grid_K,par->num_K,cdf_partner_K,K, index_iK,par->num_K, iKp,1,0); // OBS: Make sure this is correct
+            double cdf_Kp_cond = tools::interp_1d_index_delta(grid_K,par->num_K,cdf_partner_K,K, index_iK,par->num_K, iKp,1,0);  // OBS: Is 1,0 right? We think so, but make sure when implementing remarriage
             if(cdf_Kp_cond >= random){
                 return grid_Kp[iKp];
             }
         }
 
-        logs::write("error_log.txt", 1, "Error: No partner human capital value found for random draw %f at K=%f for gender %d (index_iK=%d)\n", random, K, gender, index_iK);
-        exit(1);
+        return grid_Kp[par->num_K-1]; // OBS: all cases should be resolved within loop. Ensure that happens when implementing remarriage
 
     }
 
@@ -226,14 +224,14 @@ namespace sim {
 
         // b. find where in the cdf the random number falls
         for (int type_p=0; type_p<par->num_types; type_p++){
-            double cdf_type_p_cond = cdf_partner_type[type*par->num_types + type_p]; // OBS: Make sure this is correct
+            double cdf_type_p_cond = cdf_partner_type[type*par->num_types + type_p]; //  // OBS: Is 1,0 right? We think so, but make sure when implementing remarriage
             if(cdf_type_p_cond >= random){
                 return type_p;
             }
         }
 
         // c. return type value
-        return par->num_types-1; // OBS: Is this right? Returning highest value if not found?
+        return par->num_types-1; // OBS: all cases should be resolved within loop. Ensure that happens when implementing remarriage
     }
 
     void model(sim_struct *sim, sol_struct *sol, par_struct *par){

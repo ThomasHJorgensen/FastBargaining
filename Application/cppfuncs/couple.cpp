@@ -161,7 +161,7 @@ namespace couple {
             // first optimization run
             double minf_global = 0.0;
             nlopt_optimize(opt, x, &minf_global);
-            C_tot = x[0]; // Obs: do not declare a new variable here, otherwise the optimization run will not update the correct C_tot
+            C_tot = x[0];
 
             // second optimizatoin run with a different starting value for multistart
             if (par->do_multistart) {
@@ -741,8 +741,11 @@ namespace couple {
         double Eval_w = 0.0;
         double Eval_m = 0.0;
 
-        // OBS: This interpolation thing and especially its indices needs to be handled properly
-        auto idx_A = tools::binary_search(0, par->num_A, par->grid_A, par->grid_A[iA]);
+        // Note: A is on grid, but can't interpolate from last point. Use iA as index for interpolation, except if last point
+        auto idx_A = iA;
+        if (idx_A == par->num_A - 1) {
+            idx_A = par->num_A - 2;
+        }
 
         for (int i_love_shock = 0; i_love_shock < par->num_shock_love; ++i_love_shock) {
             double love_shock = love + par->grid_shock_love[i_love_shock];

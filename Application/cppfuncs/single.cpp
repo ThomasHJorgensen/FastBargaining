@@ -163,7 +163,7 @@ namespace single {
             // first optimization run
             double minf_global = 0.0;
             nlopt_optimize(opt, x, &minf_global);
-            Cd_tot = x[0]; // Obs: do not declare a new variable here, otherwise the optimization run will not update the correct Cd_tot
+            Cd_tot = x[0];
 
             // second optimizatoin run with a different starting value for multistart
             if (par->do_multistart) {
@@ -386,7 +386,7 @@ namespace single {
         auto idx_A_pd  = index::single_pd(t, type, il, iK, 0, par);
         auto idx_d_A   = index::single_d(t, type, il, iK, 0, par);
         auto idx_next  = index::single(t + 1, type, 0, 0, par);
-        auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u); // OBS: index::index3(type, il, 0, par->num_l, par->num_marg_u);
+        auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u);
         
         // 1. Setup: gender-specific pointers
         double* grid_A = par->grid_Aw;
@@ -650,7 +650,6 @@ namespace single {
 
         //interpolate V_single_to_single
         auto idx_interp_single = index::single(t, type, 0, 0, par);
-        // double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
         double Vsts = tools::_interp_2d(
             grid_K_single, grid_A_single, 
             par->num_K, par->num_A, 
@@ -659,7 +658,7 @@ namespace single {
             iK_single, iA_single
         );
         // interpolate couple V_single_to_couple
-        auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par); // OBS: can we do something else than interpolating over all dimensions here? Does this even work with S?
+        auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par);
         double Vstc = tools::_interp_5d_index(
             par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
             par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
@@ -817,7 +816,7 @@ namespace single {
                                     &V_single_to_couple[idx_interp_couple], 
                                     power, love, Kw, Km, A_tot
                                 );
-                                // OBS: actually onlu interpolation in power and A_tot is needed here
+                                // note: love, Kw, Km is currently on grid 
                             } else {
                                 val = V_single_to_single[idx_single];
                             }
