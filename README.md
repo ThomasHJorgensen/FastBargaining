@@ -1,1 +1,1 @@
-# iEGM
+# Code for Fast Solution of Dynamic Intra-Household Bargaining Models
