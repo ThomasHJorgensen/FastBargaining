@@ -75,23 +75,8 @@ namespace utils {
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {
-        double K_next = 0;
-
-        if (par->hc_mazzocco == true) {
-            if (labor == par->grid_l[0]) {
-                K_next = K + par->delta_mazzocco;
-            } else if (labor == par->grid_l[1]) {
-                K_next = K + par->phi_k_mazzocco;
-            } else {
-                K_next = K + 1.0;
-            }
-        } else {
-            K_next = (1.0 - par->delta) * K + par->phi_k * labor;
-        }
-
+        double K_next = (1.0 - par->delta) * K + par->phi_k * labor;
         return tools::max(0.0, tools::min(K_next, par->max_K));
-
-        // return ((1-par->delta) * K + par->phi_k * labor);
     }
 
     // double cons_priv_single(double C_tot,int gender,par_struct *par){

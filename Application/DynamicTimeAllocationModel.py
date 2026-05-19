@@ -42,87 +42,83 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
 
         # -------- core / accounting --------
-        par.R = 1.03
-        par.beta = 1.0 / par.R  # Discount factor
+        par.R = 1.03 # Interest rate (Voena (2015) - Jakobsen, Jørgensen and Low (2024) - 1.015 in Attanasio, Low, and Sánchez-Marcos (2008))
+        par.beta = 0.98  # Discount factor (Bronson, Haanwinckel, and Mazzocco (2025) / Attanasio, Low, and Sánchez-Marcos (2008))
 
-        par.div_A_share = 0.5  # divorce share of wealth to wife
+        par.div_A_share = 0.5  # divorce share of wealth to wife (Bronson (2019) - Voena (2015) estimates something slightly different)
         par.div_cost = 0.0
 
-        par.available_hours = 1.0
+        par.available_hours = 1.0 # normalization
 
         # -------- preferences (baseline + multipliers) --------
-        par.rho = 2.0
+        par.rho = 1.5 # (Bronson, Haanwinckel, and Mazzocco (2025) / Attanasio, Low, and Sánchez-Marcos (2008))
         par.rho_mult = 1.0
 
-        par.phi = 0.05
-        par.phi_mult = 1.0
+        par.phi = 3.0
+        par.phi_mult = 1.14
 
-        par.eta = 0.5
-        par.eta_mult = 1.0
+        par.eta = 2.25
+        par.eta_mult = 1.25
 
-        par.lambda_ = 0.5
+        par.lambda_ = 11.55
         par.lambda_mult = 1.0
 
         # -------- home production --------
-        par.alpha = 1.0
-        par.zeta = 0.5
-        par.omega = 0.5
-        par.pi = 0.5
+        par.alpha = 1.03
+        par.zeta = 0.40 # (Bronson, Haanwinckel, and Mazzocco (2025))
+        par.omega = 0.38 # (Bronson, Haanwinckel, and Mazzocco (2025))
+        par.pi = 0.6
 
         # -------- income / wages (baseline + multipliers) --------
-        par.mu = 0.5
-        par.sigma_mu = 0.1
-        par.gamma = 0.1
+        par.mu = 1.8
+        par.sigma_mu = 0.54
+        par.gamma = 0.13
         par.gamma2 = 0.00
 
-        par.mu_mult = 1.0
+        par.mu_mult = 1.08
         par.sigma_mu_mult = 1.0
-        par.gamma_mult = 1.0
+        par.gamma_mult = 1.95
         par.gamma2_mult = 1.0
 
         # -------- human capital process --------
-        par.phi_k = 1.0
-        par.delta = 0.1
-        par.hc_mazzocco = False
-        par.delta_mazzocco = -1.0
-        par.phi_k_mazzocco = 0.4
+        par.phi_k = 1.0 # (Jakobsen, Jørgensen and Low (2024))
+        par.delta = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         
-
         # -------- discrete choices --------
-        par.part_time = 0.75
-        par.full_time_hours = 0.35
+        par.part_time = 0.5 # as share of full time hours - it seems standard to assume that part time hours are about half of full time hours (Eckstein does it)
+        par.full_time_hours = 40.0 / (16 * 7) # ~0.36 (40 hours per week - out of 16 hours per day, 7 days per week) - 40 hours from Bronson, Haanwinckel, and Mazzocco (2025)
         
         # -------- model horizon / state space sizes --------
-        par.T = 10
+        par.T = 40
 
         # wealth
-        par.num_A = 50
-        par.max_A = 15.0
+        par.num_A = 30
+        par.max_A = 300.0
 
         # human capital
-        par.num_K = 16
-        par.max_K = par.T * 1.5
-        par.sigma_K = 0.1
+        par.num_K = 10
+        par.max_K = 10.0
+        par.sigma_K = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         par.sigma_K_mult = 1.0
         par.num_shock_K = 5
 
         # bargaining power
-        par.num_power = 21
+        par.num_power = 11
 
         # love / match quality
         par.num_love = 11
         par.max_love = 100.0
-        par.sigma_love = 0.1
-        par.mean_love = 0.0
+        par.sigma_love = 7.0
+        par.mean_love = 0.0 # normalization
         par.num_shock_love = 5  # cannot be 1 due to interpolation
-        par.type_corr = 0.45
 
         # types
-        par.num_types = 3
+        par.num_types = 4
+        par.type_corr = 0.45 # (Bronson, Haanwinckel, and Mazzocco (2025))
         
         # EGM
-        par.num_A_pd = par.num_A * 2
-        par.max_A_pd = par.max_A
+        par.num_A_pd = 30
+        par.max_A_pd = 300.0
         
         # precomputation of intratemporal solution (for iEGM)
         par.num_marg_u = 200
@@ -142,17 +138,17 @@ class HouseholdModelClass(EconModelClass):
         par.precompute_intratemporal = True
 
         # intratemporal precomputation
-        par.num_Ctot = 20
-        par.max_Ctot = par.max_A * 2
+        par.num_Ctot = 200
+        par.max_Ctot = 300.0
 
         # EGM
         par.do_egm = False
 
         # -------- simulation --------
         par.seed = 9210
-        par.simT = par.T
-        par.simN = 50
-        par.init_couple_share = 1.0
+        par.simT = 40
+        par.simN = 100_000
+        par.init_couple_share = 0.80
 
         # -------- misc --------
         par.threads = 8
