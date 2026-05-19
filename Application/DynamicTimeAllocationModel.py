@@ -1,12 +1,12 @@
 import ctypes
 import os
+import warnings
 import numpy as np
 import numba as nb
 from scipy.stats import norm, multivariate_normal
 import scipy.optimize as optimize
 from scipy.optimize import minimize
 from collections import OrderedDict
-
 
 from EconModel import EconModelClass
 from consav.grids import nonlinspace
@@ -186,7 +186,8 @@ class HouseholdModelClass(EconModelClass):
         par.sigma_Kw = par.sigma_K
         par.sigma_Km = par.sigma_K * par.sigma_K_mult
         
-    def fast_unravel_indices(self, shape, dtype=np.int32):
+    @staticmethod
+    def fast_unravel_indices(shape, dtype=np.int32):
         """Helper function to unravel indices for a given shape (for unindexing grids).
         This is a faster implementation of np.unravel_index for large arrays, as it avoids creating large intermediate arrays.
         INPUT:
@@ -206,7 +207,8 @@ class HouseholdModelClass(EconModelClass):
 
         return tuple(np.ascontiguousarray(x) for x in reversed(out))
 
-    def assortative_matrix(self, num, corr):
+    @staticmethod
+    def assortative_matrix(num, corr):
         """
         Construct assortative matching matrix P(partner_state | own_state)
 
@@ -223,8 +225,10 @@ class HouseholdModelClass(EconModelClass):
             (num x num) matrix where rows sum to 1
         """
 
-        cuts = norm.ppf(np.linspace(0, 1, num + 1))
-        cuts[0] = -10
+        # assume types are distributed as standard normal and cut into equal-probability bins
+        cuts = norm.ppf(np.linspace(0, 1, num=num + 1))
+        # set extreme values for the first and last cut instead of inf values
+        cuts[0] = -10 
         cuts[-1] = 10
 
         cov = [[1, corr], [corr, 1]]
@@ -236,10 +240,10 @@ class HouseholdModelClass(EconModelClass):
                 upper = [cuts[i+1], cuts[j+1]]
 
                 p = (
-                    multivariate_normal.cdf(upper, cov=cov)
-                    - multivariate_normal.cdf([lower[0], upper[1]], cov=cov)
-                    - multivariate_normal.cdf([upper[0], lower[1]], cov=cov)
-                    + multivariate_normal.cdf(lower, cov=cov)
+                    multivariate_normal.cdf(upper, cov=cov, allow_singular=True)
+                    - multivariate_normal.cdf([lower[0], upper[1]], cov=cov, allow_singular=True)
+                    - multivariate_normal.cdf([upper[0], lower[1]], cov=cov, allow_singular=True)
+                    + multivariate_normal.cdf(lower, cov=cov, allow_singular=True)
                 )
 
                 joint[i, j] = p
@@ -353,7 +357,6 @@ class HouseholdModelClass(EconModelClass):
 
         self.allocate_memory()
         self.fill_allocations()
-        self.draw_shocks()
 
     def allocate_memory(self):
         """Allocate arrays only (no filling/initialization)."""
@@ -541,27 +544,22 @@ class HouseholdModelClass(EconModelClass):
         shape_couple_bargaining = (par.num_types, par.num_types, par.num_love, par.num_K, par.num_K)
 
         par.idx_single_type, par.idx_single_K = self.fast_unravel_indices(shape_single[1:-1], dtype=dtype_int)
-        # par.idx_single_d_type, par.idx_single_d_l, par.idx_single_d_K = self.fast_unravel_indices(shape_single_d[1:-1], dtype=dtype_int)
-        # par.idx_single_egm_type, par.idx_single_egm_l, par.idx_single_egm_K = self.fast_unravel_indices(shape_single_egm[1:-1], dtype=dtype_int)
         par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km = self.fast_unravel_indices(shape_couple[1:-1], dtype=dtype_int)
         par.idx_couple_barg_type_w, par.idx_couple_barg_type_m, par.idx_couple_barg_love, par.idx_couple_barg_Kw, par.idx_couple_barg_Km = self.fast_unravel_indices(shape_couple_bargaining, dtype=dtype_int)
-        # par.idx_couple_d_type_w, par.idx_couple_d_type_m, par.idx_couple_d_lw, par.idx_couple_d_lm, par.idx_couple_d_power, par.idx_couple_d_love, par.idx_couple_d_Kw, par.idx_couple_d_Km = self.fast_unravel_indices(shape_couple_d[1:-1], dtype=dtype_int)
-        # par.idx_couple_egm_type_w, par.idx_couple_egm_type_m, par.idx_couple_egm_lw, par.idx_couple_egm_lm, par.idx_couple_egm_power, par.idx_couple_egm_love, par.idx_couple_egm_Kw, par.idx_couple_egm_Km = self.fast_unravel_indices(shape_couple_egm[1:-1], dtype=dtype_int)
-        # par.idx_pre_single_l, par.idx_pre_single_K, par.idx_pre_single_Ctot = self.fast_unravel_indices(shape_pre_single)
         par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=dtype_int)
-        # OBS: shape_pre_single should not be used for iEGM where i_u_marg is important and not iC.
-        
-        # _alloc(sol, "solution_time", (1,))
 
+    @staticmethod
+    def _fill(obj, names, value):
+            for n in names:
+                getattr(obj, n)[...] = value
+    
     def fill_allocations(self):
         """Fill all allocated arrays with their initial values (nan/inf/zeros) and draws/init states."""
         par = self.par
         sol = self.sol
         sim = self.sim
-
-        def _fill(obj, names, value):
-            for n in names:
-                getattr(obj, n)[...] = value
+        
+        _fill = self._fill
 
         # ========= a. singles =========
         # a.1 single -> single (discrete)
@@ -652,6 +650,21 @@ class HouseholdModelClass(EconModelClass):
 
         # ========= d. simulation =========
         # d.1 simulated outcomes
+        self.fill_simulated_outcomes()
+
+        # d.2 shocks (seed -> draws)
+        self.draw_shocks()
+
+        # d.3 initial distribution
+        self.fill_simulated_initial_conditions()
+        
+        # ========= e. timing =========
+        sol.solution_time[...] = 0.0
+
+    def fill_simulated_outcomes(self):
+        sim = self.sim
+        _fill = self._fill
+        
         _fill(sim, (
             "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
             "Cw_inter", "Cm_inter", "Qw", "Qm",
@@ -664,42 +677,14 @@ class HouseholdModelClass(EconModelClass):
         ), np.nan)
         
         sim.divorces[...] = 0.0
-        
         sim.mean_lifetime_util[...] = np.nan
         sim.C_ineq_90_10[...] = np.nan
-
-        # d.2 shocks (seed -> draws)
-        # section moved (see draw_shocks)
-
-        # d.3 initial distribution
-        np.random.seed(par.seed)
-        sim.init_A[...] = 0.0
-        sim.init_Kw[...] = 0.0
-        sim.init_Km[...] = 0.0
-        sim.init_Aw[...] = sim.init_A * par.div_A_share
-        sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        sim.init_power_idx[...] = (par.num_power // 2)
-        sim.init_love[...] = 0.0
-        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
-        sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
-        sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
-        sim.init_divorces[...] = 0.0
-        
-        # # allow for correlation in types of couples
-        # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
-        # draws = np.random.rand(probs.shape[0])
-        # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
-        
-        # ========= e. timing =========
-        sol.solution_time[...] = 0.0
-
-
 
     def draw_shocks(self):
         """Draw all shocks for the simulation (using seed for reproducibility)."""
         par = self.par
         sim = self.sim
+        
         np.random.seed(par.seed)
         shape_sim = (par.simN, par.simT)
         
@@ -717,8 +702,11 @@ class HouseholdModelClass(EconModelClass):
 
         sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
 
-
-        # d.3 initial distribution
+    def fill_simulated_initial_conditions(self):
+        par = self.par
+        sim = self.sim
+        
+        np.random.seed(par.seed)
         sim.init_A[...] = 0.0
         sim.init_Kw[...] = 0.0
         sim.init_Km[...] = 0.0
@@ -727,11 +715,16 @@ class HouseholdModelClass(EconModelClass):
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx[...] = (par.num_power // 2)
         sim.init_love[...] = 0.0
+        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
+        sim.init_divorces[...] = 0.0
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
-
-        # ========= e. timing =========
-        # sol.solution_time[...] = 0.0
+        
+        # # allow for correlation in types of couples
+        # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
+        # draws = np.random.rand(probs.shape[0])
+        # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
+        
 
     def solve(self):
 
@@ -743,13 +736,6 @@ class HouseholdModelClass(EconModelClass):
         self.setup_grids()
         self.fill_allocations()
 
-        # allocate once (or when shapes changed), otherwise just reset values
-        # shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
-        # if (not hasattr(sol, "Vwd_single_to_single")) or (sol.Vwd_single_to_single.shape != shape_single_d):
-        #     self.allocate()
-        # else:
-            # self.draw_shocks()
-
         self.cpp.solve(sol, par)
 
 
@@ -758,16 +744,14 @@ class HouseholdModelClass(EconModelClass):
         sim = self.sim
         par = self.par
 
-        # clear simulation
-        for key, val in sim.__dict__.items():
-            if 'init' in key or 'draw' in key: continue
-            setattr(sim, key, np.zeros(val.shape)+np.nan)
+        # Reset simulated outcomes (except for initial conditions and shocks)
+        self.fill_simulated_outcomes()
 
         self.cpp.simulate(sim,sol,par)
 
         sim.mean_lifetime_util[0] = (np.mean(np.sum(sim.util_w,axis=1)) + np.mean(np.sum(sim.util_m,axis=1))) / 2.0
         
-        # consumption inequality
+        # auxilliary measures (consumption inequality)
         adults = np.where(sim.couple == 1, 2.0, 1.0)
         kids = np.where(sim.couple == 1, 0.0, 0.0) # for now, not modeled
         equivalence_scale = (adults + kids*0.7)**0.7 # equivalence scale used in Meyer and Sullivan (2023)
@@ -782,14 +766,11 @@ class HouseholdModelClass(EconModelClass):
         
         # update parameters, impose bounds and return penalty
         penalty = self.update_par(theta,estpar)
-        self.setup_gender_parameters()
-        self.setup_grids()
         
         # a. solve model
         self.solve()
 
         # b. simulate
-        self.draw_shocks()
         self.simulate()
 
         # c. calculate moments
@@ -869,9 +850,6 @@ class HouseholdModelClass(EconModelClass):
         moms['wage_level_w_35_41'] = np.nanmean(sim.wage_inc_w[age_35_to_41_mask & couple_mask & full_time_w_mask]) * money_metric
         moms['wage_level_m_35_41'] = np.nanmean(sim.wage_inc_m[age_35_to_41_mask & couple_mask & full_time_m_mask]) * money_metric
 
-        # standard deviation of log wages
-        # moms['wage_sd'] = np.nanstd(np.log(np.concatenate((sim.wage_inc_w.ravel(), sim.wage_inc_m.ravel()))))
-        
         # employment rates
         moms['employment_rate_w_35_41'] = np.nanmean(sim.lw[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
         moms['employment_rate_m_35_41'] = np.nanmean(sim.lm[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
@@ -881,10 +859,6 @@ class HouseholdModelClass(EconModelClass):
         # home production
         moms['home_prod_w'] = np.nanmean(sim.hw[age_25_to_41_mask]) * hours_metric
         moms['home_prod_m'] = np.nanmean(sim.hm[age_25_to_41_mask]) * hours_metric
-        
-        # leisure
-        # moms['leisure_w'] = np.nanmean(sim.leisure_w) * hours_metric
-        # moms['leisure_m'] = np.nanmean(sim.leisure_m) * hours_metric
         
         # consumption
         equivalence_scale_BPS = 2**0.5 # equivalence scaled used in the code of Blundell, Pistaferri, Saporta-Eksten (2018)
@@ -932,8 +906,6 @@ class HouseholdModelClass(EconModelClass):
         # moms['time_leisure_w'] = np.nanmean(sim.leisure_w.ravel()) * hours_metric 
         # moms['time_leisure_m'] = np.nanmean(sim.leisure_m.ravel()) * hours_metric
         
-
-
         return moms
     
 
@@ -1014,7 +986,7 @@ class HouseholdModelClass(EconModelClass):
             pickle.dump(par_dict, f)
             
             
-    def MAD_consumption(self,true_model, num=13):
+    def measure_accuracy(self,true_model, num=13):
         par = self.par
         sol = self.sol
         
@@ -1036,7 +1008,7 @@ class HouseholdModelClass(EconModelClass):
         power = np.empty(shape, dtype=np.float64)
         power_diff = np.empty(shape, dtype=np.float64)
         C = np.empty(shape_d, dtype=np.float64)
-        self.cpp.random_C_points(lw, lm, power, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
+        self.cpp.accuracy_measures(lw, lm, power, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
         
         # true model
         lw_true = np.empty(shape, dtype=np.float64)
@@ -1044,22 +1016,24 @@ class HouseholdModelClass(EconModelClass):
         power_true = np.empty(shape, dtype=np.float64)
         power_diff_true = np.empty(shape, dtype=np.float64)
         C_true = np.empty(shape_d, dtype=np.float64)
-        true_model.cpp.random_C_points(lw_true, lm_true, power_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
+        true_model.cpp.accuracy_measures(lw_true, lm_true, power_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
 
         # deviations
-        l_MAD = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
+        l_ERROR = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
  
         divorced = (power_diff<-1.0)
         divorced_true = (power_diff_true<-1.0)
-        divorce_MAD = np.mean((divorced) != (divorced_true))
+        divorce_ERROR = np.mean((divorced) != (divorced_true))
         
-        power_updated = (power_diff != 0.0) & (power_diff>-1.0)
-        power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
-        power_MAD = np.mean(np.abs(power[power_updated_true & (~divorced)] - power_true[power_updated_true & (~divorced)]))
+        # evaluate power where true model updates and neither model divorces
+        is_power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
+        power_updated = power[is_power_updated_true & (~divorced) & (~divorced_true)]
+        power_updated_true = power_true[is_power_updated_true & (~divorced) & (~divorced_true)]
+        power_MAD = np.mean(np.abs(power_updated - power_updated_true))
         
         C_MAD = np.mean(np.abs(C - C_true))
         
-        return l_MAD, divorce_MAD, power_MAD, C_MAD
+        return l_ERROR, divorce_ERROR, power_MAD, C_MAD
             
     def wealth_compensation(self,true_model):
         # search for level of initial wealth that makes mean lifetime utility similar with true model
