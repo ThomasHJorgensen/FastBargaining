@@ -555,31 +555,17 @@ namespace couple {
         const int nL  = par->num_love;
         const int ntypes  = par->num_types;
         const int nK  = par->num_K;
-
-        const long long total = (long long)ntypes * ntypes * nP * nL * nK * nK;
+        const long long total = ntypes * ntypes * nP * nL * nK * nK;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_type_w[idx];
-            const auto type_m = (int)par->idx_couple_type_m[idx];
-            const auto iP = (int)par->idx_couple_power[idx];
-            const auto iL = (int)par->idx_couple_love[idx];
-            const auto iKw = (int)par->idx_couple_Kw[idx];
-            const auto iKm = (int)par->idx_couple_Km[idx];
+            const auto type_w = par->idx_couple_type_w[idx];
+            const auto type_m = par->idx_couple_type_m[idx];
+            const auto iP = par->idx_couple_power[idx];
+            const auto iL = par->idx_couple_love[idx];
+            const auto iKw = par->idx_couple_Kw[idx];
+            const auto iKm = par->idx_couple_Km[idx];
 
             // Note: important to have discrete choice as inner loop
             //       to allow parallelization over outer loops while
@@ -730,29 +716,16 @@ namespace couple {
         const int nL  = par->num_love;
         const int ntypes  = par->num_types;
         const int nK  = par->num_K;
-
-        // Total number of iterations
-        long long total = (long long)ntypes * ntypes * nL * nK * nK;
+        long long total = ntypes * ntypes * nL * nK * nK;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_barg_type_w[idx];
-            const auto type_m = (int)par->idx_couple_barg_type_m[idx];
-            const auto iL = (int)par->idx_couple_barg_love[idx];
-            const auto iKw = (int)par->idx_couple_barg_Kw[idx];
-            const auto iKm = (int)par->idx_couple_barg_Km[idx];
+            const auto type_w = par->idx_couple_barg_type_w[idx];
+            const auto type_m = par->idx_couple_barg_type_m[idx];
+            const auto iL = par->idx_couple_barg_love[idx];
+            const auto iKw = par->idx_couple_barg_Kw[idx];
+            const auto iKm = par->idx_couple_barg_Km[idx];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
                 if (strcmp(par->bargaining, "limited") == 0) {
@@ -767,30 +740,17 @@ namespace couple {
         }
 
 
-        total = (long long)ntypes * ntypes * nP * nL * nK * nK;
+        total = ntypes * ntypes * nP * nL * nK * nK;
             
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_type_w[idx];
-            const auto type_m = (int)par->idx_couple_type_m[idx];
-            const auto iP = (int)par->idx_couple_power[idx];
-            const auto iL = (int)par->idx_couple_love[idx];
-            const auto iKw = (int)par->idx_couple_Kw[idx];
-            const auto iKm = (int)par->idx_couple_Km[idx];
+            const auto type_w = par->idx_couple_type_w[idx];
+            const auto type_m = par->idx_couple_type_m[idx];
+            const auto iP = par->idx_couple_power[idx];
+            const auto iL = par->idx_couple_love[idx];
+            const auto iKw = par->idx_couple_Kw[idx];
+            const auto iKm = par->idx_couple_Km[idx];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
                 calc_expected_value_couple(
@@ -819,31 +779,17 @@ namespace couple {
         const int nL  = par->num_love;
         const int ntypes  = par->num_types;
         const int nK  = par->num_K;
-
-        const long long total = (long long)ntypes * ntypes * nP * nL * nK * nK;
+        const long long total = ntypes * ntypes * nP * nL * nK * nK;
             
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_type_w[idx];
-            const auto type_m = (int)par->idx_couple_type_m[idx];
-            const auto iP = (int)par->idx_couple_power[idx];
-            const auto iL = (int)par->idx_couple_love[idx];
-            const auto iKw = (int)par->idx_couple_Kw[idx];
-            const auto iKm = (int)par->idx_couple_Km[idx];
+            const auto type_w = par->idx_couple_type_w[idx];
+            const auto type_m = par->idx_couple_type_m[idx];
+            const auto iP = par->idx_couple_power[idx];
+            const auto iL = par->idx_couple_love[idx];
+            const auto iKw = par->idx_couple_Kw[idx];
+            const auto iKm = par->idx_couple_Km[idx];
 
             auto idx_A = index::couple(t, type_w, type_m, iP, iL, iKw, iKm, 0, par);
 

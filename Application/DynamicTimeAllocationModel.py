@@ -540,13 +540,12 @@ class HouseholdModelClass(EconModelClass):
 
         
         # --- f. flatten shape indices (unindexing for grids) ---
-        dtype_int = np.float64
         shape_couple_bargaining = (par.num_types, par.num_types, par.num_love, par.num_K, par.num_K)
 
-        par.idx_single_type, par.idx_single_K = self.fast_unravel_indices(shape_single[1:-1], dtype=dtype_int)
-        par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km = self.fast_unravel_indices(shape_couple[1:-1], dtype=dtype_int)
-        par.idx_couple_barg_type_w, par.idx_couple_barg_type_m, par.idx_couple_barg_love, par.idx_couple_barg_Kw, par.idx_couple_barg_Km = self.fast_unravel_indices(shape_couple_bargaining, dtype=dtype_int)
-        par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=dtype_int)
+        par.idx_single_type, par.idx_single_K = self.fast_unravel_indices(shape_single[1:-1], dtype=np.int64)
+        par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km = self.fast_unravel_indices(shape_couple[1:-1], dtype=np.int64)
+        par.idx_couple_barg_type_w, par.idx_couple_barg_type_m, par.idx_couple_barg_love, par.idx_couple_barg_Kw, par.idx_couple_barg_Km = self.fast_unravel_indices(shape_couple_bargaining, dtype=np.int64)
+        par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=np.int64)
 
     @staticmethod
     def _fill(obj, names, value):

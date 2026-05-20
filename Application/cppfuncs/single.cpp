@@ -554,20 +554,13 @@ namespace single {
         // 1. solve choice specific
         const int ntypes   = par->num_types;
         const int nK   = par->num_K;
-
-        // Total number of iterations
-        const int total = ntypes * nK;
+        const long long int total = ntypes * nK;
 
         #pragma omp for schedule(static)
-        for (int idx = 0; idx < total; ++idx) {
+        for (long long int idx = 0; idx < total; ++idx) {
 
-            // int tmp = idx;
-            // const int iK  = tmp % nK;
-            // tmp /= nK;
-            // const int type  = tmp;
-
-            const auto type = (int)par->idx_single_type[idx];
-            const auto iK = (int)par->idx_single_K[idx];
+            const auto type = par->idx_single_type[idx];
+            const auto iK = par->idx_single_K[idx];
 
             for (int il = 0; il < par->num_l; il++) {
                 solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par); // CHANGED
@@ -855,13 +848,8 @@ namespace single {
             #pragma omp for schedule(static)
             for (long long int idx = 0; idx < total; ++idx) {
 
-                // int tmp = idx;
-                // const int iK  = tmp % nK;
-                // tmp /= nK;
-                // const int type  = tmp;
-
-                const auto type = (int)par->idx_single_type[idx];
-                const auto iK = (int)par->idx_single_K[idx];
+                const auto type = par->idx_single_type[idx];
+                const auto iK = par->idx_single_K[idx];
 
                 for (int iA = 0; iA < par->num_A; iA++) {
                     auto idx = index::single(t, type, iK, iA, par); // CHANGED
@@ -883,15 +871,10 @@ namespace single {
             total = ntypes * nK;
 
             #pragma omp for schedule(static)
-            for (int idx = 0; idx < total; ++idx) {
+            for (long long int idx = 0; idx < total; ++idx) {
 
-                // int tmp = idx;
-                // const int iK  = tmp % nK;
-                // tmp /= nK;
-                // const int type  = tmp;
-
-                const auto type = (int)par->idx_single_type[idx];
-                const auto iK = (int)par->idx_single_K[idx];
+                const auto type = par->idx_single_type[idx];
+                const auto iK = par->idx_single_K[idx];
 
 
                 for (int iA = 0; iA < par->num_A; iA++) {
@@ -911,19 +894,13 @@ namespace single {
 
         const int ntypes   = par->num_types;
         const int nK   = par->num_K;
-        const int total = ntypes * nK;
+        const long long int total = ntypes * nK;
 
         #pragma omp for schedule(static)
-        for (int idx = 0; idx < total; ++idx) {
-
-            // int tmp = idx;
-            // const int iK  = tmp % nK;
-            // tmp /= nK;
-            // const int type  = tmp;
+        for (long long int idx = 0; idx < total; ++idx) {
             
-            const auto type = (int)par->idx_single_type[idx];
-            const auto iK = (int)par->idx_single_K[idx];
-            
+            const auto type = par->idx_single_type[idx];
+            const auto iK = par->idx_single_K[idx];
             
             auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
 

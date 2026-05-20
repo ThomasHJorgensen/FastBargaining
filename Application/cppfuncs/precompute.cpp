@@ -427,23 +427,14 @@ namespace precompute{
         // precompute optimal allocation for couples
         const int nl = par->num_l;
         const int nP = par->num_power;
-
-        // total number of iterations
-        const long long total = (long long)nl * nl * nP;
+        const long long total = nl * nl * nP;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int ilm = tmp % nl;
-            // tmp /= nl;
-            // const int ilw = tmp;
-
-            const auto ilw = (int)par->idx_pre_couple_lw[idx];
-            const auto ilm = (int)par->idx_pre_couple_lm[idx];
-            const auto iP = (int)par->idx_pre_couple_power[idx];
+            const auto ilw = par->idx_pre_couple_lw[idx];
+            const auto ilm = par->idx_pre_couple_lm[idx];
+            const auto iP = par->idx_pre_couple_power[idx];
 
                     
             double lw = par->grid_l[ilw];
