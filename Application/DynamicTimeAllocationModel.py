@@ -698,9 +698,22 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_uniform_partner_Am[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_w[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_m[...] = np.random.uniform(size=shape_sim)
-
+        
         sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
-
+        
+        sim.init_A[...] = 0.0
+        sim.init_Kw[...] = 0.0
+        sim.init_Km[...] = 0.0
+        sim.init_Aw[...] = sim.init_A * par.div_A_share
+        sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
+        sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
+        sim.init_power_idx[...] = (par.num_power // 2)
+        sim.init_love[...] = 0.0
+        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
+        sim.init_divorces[...] = 0.0
+        sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
+        sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
+        
     def fill_simulated_initial_conditions(self):
         par = self.par
         sim = self.sim
@@ -770,6 +783,7 @@ class HouseholdModelClass(EconModelClass):
         self.solve()
 
         # b. simulate
+        self.draw_shocks()
         self.simulate()
 
         # c. calculate moments
