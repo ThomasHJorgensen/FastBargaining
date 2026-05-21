@@ -1,3 +1,4 @@
+import stat
 import ctypes
 import os
 import warnings
@@ -355,40 +356,60 @@ class HouseholdModelClass(EconModelClass):
         self.setup_gender_parameters()
         self.setup_grids()
 
-        self.allocate_memory()
-        self.fill_allocations()
+        self.allocate_sol()
+        self.allocate_sim()
+        self.draw_shocks()
+        self.draw_initial_states()
+            
+    @staticmethod
+    def _alloc(obj, name, shape, dtype=np.float64, value=np.nan, reset=False):
+        if not reset:
+            setattr(obj, name, np.empty(shape, dtype=dtype))
+        # can't use nan if dtype is int or bool, so set to other value in that case
+        if np.isnan(value):
+            if np.issubdtype(dtype, np.unsignedinteger):
+                value = 9999
+            elif np.issubdtype(dtype, np.integer):
+                value = -9999
+            elif np.issubdtype(dtype, np.bool_):
+                value = False
+        getattr(obj, name)[...] = value
 
-    def allocate_memory(self):
-        """Allocate arrays only (no filling/initialization)."""
+    def allocate_sol(self, reset=False):
+        """
+        Allocate solution storage (memory) and initialize all values.
+        
+        args:
+            - reset: bool, if True, only fill existing arrays with value (without allocating new memory)
+        """
         par = self.par
         sol = self.sol
-        sim = self.sim
+        
+        def alloc(name, shape, dtype=np.float64, value=np.nan):
+            self._alloc(sol, name, shape, dtype=dtype, value=value, reset=reset)
 
-        # a. singles
+        # singles
         shape_single = (par.T, par.num_types, par.num_K, par.num_A)
         shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
         shape_single_egm = (par.T, par.num_types, par.num_l, par.num_K, par.num_A_pd)
 
-        # b. couples
+        # couples
         shape_couple = (par.T, par.num_types, par.num_types, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
         shape_couple_d = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
         shape_couple_egm = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
  
-        # c. precomputations
+        # precomputations
         shape_pre_single = (par.num_l, par.num_Ctot)
         shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
-
-        # d. simulation
-        shape_sim = (par.simN, par.simT)
         
-        
-        # helper
-        def _alloc(obj, name, shape, dtype=np.float64):
-            setattr(obj, name, np.empty(shape, dtype=dtype))
 
-        # --- a.1. single to single (discrete l choices) ---
+        # --- single to single (discrete l choices) ---
         for name in (
             "Vwd_single_to_single", "Vmd_single_to_single",
+        ):
+            alloc(name, shape_single_d, value=-np.inf)
+                
+        for name in (
             "Cwd_tot_single_to_single", "Cmd_tot_single_to_single",
             "Cwd_priv_single_to_single", "Cmd_priv_single_to_single",
             "Cwd_inter_single_to_single", "Cmd_inter_single_to_single",
@@ -396,7 +417,7 @@ class HouseholdModelClass(EconModelClass):
             "lwd_single_to_single", "lmd_single_to_single",
             "hwd_single_to_single", "hmd_single_to_single",
         ):
-            _alloc(sol, name, shape_single_d)
+            alloc(name, shape_single_d, value=np.nan)
 
         # --- single to single (EGM post-decision) ---
         for name in (
@@ -405,73 +426,96 @@ class HouseholdModelClass(EconModelClass):
             "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
             "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
         ):
-            _alloc(sol, name, shape_single_egm)
+            alloc(name, shape_single_egm, value=0.0)
 
-        # --- a.2. couple to single ---
+        # --- couple to single ---
         for name in (
             "Vw_couple_to_single", "Vm_couple_to_single",
         ):
-            _alloc(sol, name, shape_single)
+            alloc(name, shape_single, value=np.nan)
 
-        # --- a.3. start as single ---
+        # --- start as single ---
         for name in (
             "EVw_start_as_single", "EVm_start_as_single",
+        ):
+            alloc(name, shape_single, value=-np.inf)
+        
+        for name in (
             "EmargVw_start_as_single", "EmargVm_start_as_single",
             "EVw_cond_meet_partner", "EVm_cond_meet_partner",
             "EVw_uncond_meet_partner", "EVm_uncond_meet_partner",
         ):
-            _alloc(sol, name, shape_single)
+            alloc(name, shape_single, value=np.nan)
             
-        # --- a.4 optimal discrete choices single ---
+        # --- optimal discrete choices single ---
         for name in (
             "Vw_single_to_single", "Vm_single_to_single",
+        ):
+            alloc(name, shape_single, value=-np.inf)
+        
+        for name in (
             "Cw_tot_single_to_single", "Cm_tot_single_to_single",
             "lw_single_to_single", "lm_single_to_single",
         ):
-            _alloc(sol, name, shape_single)
+            alloc(name, shape_single, value=np.nan)
 
-        # --- b.1. couple to couple ---
+        # --- couple to couple ---
         for name in (
-            "Vwd_couple_to_couple", "Vmd_couple_to_couple", "Vd_couple_to_couple",
+            "Vd_couple_to_couple",
+        ):
+            alloc(name, shape_couple_d, value=-np.inf)
+        for name in (
+            "Vwd_couple_to_couple", "Vmd_couple_to_couple", 
             "Cwd_priv_couple_to_couple", "Cmd_priv_couple_to_couple",
             "Cd_inter_couple_to_couple", "Qd_couple_to_couple",
             "lwd_couple_to_couple", "lmd_couple_to_couple",
             "hwd_couple_to_couple", "hmd_couple_to_couple",
             "Cd_tot_couple_to_couple",
         ):
-            _alloc(sol, name, shape_couple_d)
+            alloc(name, shape_couple_d, value=np.nan)
 
         # state-level power objects (must be shape_couple)
-        _alloc(sol, "power_idx", shape_couple, dtype=np.int32)
-        _alloc(sol, "power", shape_couple)
+        alloc("power_idx", shape_couple, dtype=np.int32, value=0)
+        alloc("power", shape_couple, value=np.nan)
 
         # --- couple to couple (EGM post-decision) ---
         for name in (
             "EmargUd_pd", "Cd_tot_pd", "Md_pd", "Vd_couple_to_couple_pd"
         ):
-            _alloc(sol, name, shape_couple_egm)
+            alloc(name, shape_couple_egm, value=0.0)
 
-        # --- b.2. single to couple ---
+        # --- single to couple ---
         for name in (
-            "Vw_single_to_couple", "Vm_single_to_couple", "V_single_to_couple",
+            "V_single_to_couple",
         ):
-            _alloc(sol, name, shape_couple)
+            alloc(name, shape_couple, value=-np.inf)
+        
+        for name in (
+            "Vw_single_to_couple", "Vm_single_to_couple",
+        ):
+            alloc(name, shape_couple, value=np.nan)
             
-        # --- b.3. start as couple ---
+        # --- start as couple ---
         for name in (
             "Vw_start_as_couple", "Vm_start_as_couple", "margV_start_as_couple",
             "EVw_start_as_couple", "EVm_start_as_couple", "EmargV_start_as_couple",
         ):
-            _alloc(sol, name, shape_couple)
+            alloc(name, shape_couple, value=np.nan)
             
-        # --- b.4 optimal discrete choices couple ---
+        # --- optimal discrete choices couple ---
         for name in (
-            "V_couple_to_couple", "Vw_couple_to_couple", "Vm_couple_to_couple",
-            "C_tot_couple_to_couple", "lw_couple_to_couple", "lm_couple_to_couple",
+            "V_couple_to_couple", 
         ):
-            _alloc(sol, name, shape_couple)
+            alloc(name, shape_couple, value=-np.inf)
+            
+        for name in (
+            "Vw_couple_to_couple", "Vm_couple_to_couple",
+            "C_tot_couple_to_couple", 
+            "lw_couple_to_couple", "lm_couple_to_couple",
+        ):
+            alloc(name, shape_couple, value=np.nan)
 
-        # --- c. precomputed intratemporal solution ---
+        # --- precomputed intratemporal solution ---
         for name in (
             "pre_Cwd_priv_single", "pre_Cmd_priv_single",
             "pre_Cwd_inter_single", "pre_Cmd_inter_single",
@@ -480,7 +524,7 @@ class HouseholdModelClass(EconModelClass):
             "grid_marg_u_single_w", "grid_marg_u_single_m",
             "grid_marg_u_single_w_for_inv", "grid_marg_u_single_m_for_inv",
         ):
-            _alloc(sol, name, shape_pre_single)
+            alloc(name, shape_pre_single, value=np.nan)
 
         for name in (
             "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
@@ -489,195 +533,85 @@ class HouseholdModelClass(EconModelClass):
             "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
             "grid_Cinterp_couple",
         ):
-            _alloc(sol, name, shape_pre_couple)
-
-
-        # --- d.1 simulation variables ---
-        shape_sim = (par.simN, par.simT)
-        for name in (
-            "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
-            "Cw_inter", "Cm_inter", "Qw", "Qm", "Cw_tot", "Cm_tot", "C_tot",
-            "Kw", "Km", "A", "Aw", "Am", "couple", "power", "love",
-            "wage_inc_w", "wage_inc_m", "after_tax_inc_w", "after_tax_inc_m",
-            "leisure_w", "leisure_m",
-            "divorces",
-        ):
-            _alloc(sim, name, shape_sim)
-
-        _alloc(sim, "util_w", (par.simN, par.simT))
-        _alloc(sim, "util_m", (par.simN, par.simT))
-        _alloc(sim, "mean_lifetime_util", (1,))
-        _alloc(sim, "C_ineq_90_10", (1,par.simT,))
-
-        # --- d.2 shocks ---
-        for name in (
-            "draw_shock_Kw", "draw_shock_Km", "draw_love", "draw_meet",
-            "draw_uniform_partner_Kw", "draw_uniform_partner_Km",
-            "draw_uniform_partner_Aw", "draw_uniform_partner_Am",
-            "draw_uniform_partner_type_w", "draw_uniform_partner_type_m",
-            "draw_repartner_love",
-        ):
-            _alloc(sim, name, shape_sim)
-
-
-        # --- d.3 initial distribution ---
-        _alloc(sim, "init_type_w", (par.simN,), dtype=np.int32)
-        _alloc(sim, "init_type_m", (par.simN,), dtype=np.int32)
-        _alloc(sim, "init_love", (par.simN,))
-        _alloc(sim, "init_Kw", (par.simN,))
-        _alloc(sim, "init_Km", (par.simN,))
-        _alloc(sim, "init_A", (par.simN,))
-        _alloc(sim, "init_Aw", (par.simN,))
-        _alloc(sim, "init_Am", (par.simN,))
-        _alloc(sim, "init_couple", (par.simN,), dtype=np.bool_)
-        _alloc(sim, "init_power_idx", (par.simN,), dtype=np.int32)
-        _alloc(sim, "init_divorces", (par.simN,))
-
-        # --- e. other
+            alloc(name, shape_pre_couple, value=np.nan)
+            
         # timing
-        _alloc(sol, "solution_time", (1,))
-        
-
-        
-        # --- f. flatten shape indices (unindexing for grids) ---
+        for name in (
+            "solution_time",
+        ):
+            alloc(name, (1,), value=np.nan)
+            
+        # --- flat index arrays (unindexing for grids) ---
         shape_couple_bargaining = (par.num_types, par.num_types, par.num_love, par.num_K, par.num_K)
 
         par.idx_single_type, par.idx_single_K = self.fast_unravel_indices(shape_single[1:-1], dtype=np.int64)
         par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km = self.fast_unravel_indices(shape_couple[1:-1], dtype=np.int64)
         par.idx_couple_barg_type_w, par.idx_couple_barg_type_m, par.idx_couple_barg_love, par.idx_couple_barg_Kw, par.idx_couple_barg_Km = self.fast_unravel_indices(shape_couple_bargaining, dtype=np.int64)
         par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=np.int64)
-
-    @staticmethod
-    def _fill(obj, names, value):
-            for n in names:
-                getattr(obj, n)[...] = value
     
-    def fill_allocations(self):
-        """Fill all allocated arrays with their initial values (nan/inf/zeros) and draws/init states."""
+
+
+    def allocate_sim(self, reset=False):
+        """
+        Allocate simulation storage (memory) and initialize all values.
+
+        args:
+            - reset: bool, if True, only refill output arrays (leave draw/init arrays untouched).
+        """
         par = self.par
-        sol = self.sol
         sim = self.sim
-        
-        _fill = self._fill
 
-        # ========= a. singles =========
-        # a.1 single -> single (discrete)
-        _fill(sol, ("Vwd_single_to_single", "Vmd_single_to_single"), -np.inf)
-        _fill(sol, (
-            "Cwd_tot_single_to_single", "Cmd_tot_single_to_single",
-            "Cwd_priv_single_to_single", "Cmd_priv_single_to_single",
-            "Cwd_inter_single_to_single", "Cmd_inter_single_to_single",
-            "Qwd_single_to_single", "Qmd_single_to_single",
-            "lwd_single_to_single", "lmd_single_to_single",
-            "hwd_single_to_single", "hmd_single_to_single",
-        ), np.nan)
+        def alloc(name, shape, dtype=np.float64, value=np.nan):
+            self._alloc(sim, name, shape, dtype=dtype, value=value, reset=reset)
 
-        # a.1 EGM post-decision (singles)
-        _fill(sol, (
-            "EmargUwd_single_to_single_pd", "Cwd_tot_single_to_single_pd",
-            "Mwd_single_to_single_pd", "Vwd_single_to_single_pd",
-            "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
-            "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
-        ), 0.0)
+        # simulation
+        shape_sim = (par.simN, par.simT)
 
-        # a.2 couple -> single
-        _fill(sol, (
-            "Vw_couple_to_single", "Vm_couple_to_single",
-        ), np.nan)
-
-        # a.3 start as single
-        _fill(sol, ("EVw_start_as_single", "EVm_start_as_single"), -np.inf)
-        _fill(sol, (
-            "EmargVw_start_as_single", "EmargVm_start_as_single",
-            "EVw_cond_meet_partner", "EVm_cond_meet_partner",
-            "EVw_uncond_meet_partner", "EVm_uncond_meet_partner",
-        ), np.nan)
-
-        # a.4 optimal discrete choices (single)
-        _fill(sol, ("Vw_single_to_single", "Vm_single_to_single"), -np.inf)
-        _fill(sol, (
-            "Cw_tot_single_to_single", "Cm_tot_single_to_single",
-            "lw_single_to_single", "lm_single_to_single",
-        ), np.nan)
-
-        # ========= b. couples =========
-        # b.1 couple -> couple (discrete)
-        _fill(sol, ("Vwd_couple_to_couple", "Vmd_couple_to_couple"), np.nan)
-        sol.Vd_couple_to_couple[...] = -np.inf
-        _fill(sol, (
-            "Cwd_priv_couple_to_couple", "Cmd_priv_couple_to_couple",
-            "Cd_inter_couple_to_couple", "Qd_couple_to_couple",
-            "lwd_couple_to_couple", "lmd_couple_to_couple",
-            "hwd_couple_to_couple", "hmd_couple_to_couple",
-            "Cd_tot_couple_to_couple",
-        ), np.nan)
-
-        sol.power_idx[...] = 0
-        sol.power[...] = np.nan
-
-        # b.1 EGM post-decision (couples)
-        _fill(sol, ("EmargUd_pd", "Cd_tot_pd", "Md_pd", "Vd_couple_to_couple_pd"), 0.0)
-
-        # b.2 single -> couple
-        _fill(sol, ("Vw_single_to_couple", "Vm_single_to_couple"), np.nan)
-        sol.V_single_to_couple[...] = -np.inf
-
-        # b.3 start as couple
-        _fill(sol, (
-            "Vw_start_as_couple", "Vm_start_as_couple", "margV_start_as_couple",
-            "EVw_start_as_couple", "EVm_start_as_couple", "EmargV_start_as_couple",
-        ), np.nan)
-
-        # b.4 optimal discrete choices (couple)
-        sol.V_couple_to_couple[...] = -np.inf
-        _fill(sol, (
-            "Vw_couple_to_couple", "Vm_couple_to_couple",
-            "C_tot_couple_to_couple",
-            "lw_couple_to_couple", "lm_couple_to_couple",
-        ), np.nan)
-
-        # ========= c. precomputed intratemporal solution =========
-        _fill(sol, (
-            "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
-            "pre_Cd_inter_couple", "pre_Qd_couple",
-            "pre_hwd_couple", "pre_hmd_couple",
-            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
-            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
-            "pre_Qwd_single", "pre_Qmd_single",
-            "pre_hwd_single", "pre_hmd_single",
-        ), np.nan)
-
-        # ========= d. simulation =========
-        # d.1 simulated outcomes
-        self.fill_simulated_outcomes()
-
-        # d.2 shocks (seed -> draws)
-        self.draw_shocks()
-
-        # d.3 initial distribution
-        self.fill_simulated_initial_conditions()
-        
-        # ========= e. timing =========
-        sol.solution_time[...] = 0.0
-
-    def fill_simulated_outcomes(self):
-        sim = self.sim
-        _fill = self._fill
-        
-        _fill(sim, (
+        # --- simulation output variables ---
+        for name in (
             "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
             "Cw_inter", "Cm_inter", "Qw", "Qm",
             "Cw_tot", "Cm_tot", "C_tot",
             "Kw", "Km", "A", "Aw", "Am",
             "couple", "power", "love",
             "wage_inc_w", "wage_inc_m", "after_tax_inc_w", "after_tax_inc_m",
-            "leisure_w", "leisure_m", 
+            "leisure_w", "leisure_m",
             "util_w", "util_m",
-        ), np.nan)
-        
-        sim.divorces[...] = 0.0
-        sim.mean_lifetime_util[...] = np.nan
-        sim.C_ineq_90_10[...] = np.nan
+        ):
+            alloc(name, shape_sim, value=np.nan)
+
+        alloc("divorces", shape_sim, value=0.0)
+        alloc("mean_lifetime_util", (1,), value=np.nan)
+        alloc("C_ineq_90_10", (1, par.simT), value=np.nan)
+
+        # --- shock draw arrays ---
+        if not reset:
+            for name in (
+                "draw_shock_Kw", "draw_shock_Km", "draw_love", "draw_meet",
+                "draw_uniform_partner_Kw", "draw_uniform_partner_Km",
+                "draw_uniform_partner_Aw", "draw_uniform_partner_Am",
+                "draw_uniform_partner_type_w", "draw_uniform_partner_type_m",
+                "draw_repartner_love",
+            ):
+                alloc(name, shape_sim, value=np.nan)
+
+        # --- initial state arrays ---
+        if not reset:
+            for name in (
+                "init_love", "init_Kw", "init_Km",
+                "init_A", "init_Aw", "init_Am", "init_divorces",
+            ):
+                alloc(name, (par.simN,), value=np.nan)
+
+            for name in (
+                "init_type_w", "init_type_m", "init_power_idx",
+            ):
+                alloc(name, (par.simN,), dtype=np.int32, value=-1000)
+
+            for name in (
+                "init_couple",
+            ):
+                alloc(name, (par.simN,), dtype=np.bool_, value=False)
 
     def draw_shocks(self):
         """Draw all shocks for the simulation (using seed for reproducibility)."""
@@ -714,7 +648,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
         
-    def fill_simulated_initial_conditions(self):
+    def draw_initial_states(self):
         par = self.par
         sim = self.sim
         
@@ -746,7 +680,7 @@ class HouseholdModelClass(EconModelClass):
         # always ensure sizes/grids are up-to-date (needed for shape checks)
         self.setup_gender_parameters()
         self.setup_grids()
-        self.fill_allocations()
+        self.allocate_sol(reset=True)
 
         self.cpp.solve(sol, par)
 
@@ -757,13 +691,13 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
 
         # Reset simulated outcomes (except for initial conditions and shocks)
-        self.fill_simulated_outcomes()
-
+        self.allocate_sim(reset=True)
         self.cpp.simulate(sim,sol,par)
 
-        sim.mean_lifetime_util[0] = (np.mean(np.sum(sim.util_w,axis=1)) + np.mean(np.sum(sim.util_m,axis=1))) / 2.0
         
         # auxilliary measures (consumption inequality)
+        sim.mean_lifetime_util[0] = (np.mean(np.sum(sim.util_w,axis=1)) + np.mean(np.sum(sim.util_m,axis=1))) / 2.0
+        
         adults = np.where(sim.couple == 1, 2.0, 1.0)
         kids = np.where(sim.couple == 1, 0.0, 0.0) # for now, not modeled
         equivalence_scale = (adults + kids*0.7)**0.7 # equivalence scale used in Meyer and Sullivan (2023)
