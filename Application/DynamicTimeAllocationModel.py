@@ -358,8 +358,7 @@ class HouseholdModelClass(EconModelClass):
 
         self.allocate_sol()
         self.allocate_sim()
-        self.draw_shocks()
-        self.draw_initial_states()
+        self.draw_shocks_and_initial_states()
             
     @staticmethod
     def _alloc(obj, name, shape, dtype=np.float64, value=np.nan, reset=False):
@@ -613,7 +612,7 @@ class HouseholdModelClass(EconModelClass):
             ):
                 alloc(name, (par.simN,), dtype=np.bool_, value=False)
 
-    def draw_shocks(self):
+    def draw_shocks_and_initial_states(self):
         """Draw all shocks for the simulation (using seed for reproducibility)."""
         par = self.par
         sim = self.sim
@@ -648,29 +647,11 @@ class HouseholdModelClass(EconModelClass):
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
         
-    def draw_initial_states(self):
-        par = self.par
-        sim = self.sim
-        
-        np.random.seed(par.seed)
-        sim.init_A[...] = 0.0
-        sim.init_Kw[...] = 0.0
-        sim.init_Km[...] = 0.0
-        sim.init_Aw[...] = sim.init_A * par.div_A_share
-        sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        sim.init_power_idx[...] = (par.num_power // 2)
-        sim.init_love[...] = 0.0
-        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
-        sim.init_divorces[...] = 0.0
-        sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
-        sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
-        
         # # allow for correlation in types of couples
         # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
         # draws = np.random.rand(probs.shape[0])
         # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
-        
+
 
     def solve(self):
 
@@ -685,16 +666,17 @@ class HouseholdModelClass(EconModelClass):
         self.cpp.solve(sol, par)
 
 
-    def simulate(self):
+    def simulate(self, redraw=False):
         sol = self.sol
         sim = self.sim
         par = self.par
 
         # Reset simulated outcomes (except for initial conditions and shocks)
         self.allocate_sim(reset=True)
+        if redraw:
+            self.draw_shocks_and_initial_states()
         self.cpp.simulate(sim,sol,par)
 
-        
         # auxilliary measures (consumption inequality)
         sim.mean_lifetime_util[0] = (np.mean(np.sum(sim.util_w,axis=1)) + np.mean(np.sum(sim.util_m,axis=1))) / 2.0
         
@@ -717,8 +699,7 @@ class HouseholdModelClass(EconModelClass):
         self.solve()
 
         # b. simulate
-        self.draw_shocks()
-        self.simulate()
+        self.simulate(redraw=True)
 
         # c. calculate moments
         moms = self.calc_moments()
