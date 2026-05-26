@@ -1,12 +1,13 @@
+import stat
 import ctypes
 import os
+import warnings
 import numpy as np
 import numba as nb
 from scipy.stats import norm, multivariate_normal
 import scipy.optimize as optimize
 from scipy.optimize import minimize
 from collections import OrderedDict
-
 
 from EconModel import EconModelClass
 from consav.grids import nonlinspace
@@ -42,87 +43,83 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
 
         # -------- core / accounting --------
-        par.R = 1.03
-        par.beta = 1.0 / par.R  # Discount factor
+        par.R = 1.03 # Interest rate (Voena (2015) - Jakobsen, Jørgensen and Low (2024) - 1.015 in Attanasio, Low, and Sánchez-Marcos (2008))
+        par.beta = 0.98  # Discount factor (Bronson, Haanwinckel, and Mazzocco (2025) / Attanasio, Low, and Sánchez-Marcos (2008))
 
-        par.div_A_share = 0.5  # divorce share of wealth to wife
+        par.div_A_share = 0.5  # divorce share of wealth to wife (Bronson (2019) - Voena (2015) estimates something slightly different)
         par.div_cost = 0.0
 
-        par.available_hours = 1.0
+        par.available_hours = 1.0 # normalization
 
         # -------- preferences (baseline + multipliers) --------
-        par.rho = 2.0
+        par.rho = 1.5 # (Bronson, Haanwinckel, and Mazzocco (2025) / Attanasio, Low, and Sánchez-Marcos (2008))
         par.rho_mult = 1.0
 
-        par.phi = 0.05
-        par.phi_mult = 1.0
+        par.phi = 3.0
+        par.phi_mult = 1.14
 
-        par.eta = 0.5
-        par.eta_mult = 1.0
+        par.eta = 2.25
+        par.eta_mult = 1.25
 
-        par.lambda_ = 0.5
+        par.lambda_ = 11.55
         par.lambda_mult = 1.0
 
         # -------- home production --------
-        par.alpha = 1.0
-        par.zeta = 0.5
-        par.omega = 0.5
-        par.pi = 0.5
+        par.alpha = 1.03
+        par.zeta = 0.40 # (Bronson, Haanwinckel, and Mazzocco (2025))
+        par.omega = 0.38 # (Bronson, Haanwinckel, and Mazzocco (2025))
+        par.pi = 0.6
 
         # -------- income / wages (baseline + multipliers) --------
-        par.mu = 0.5
-        par.sigma_mu = 0.1
-        par.gamma = 0.1
+        par.mu = 1.8
+        par.sigma_mu = 0.54
+        par.gamma = 0.13
         par.gamma2 = 0.00
 
-        par.mu_mult = 1.0
+        par.mu_mult = 1.08
         par.sigma_mu_mult = 1.0
-        par.gamma_mult = 1.0
+        par.gamma_mult = 1.95
         par.gamma2_mult = 1.0
 
         # -------- human capital process --------
-        par.phi_k = 1.0
-        par.delta = 0.1
-        par.hc_mazzocco = False
-        par.delta_mazzocco = -1.0
-        par.phi_k_mazzocco = 0.4
+        par.phi_k = 1.0 # (Jakobsen, Jørgensen and Low (2024))
+        par.delta = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         
-
         # -------- discrete choices --------
-        par.part_time = 0.75
-        par.full_time_hours = 0.35
+        par.part_time = 0.5 # as share of full time hours - it seems standard to assume that part time hours are about half of full time hours (Eckstein does it)
+        par.full_time_hours = 40.0 / (16 * 7) # ~0.36 (40 hours per week - out of 16 hours per day, 7 days per week) - 40 hours from Bronson, Haanwinckel, and Mazzocco (2025)
         
         # -------- model horizon / state space sizes --------
-        par.T = 10
+        par.T = 40
 
         # wealth
-        par.num_A = 50
-        par.max_A = 15.0
+        par.num_A = 30
+        par.max_A = 300.0
 
         # human capital
-        par.num_K = 16
-        par.max_K = par.T * 1.5
-        par.sigma_K = 0.1
+        par.num_K = 10
+        par.max_K = 10.0
+        par.sigma_K = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         par.sigma_K_mult = 1.0
         par.num_shock_K = 5
 
         # bargaining power
-        par.num_power = 21
+        par.num_power = 11
 
         # love / match quality
         par.num_love = 11
         par.max_love = 100.0
-        par.sigma_love = 0.1
-        par.mean_love = 0.0
+        par.sigma_love = 7.0
+        par.mean_love = 0.0 # normalization
         par.num_shock_love = 5  # cannot be 1 due to interpolation
-        par.type_corr = 0.45
 
         # types
-        par.num_types = 3
+        par.num_types = 4
+        par.type_corr = 0.45 # (Bronson, Haanwinckel, and Mazzocco (2025))
         
         # EGM
-        par.num_A_pd = par.num_A * 2
-        par.max_A_pd = par.max_A
+        par.num_A_pd = 30
+        par.max_A_pd = 300.0
         
         # precomputation of intratemporal solution (for iEGM)
         par.num_marg_u = 200
@@ -142,17 +139,17 @@ class HouseholdModelClass(EconModelClass):
         par.precompute_intratemporal = True
 
         # intratemporal precomputation
-        par.num_Ctot = 20
-        par.max_Ctot = par.max_A * 2
+        par.num_Ctot = 200
+        par.max_Ctot = 300.0
 
         # EGM
         par.do_egm = False
 
         # -------- simulation --------
         par.seed = 9210
-        par.simT = par.T
-        par.simN = 50
-        par.init_couple_share = 1.0
+        par.simT = 40
+        par.simN = 100_000
+        par.init_couple_share = 0.80
 
         # -------- misc --------
         par.threads = 8
@@ -190,7 +187,8 @@ class HouseholdModelClass(EconModelClass):
         par.sigma_Kw = par.sigma_K
         par.sigma_Km = par.sigma_K * par.sigma_K_mult
         
-    def fast_unravel_indices(self, shape, dtype=np.int32):
+    @staticmethod
+    def fast_unravel_indices(shape, dtype=np.int32):
         """Helper function to unravel indices for a given shape (for unindexing grids).
         This is a faster implementation of np.unravel_index for large arrays, as it avoids creating large intermediate arrays.
         INPUT:
@@ -210,7 +208,8 @@ class HouseholdModelClass(EconModelClass):
 
         return tuple(np.ascontiguousarray(x) for x in reversed(out))
 
-    def assortative_matrix(self, num, corr):
+    @staticmethod
+    def assortative_matrix(num, corr):
         """
         Construct assortative matching matrix P(partner_state | own_state)
 
@@ -227,8 +226,10 @@ class HouseholdModelClass(EconModelClass):
             (num x num) matrix where rows sum to 1
         """
 
-        cuts = norm.ppf(np.linspace(0, 1, num + 1))
-        cuts[0] = -10
+        # assume types are distributed as standard normal and cut into equal-probability bins
+        cuts = norm.ppf(np.linspace(0, 1, num=num + 1))
+        # set extreme values for the first and last cut instead of inf values
+        cuts[0] = -10 
         cuts[-1] = 10
 
         cov = [[1, corr], [corr, 1]]
@@ -240,10 +241,10 @@ class HouseholdModelClass(EconModelClass):
                 upper = [cuts[i+1], cuts[j+1]]
 
                 p = (
-                    multivariate_normal.cdf(upper, cov=cov)
-                    - multivariate_normal.cdf([lower[0], upper[1]], cov=cov)
-                    - multivariate_normal.cdf([upper[0], lower[1]], cov=cov)
-                    + multivariate_normal.cdf(lower, cov=cov)
+                    multivariate_normal.cdf(upper, cov=cov, allow_singular=True)
+                    - multivariate_normal.cdf([lower[0], upper[1]], cov=cov, allow_singular=True)
+                    - multivariate_normal.cdf([upper[0], lower[1]], cov=cov, allow_singular=True)
+                    + multivariate_normal.cdf(lower, cov=cov, allow_singular=True)
                 )
 
                 joint[i, j] = p
@@ -355,41 +356,59 @@ class HouseholdModelClass(EconModelClass):
         self.setup_gender_parameters()
         self.setup_grids()
 
-        self.allocate_memory()
-        self.fill_allocations()
-        self.draw_shocks()
+        self.allocate_sol()
+        self.allocate_sim()
+        self.draw_shocks_and_initial_states()
+            
+    @staticmethod
+    def _alloc(obj, name, shape, dtype=np.float64, value=np.nan, reset=False):
+        if not reset:
+            setattr(obj, name, np.empty(shape, dtype=dtype))
+        # can't use nan if dtype is int or bool, so set to other value in that case
+        if np.isnan(value):
+            if np.issubdtype(dtype, np.unsignedinteger):
+                value = 9999
+            elif np.issubdtype(dtype, np.integer):
+                value = -9999
+            elif np.issubdtype(dtype, np.bool_):
+                value = False
+        getattr(obj, name)[...] = value
 
-    def allocate_memory(self):
-        """Allocate arrays only (no filling/initialization)."""
+    def allocate_sol(self, reset=False):
+        """
+        Allocate solution storage (memory) and initialize all values.
+        
+        args:
+            - reset: bool, if True, only fill existing arrays with value (without allocating new memory)
+        """
         par = self.par
         sol = self.sol
-        sim = self.sim
+        
+        def alloc(name, shape, dtype=np.float64, value=np.nan):
+            self._alloc(sol, name, shape, dtype=dtype, value=value, reset=reset)
 
-        # a. singles
+        # singles
         shape_single = (par.T, par.num_types, par.num_K, par.num_A)
         shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
         shape_single_egm = (par.T, par.num_types, par.num_l, par.num_K, par.num_A_pd)
 
-        # b. couples
+        # couples
         shape_couple = (par.T, par.num_types, par.num_types, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
         shape_couple_d = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power, par.num_love, par.num_K, par.num_K, par.num_A)
         shape_couple_egm = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, par.num_power,par.num_love, par.num_K, par.num_K,par.num_A_pd)
  
-        # c. precomputations
+        # precomputations
         shape_pre_single = (par.num_l, par.num_Ctot)
         shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
-
-        # d. simulation
-        shape_sim = (par.simN, par.simT)
         
-        
-        # helper
-        def _alloc(obj, name, shape, dtype=np.float64):
-            setattr(obj, name, np.empty(shape, dtype=dtype))
 
-        # --- a.1. single to single (discrete l choices) ---
+        # --- single to single (discrete l choices) ---
         for name in (
             "Vwd_single_to_single", "Vmd_single_to_single",
+        ):
+            alloc(name, shape_single_d, value=-np.inf)
+                
+        for name in (
             "Cwd_tot_single_to_single", "Cmd_tot_single_to_single",
             "Cwd_priv_single_to_single", "Cmd_priv_single_to_single",
             "Cwd_inter_single_to_single", "Cmd_inter_single_to_single",
@@ -397,7 +416,7 @@ class HouseholdModelClass(EconModelClass):
             "lwd_single_to_single", "lmd_single_to_single",
             "hwd_single_to_single", "hmd_single_to_single",
         ):
-            _alloc(sol, name, shape_single_d)
+            alloc(name, shape_single_d, value=np.nan)
 
         # --- single to single (EGM post-decision) ---
         for name in (
@@ -406,73 +425,96 @@ class HouseholdModelClass(EconModelClass):
             "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
             "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
         ):
-            _alloc(sol, name, shape_single_egm)
+            alloc(name, shape_single_egm, value=0.0)
 
-        # --- a.2. couple to single ---
+        # --- couple to single ---
         for name in (
             "Vw_couple_to_single", "Vm_couple_to_single",
         ):
-            _alloc(sol, name, shape_single)
+            alloc(name, shape_single, value=np.nan)
 
-        # --- a.3. start as single ---
+        # --- start as single ---
         for name in (
             "EVw_start_as_single", "EVm_start_as_single",
+        ):
+            alloc(name, shape_single, value=-np.inf)
+        
+        for name in (
             "EmargVw_start_as_single", "EmargVm_start_as_single",
             "EVw_cond_meet_partner", "EVm_cond_meet_partner",
             "EVw_uncond_meet_partner", "EVm_uncond_meet_partner",
         ):
-            _alloc(sol, name, shape_single)
+            alloc(name, shape_single, value=np.nan)
             
-        # --- a.4 optimal discrete choices single ---
+        # --- optimal discrete choices single ---
         for name in (
             "Vw_single_to_single", "Vm_single_to_single",
+        ):
+            alloc(name, shape_single, value=-np.inf)
+        
+        for name in (
             "Cw_tot_single_to_single", "Cm_tot_single_to_single",
             "lw_single_to_single", "lm_single_to_single",
         ):
-            _alloc(sol, name, shape_single)
+            alloc(name, shape_single, value=np.nan)
 
-        # --- b.1. couple to couple ---
+        # --- couple to couple ---
         for name in (
-            "Vwd_couple_to_couple", "Vmd_couple_to_couple", "Vd_couple_to_couple",
+            "Vd_couple_to_couple",
+        ):
+            alloc(name, shape_couple_d, value=-np.inf)
+        for name in (
+            "Vwd_couple_to_couple", "Vmd_couple_to_couple", 
             "Cwd_priv_couple_to_couple", "Cmd_priv_couple_to_couple",
             "Cd_inter_couple_to_couple", "Qd_couple_to_couple",
             "lwd_couple_to_couple", "lmd_couple_to_couple",
             "hwd_couple_to_couple", "hmd_couple_to_couple",
             "Cd_tot_couple_to_couple",
         ):
-            _alloc(sol, name, shape_couple_d)
+            alloc(name, shape_couple_d, value=np.nan)
 
         # state-level power objects (must be shape_couple)
-        _alloc(sol, "power_idx", shape_couple, dtype=np.int32)
-        _alloc(sol, "power", shape_couple)
+        alloc("power_idx", shape_couple, dtype=np.int32, value=0)
+        alloc("power", shape_couple, value=np.nan)
 
         # --- couple to couple (EGM post-decision) ---
         for name in (
             "EmargUd_pd", "Cd_tot_pd", "Md_pd", "Vd_couple_to_couple_pd"
         ):
-            _alloc(sol, name, shape_couple_egm)
+            alloc(name, shape_couple_egm, value=0.0)
 
-        # --- b.2. single to couple ---
+        # --- single to couple ---
         for name in (
-            "Vw_single_to_couple", "Vm_single_to_couple", "V_single_to_couple",
+            "V_single_to_couple",
         ):
-            _alloc(sol, name, shape_couple)
+            alloc(name, shape_couple, value=-np.inf)
+        
+        for name in (
+            "Vw_single_to_couple", "Vm_single_to_couple",
+        ):
+            alloc(name, shape_couple, value=np.nan)
             
-        # --- b.3. start as couple ---
+        # --- start as couple ---
         for name in (
             "Vw_start_as_couple", "Vm_start_as_couple", "margV_start_as_couple",
             "EVw_start_as_couple", "EVm_start_as_couple", "EmargV_start_as_couple",
         ):
-            _alloc(sol, name, shape_couple)
+            alloc(name, shape_couple, value=np.nan)
             
-        # --- b.4 optimal discrete choices couple ---
+        # --- optimal discrete choices couple ---
         for name in (
-            "V_couple_to_couple", "Vw_couple_to_couple", "Vm_couple_to_couple",
-            "C_tot_couple_to_couple", "lw_couple_to_couple", "lm_couple_to_couple",
+            "V_couple_to_couple", 
         ):
-            _alloc(sol, name, shape_couple)
+            alloc(name, shape_couple, value=-np.inf)
+            
+        for name in (
+            "Vw_couple_to_couple", "Vm_couple_to_couple",
+            "C_tot_couple_to_couple", 
+            "lw_couple_to_couple", "lm_couple_to_couple",
+        ):
+            alloc(name, shape_couple, value=np.nan)
 
-        # --- c. precomputed intratemporal solution ---
+        # --- precomputed intratemporal solution ---
         for name in (
             "pre_Cwd_priv_single", "pre_Cmd_priv_single",
             "pre_Cwd_inter_single", "pre_Cmd_inter_single",
@@ -481,7 +523,7 @@ class HouseholdModelClass(EconModelClass):
             "grid_marg_u_single_w", "grid_marg_u_single_m",
             "grid_marg_u_single_w_for_inv", "grid_marg_u_single_m_for_inv",
         ):
-            _alloc(sol, name, shape_pre_single)
+            alloc(name, shape_pre_single, value=np.nan)
 
         for name in (
             "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
@@ -490,220 +532,91 @@ class HouseholdModelClass(EconModelClass):
             "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
             "grid_Cinterp_couple",
         ):
-            _alloc(sol, name, shape_pre_couple)
-
-
-        # --- d.1 simulation variables ---
-        shape_sim = (par.simN, par.simT)
-        for name in (
-            "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
-            "Cw_inter", "Cm_inter", "Qw", "Qm", "Cw_tot", "Cm_tot", "C_tot",
-            "Kw", "Km", "A", "Aw", "Am", "couple", "power", "love",
-            "wage_inc_w", "wage_inc_m", "after_tax_inc_w", "after_tax_inc_m",
-            "leisure_w", "leisure_m",
-            "divorces",
-        ):
-            _alloc(sim, name, shape_sim)
-
-        _alloc(sim, "util_w", (par.simN, par.simT))
-        _alloc(sim, "util_m", (par.simN, par.simT))
-        _alloc(sim, "mean_lifetime_util", (1,))
-        _alloc(sim, "C_ineq_90_10", (1,par.simT,))
-
-        # --- d.2 shocks ---
-        for name in (
-            "draw_shock_Kw", "draw_shock_Km", "draw_love", "draw_meet",
-            "draw_uniform_partner_Kw", "draw_uniform_partner_Km",
-            "draw_uniform_partner_Aw", "draw_uniform_partner_Am",
-            "draw_uniform_partner_type_w", "draw_uniform_partner_type_m",
-            "draw_repartner_love",
-        ):
-            _alloc(sim, name, shape_sim)
-
-
-        # --- d.3 initial distribution ---
-        _alloc(sim, "init_type_w", (par.simN,), dtype=np.int32)
-        _alloc(sim, "init_type_m", (par.simN,), dtype=np.int32)
-        _alloc(sim, "init_love", (par.simN,))
-        _alloc(sim, "init_Kw", (par.simN,))
-        _alloc(sim, "init_Km", (par.simN,))
-        _alloc(sim, "init_A", (par.simN,))
-        _alloc(sim, "init_Aw", (par.simN,))
-        _alloc(sim, "init_Am", (par.simN,))
-        _alloc(sim, "init_couple", (par.simN,), dtype=np.bool_)
-        _alloc(sim, "init_power_idx", (par.simN,), dtype=np.int32)
-        _alloc(sim, "init_divorces", (par.simN,))
-
-        # --- e. other
+            alloc(name, shape_pre_couple, value=np.nan)
+            
         # timing
-        _alloc(sol, "solution_time", (1,))
-        
-
-        
-        # --- f. flatten shape indices (unindexing for grids) ---
-        dtype_int = np.float64
+        for name in (
+            "solution_time",
+        ):
+            alloc(name, (1,), value=np.nan)
+            
+        # --- flat index arrays (unindexing for grids) ---
         shape_couple_bargaining = (par.num_types, par.num_types, par.num_love, par.num_K, par.num_K)
 
-        par.idx_single_type, par.idx_single_K = self.fast_unravel_indices(shape_single[1:-1], dtype=dtype_int)
-        # par.idx_single_d_type, par.idx_single_d_l, par.idx_single_d_K = self.fast_unravel_indices(shape_single_d[1:-1], dtype=dtype_int)
-        # par.idx_single_egm_type, par.idx_single_egm_l, par.idx_single_egm_K = self.fast_unravel_indices(shape_single_egm[1:-1], dtype=dtype_int)
-        par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km = self.fast_unravel_indices(shape_couple[1:-1], dtype=dtype_int)
-        par.idx_couple_barg_type_w, par.idx_couple_barg_type_m, par.idx_couple_barg_love, par.idx_couple_barg_Kw, par.idx_couple_barg_Km = self.fast_unravel_indices(shape_couple_bargaining, dtype=dtype_int)
-        # par.idx_couple_d_type_w, par.idx_couple_d_type_m, par.idx_couple_d_lw, par.idx_couple_d_lm, par.idx_couple_d_power, par.idx_couple_d_love, par.idx_couple_d_Kw, par.idx_couple_d_Km = self.fast_unravel_indices(shape_couple_d[1:-1], dtype=dtype_int)
-        # par.idx_couple_egm_type_w, par.idx_couple_egm_type_m, par.idx_couple_egm_lw, par.idx_couple_egm_lm, par.idx_couple_egm_power, par.idx_couple_egm_love, par.idx_couple_egm_Kw, par.idx_couple_egm_Km = self.fast_unravel_indices(shape_couple_egm[1:-1], dtype=dtype_int)
-        # par.idx_pre_single_l, par.idx_pre_single_K, par.idx_pre_single_Ctot = self.fast_unravel_indices(shape_pre_single)
-        par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=dtype_int)
-        # OBS: shape_pre_single should not be used for iEGM where i_u_marg is important and not iC.
-        
-        # _alloc(sol, "solution_time", (1,))
+        par.idx_single_type, par.idx_single_K = self.fast_unravel_indices(shape_single[1:-1], dtype=np.int64)
+        par.idx_couple_type_w, par.idx_couple_type_m, par.idx_couple_power, par.idx_couple_love, par.idx_couple_Kw, par.idx_couple_Km = self.fast_unravel_indices(shape_couple[1:-1], dtype=np.int64)
+        par.idx_couple_barg_type_w, par.idx_couple_barg_type_m, par.idx_couple_barg_love, par.idx_couple_barg_Kw, par.idx_couple_barg_Km = self.fast_unravel_indices(shape_couple_bargaining, dtype=np.int64)
+        par.idx_pre_couple_lw, par.idx_pre_couple_lm, par.idx_pre_couple_power, = self.fast_unravel_indices(shape_pre_couple[:-1], dtype=np.int64)
+    
 
-    def fill_allocations(self):
-        """Fill all allocated arrays with their initial values (nan/inf/zeros) and draws/init states."""
+
+    def allocate_sim(self, reset=False):
+        """
+        Allocate simulation storage (memory) and initialize all values.
+
+        args:
+            - reset: bool, if True, only refill output arrays (leave draw/init arrays untouched).
+        """
         par = self.par
-        sol = self.sol
         sim = self.sim
 
-        def _fill(obj, names, value):
-            for n in names:
-                getattr(obj, n)[...] = value
+        def alloc(name, shape, dtype=np.float64, value=np.nan):
+            self._alloc(sim, name, shape, dtype=dtype, value=value, reset=reset)
 
-        # ========= a. singles =========
-        # a.1 single -> single (discrete)
-        _fill(sol, ("Vwd_single_to_single", "Vmd_single_to_single"), -np.inf)
-        _fill(sol, (
-            "Cwd_tot_single_to_single", "Cmd_tot_single_to_single",
-            "Cwd_priv_single_to_single", "Cmd_priv_single_to_single",
-            "Cwd_inter_single_to_single", "Cmd_inter_single_to_single",
-            "Qwd_single_to_single", "Qmd_single_to_single",
-            "lwd_single_to_single", "lmd_single_to_single",
-            "hwd_single_to_single", "hmd_single_to_single",
-        ), np.nan)
+        # simulation
+        shape_sim = (par.simN, par.simT)
 
-        # a.1 EGM post-decision (singles)
-        _fill(sol, (
-            "EmargUwd_single_to_single_pd", "Cwd_tot_single_to_single_pd",
-            "Mwd_single_to_single_pd", "Vwd_single_to_single_pd",
-            "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
-            "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
-        ), 0.0)
-
-        # a.2 couple -> single
-        _fill(sol, (
-            "Vw_couple_to_single", "Vm_couple_to_single",
-        ), np.nan)
-
-        # a.3 start as single
-        _fill(sol, ("EVw_start_as_single", "EVm_start_as_single"), -np.inf)
-        _fill(sol, (
-            "EmargVw_start_as_single", "EmargVm_start_as_single",
-            "EVw_cond_meet_partner", "EVm_cond_meet_partner",
-            "EVw_uncond_meet_partner", "EVm_uncond_meet_partner",
-        ), np.nan)
-
-        # a.4 optimal discrete choices (single)
-        _fill(sol, ("Vw_single_to_single", "Vm_single_to_single"), -np.inf)
-        _fill(sol, (
-            "Cw_tot_single_to_single", "Cm_tot_single_to_single",
-            "lw_single_to_single", "lm_single_to_single",
-        ), np.nan)
-
-        # ========= b. couples =========
-        # b.1 couple -> couple (discrete)
-        _fill(sol, ("Vwd_couple_to_couple", "Vmd_couple_to_couple"), np.nan)
-        sol.Vd_couple_to_couple[...] = -np.inf
-        _fill(sol, (
-            "Cwd_priv_couple_to_couple", "Cmd_priv_couple_to_couple",
-            "Cd_inter_couple_to_couple", "Qd_couple_to_couple",
-            "lwd_couple_to_couple", "lmd_couple_to_couple",
-            "hwd_couple_to_couple", "hmd_couple_to_couple",
-            "Cd_tot_couple_to_couple",
-        ), np.nan)
-
-        sol.power_idx[...] = 0
-        sol.power[...] = np.nan
-
-        # b.1 EGM post-decision (couples)
-        _fill(sol, ("EmargUd_pd", "Cd_tot_pd", "Md_pd", "Vd_couple_to_couple_pd"), 0.0)
-
-        # b.2 single -> couple
-        _fill(sol, ("Vw_single_to_couple", "Vm_single_to_couple"), np.nan)
-        sol.V_single_to_couple[...] = -np.inf
-
-        # b.3 start as couple
-        _fill(sol, (
-            "Vw_start_as_couple", "Vm_start_as_couple", "margV_start_as_couple",
-            "EVw_start_as_couple", "EVm_start_as_couple", "EmargV_start_as_couple",
-        ), np.nan)
-
-        # b.4 optimal discrete choices (couple)
-        sol.V_couple_to_couple[...] = -np.inf
-        _fill(sol, (
-            "Vw_couple_to_couple", "Vm_couple_to_couple",
-            "C_tot_couple_to_couple",
-            "lw_couple_to_couple", "lm_couple_to_couple",
-        ), np.nan)
-
-        # ========= c. precomputed intratemporal solution =========
-        _fill(sol, (
-            "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
-            "pre_Cd_inter_couple", "pre_Qd_couple",
-            "pre_hwd_couple", "pre_hmd_couple",
-            "pre_Cwd_priv_single", "pre_Cmd_priv_single",
-            "pre_Cwd_inter_single", "pre_Cmd_inter_single",
-            "pre_Qwd_single", "pre_Qmd_single",
-            "pre_hwd_single", "pre_hmd_single",
-        ), np.nan)
-
-        # ========= d. simulation =========
-        # d.1 simulated outcomes
-        _fill(sim, (
+        # --- simulation output variables ---
+        for name in (
             "lw", "lm", "Cw_priv", "Cm_priv", "hw", "hm",
             "Cw_inter", "Cm_inter", "Qw", "Qm",
             "Cw_tot", "Cm_tot", "C_tot",
             "Kw", "Km", "A", "Aw", "Am",
             "couple", "power", "love",
             "wage_inc_w", "wage_inc_m", "after_tax_inc_w", "after_tax_inc_m",
-            "leisure_w", "leisure_m", 
+            "leisure_w", "leisure_m",
             "util_w", "util_m",
-        ), np.nan)
-        
-        sim.divorces[...] = 0.0
-        
-        sim.mean_lifetime_util[...] = np.nan
-        sim.C_ineq_90_10[...] = np.nan
+        ):
+            alloc(name, shape_sim, value=np.nan)
 
-        # d.2 shocks (seed -> draws)
-        # section moved (see draw_shocks)
+        alloc("divorces", shape_sim, value=0.0)
+        alloc("mean_lifetime_util", (1,), value=np.nan)
+        alloc("C_ineq_90_10", (1, par.simT), value=np.nan)
 
-        # d.3 initial distribution
-        np.random.seed(par.seed)
-        sim.init_A[...] = 0.0
-        sim.init_Kw[...] = 0.0
-        sim.init_Km[...] = 0.0
-        sim.init_Aw[...] = sim.init_A * par.div_A_share
-        sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
-        sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        sim.init_power_idx[...] = (par.num_power // 2)
-        sim.init_love[...] = 0.0
-        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
-        sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
-        sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
-        sim.init_divorces[...] = 0.0
-        
-        # # allow for correlation in types of couples
-        # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
-        # draws = np.random.rand(probs.shape[0])
-        # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
-        
-        # ========= e. timing =========
-        sol.solution_time[...] = 0.0
+        # --- shock draw arrays ---
+        if not reset:
+            for name in (
+                "draw_shock_Kw", "draw_shock_Km", "draw_love", "draw_meet",
+                "draw_uniform_partner_Kw", "draw_uniform_partner_Km",
+                "draw_uniform_partner_Aw", "draw_uniform_partner_Am",
+                "draw_uniform_partner_type_w", "draw_uniform_partner_type_m",
+                "draw_repartner_love",
+            ):
+                alloc(name, shape_sim, value=np.nan)
 
+        # --- initial state arrays ---
+        if not reset:
+            for name in (
+                "init_love", "init_Kw", "init_Km",
+                "init_A", "init_Aw", "init_Am", "init_divorces",
+            ):
+                alloc(name, (par.simN,), value=np.nan)
 
+            for name in (
+                "init_type_w", "init_type_m", "init_power_idx",
+            ):
+                alloc(name, (par.simN,), dtype=np.int32, value=-1000)
 
-    def draw_shocks(self):
+            for name in (
+                "init_couple",
+            ):
+                alloc(name, (par.simN,), dtype=np.bool_, value=False)
+
+    def draw_shocks_and_initial_states(self):
         """Draw all shocks for the simulation (using seed for reproducibility)."""
         par = self.par
         sim = self.sim
+        
         np.random.seed(par.seed)
         shape_sim = (par.simN, par.simT)
         
@@ -718,11 +631,9 @@ class HouseholdModelClass(EconModelClass):
         sim.draw_uniform_partner_Am[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_w[...] = np.random.uniform(size=shape_sim)
         sim.draw_uniform_partner_type_m[...] = np.random.uniform(size=shape_sim)
-
+        
         sim.draw_repartner_love[...] = par.sigma_love * np.random.normal(0.0, 1.0, size=shape_sim)
-
-
-        # d.3 initial distribution
+        
         sim.init_A[...] = 0.0
         sim.init_Kw[...] = 0.0
         sim.init_Km[...] = 0.0
@@ -731,11 +642,16 @@ class HouseholdModelClass(EconModelClass):
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
         sim.init_power_idx[...] = (par.num_power // 2)
         sim.init_love[...] = 0.0
+        # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
+        sim.init_divorces[...] = 0.0
         sim.init_type_w[...] = np.random.choice(par.num_types, par.simN, p=par.type_w_share)
         sim.init_type_m[...] = np.random.choice(par.num_types, par.simN, p=par.type_m_share)
+        
+        # # allow for correlation in types of couples
+        # probs = par.prob_partner_type_w[sim.init_type_w[sim.init_couple]]
+        # draws = np.random.rand(probs.shape[0])
+        # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
 
-        # ========= e. timing =========
-        # sol.solution_time[...] = 0.0
 
     def solve(self):
 
@@ -745,33 +661,25 @@ class HouseholdModelClass(EconModelClass):
         # always ensure sizes/grids are up-to-date (needed for shape checks)
         self.setup_gender_parameters()
         self.setup_grids()
-        self.fill_allocations()
-
-        # allocate once (or when shapes changed), otherwise just reset values
-        # shape_single_d = (par.T, par.num_types, par.num_l, par.num_K, par.num_A)
-        # if (not hasattr(sol, "Vwd_single_to_single")) or (sol.Vwd_single_to_single.shape != shape_single_d):
-        #     self.allocate()
-        # else:
-            # self.draw_shocks()
+        self.allocate_sol(reset=True)
 
         self.cpp.solve(sol, par)
 
 
-    def simulate(self):
+    def simulate(self, redraw=False):
         sol = self.sol
         sim = self.sim
         par = self.par
 
-        # clear simulation
-        for key, val in sim.__dict__.items():
-            if 'init' in key or 'draw' in key: continue
-            setattr(sim, key, np.zeros(val.shape)+np.nan)
-
+        # Reset simulated outcomes (except for initial conditions and shocks)
+        self.allocate_sim(reset=True)
+        if redraw:
+            self.draw_shocks_and_initial_states()
         self.cpp.simulate(sim,sol,par)
 
+        # auxilliary measures (consumption inequality)
         sim.mean_lifetime_util[0] = (np.mean(np.sum(sim.util_w,axis=1)) + np.mean(np.sum(sim.util_m,axis=1))) / 2.0
         
-        # consumption inequality
         adults = np.where(sim.couple == 1, 2.0, 1.0)
         kids = np.where(sim.couple == 1, 0.0, 0.0) # for now, not modeled
         equivalence_scale = (adults + kids*0.7)**0.7 # equivalence scale used in Meyer and Sullivan (2023)
@@ -786,15 +694,12 @@ class HouseholdModelClass(EconModelClass):
         
         # update parameters, impose bounds and return penalty
         penalty = self.update_par(theta,estpar)
-        self.setup_gender_parameters()
-        self.setup_grids()
         
         # a. solve model
         self.solve()
 
         # b. simulate
-        self.draw_shocks()
-        self.simulate()
+        self.simulate(redraw=True)
 
         # c. calculate moments
         moms = self.calc_moments()
@@ -873,9 +778,6 @@ class HouseholdModelClass(EconModelClass):
         moms['wage_level_w_35_41'] = np.nanmean(sim.wage_inc_w[age_35_to_41_mask & couple_mask & full_time_w_mask]) * money_metric
         moms['wage_level_m_35_41'] = np.nanmean(sim.wage_inc_m[age_35_to_41_mask & couple_mask & full_time_m_mask]) * money_metric
 
-        # standard deviation of log wages
-        # moms['wage_sd'] = np.nanstd(np.log(np.concatenate((sim.wage_inc_w.ravel(), sim.wage_inc_m.ravel()))))
-        
         # employment rates
         moms['employment_rate_w_35_41'] = np.nanmean(sim.lw[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
         moms['employment_rate_m_35_41'] = np.nanmean(sim.lm[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
@@ -885,10 +787,6 @@ class HouseholdModelClass(EconModelClass):
         # home production
         moms['home_prod_w'] = np.nanmean(sim.hw[age_25_to_41_mask]) * hours_metric
         moms['home_prod_m'] = np.nanmean(sim.hm[age_25_to_41_mask]) * hours_metric
-        
-        # leisure
-        # moms['leisure_w'] = np.nanmean(sim.leisure_w) * hours_metric
-        # moms['leisure_m'] = np.nanmean(sim.leisure_m) * hours_metric
         
         # consumption
         equivalence_scale_BPS = 2**0.5 # equivalence scaled used in the code of Blundell, Pistaferri, Saporta-Eksten (2018)
@@ -936,8 +834,6 @@ class HouseholdModelClass(EconModelClass):
         # moms['time_leisure_w'] = np.nanmean(sim.leisure_w.ravel()) * hours_metric 
         # moms['time_leisure_m'] = np.nanmean(sim.leisure_m.ravel()) * hours_metric
         
-
-
         return moms
     
 
@@ -1018,7 +914,7 @@ class HouseholdModelClass(EconModelClass):
             pickle.dump(par_dict, f)
             
             
-    def MAD_consumption(self,true_model, num=13):
+    def measure_accuracy(self,true_model, num=13):
         par = self.par
         sol = self.sol
         
@@ -1040,7 +936,7 @@ class HouseholdModelClass(EconModelClass):
         power = np.empty(shape, dtype=np.float64)
         power_diff = np.empty(shape, dtype=np.float64)
         C = np.empty(shape_d, dtype=np.float64)
-        self.cpp.random_C_points(lw, lm, power, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
+        self.cpp.accuracy_measures(lw, lm, power, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
         
         # true model
         lw_true = np.empty(shape, dtype=np.float64)
@@ -1048,22 +944,24 @@ class HouseholdModelClass(EconModelClass):
         power_true = np.empty(shape, dtype=np.float64)
         power_diff_true = np.empty(shape, dtype=np.float64)
         C_true = np.empty(shape_d, dtype=np.float64)
-        true_model.cpp.random_C_points(lw_true, lm_true, power_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
+        true_model.cpp.accuracy_measures(lw_true, lm_true, power_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
 
         # deviations
-        l_MAD = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
+        l_ERROR = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
  
         divorced = (power_diff<-1.0)
         divorced_true = (power_diff_true<-1.0)
-        divorce_MAD = np.mean((divorced) != (divorced_true))
+        divorce_ERROR = np.mean((divorced) != (divorced_true))
         
-        power_updated = (power_diff != 0.0) & (power_diff>-1.0)
-        power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
-        power_MAD = np.mean(np.abs(power[power_updated_true & (~divorced)] - power_true[power_updated_true & (~divorced)]))
+        # evaluate power where true model updates and neither model divorces
+        is_power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
+        power_updated = power[is_power_updated_true & (~divorced) & (~divorced_true)]
+        power_updated_true = power_true[is_power_updated_true & (~divorced) & (~divorced_true)]
+        power_MAD = np.mean(np.abs(power_updated - power_updated_true))
         
         C_MAD = np.mean(np.abs(C - C_true))
         
-        return l_MAD, divorce_MAD, power_MAD, C_MAD
+        return l_ERROR, divorce_ERROR, power_MAD, C_MAD
             
     def wealth_compensation(self,true_model):
         # search for level of initial wealth that makes mean lifetime utility similar with true model

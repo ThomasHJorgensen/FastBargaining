@@ -473,33 +473,6 @@ namespace single {
         );
     }
 
-    int find_interpolated_labor_index_single(int t, int type, double K, double A, int gender, sol_struct* sol, par_struct* par){
-
-        //--- Set variables based on gender ---
-        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
-        double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
-        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
-
-        // find nearest index once
-        int iK = tools::binary_search(0, par->num_K, grid_K, K);
-        int iA = tools::binary_search(0, par->num_A, grid_A, A);
-
-        double maxV = -std::numeric_limits<double>::infinity();
-        int labor_index = 0;
-
-        //--- Loop over labor choices ---
-        for (int il = 0; il < par->num_l; il++) {
-            auto idx_d_A = index::single_d(t, type, il, 0, 0, par);
-            double V_now = tools::_interp_2d(grid_K, grid_A, par->num_K, par->num_A, &Vd_single_to_single[idx_d_A], K, A, iK, iA);
-            if (V_now > maxV) {
-                maxV = V_now;
-                labor_index = il;
-            }
-        }
-
-        return labor_index;
-    }
-
     void calc_marginal_value_single_Agrid(double* V, double* margV, int gender, sol_struct* sol, par_struct* par)
     {
         double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
@@ -554,8 +527,6 @@ namespace single {
     }
 
 
-    
-
     void solve_choice_specific_single_to_single(int t, int type, int il, int iK, int gender, sol_struct *sol, par_struct *par) {
 
         // Terminal period: no continuation value
@@ -583,20 +554,13 @@ namespace single {
         // 1. solve choice specific
         const int ntypes   = par->num_types;
         const int nK   = par->num_K;
-
-        // Total number of iterations
-        const int total = ntypes * nK;
+        const long long int total = ntypes * nK;
 
         #pragma omp for schedule(static)
-        for (int idx = 0; idx < total; ++idx) {
+        for (long long int idx = 0; idx < total; ++idx) {
 
-            // int tmp = idx;
-            // const int iK  = tmp % nK;
-            // tmp /= nK;
-            // const int type  = tmp;
-
-            const auto type = (int)par->idx_single_type[idx];
-            const auto iK = (int)par->idx_single_K[idx];
+            const auto type = par->idx_single_type[idx];
+            const auto iK = par->idx_single_K[idx];
 
             for (int il = 0; il < par->num_l; il++) {
                 solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par); // CHANGED
@@ -830,37 +794,6 @@ namespace single {
         return Ev_cond;
     }
 
-
-    // void expected_value_start_single_Agrid(int t, int type, int iK, int gender, sol_struct* sol,par_struct* par){
-    //     auto idx_A = index::single(t, type, iK, 0, par);
-    //     // get variables
-    //     double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
-    //     double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
-    //     double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
-    //     double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
-
-    //     const double p_meet = par->prob_repartner[t];
-    //     const bool no_meet = (par->p_meet == 0.0);
-    //     for (int iA = 0; iA < par->num_A; iA++) {
-    //         if (no_meet) {
-    //             // expected value of starting single is just value of remaining single
-    //             EV_start_as_single[iA] = V_single_to_single[iA];
-    //             EV_cond_meet_partner[iA] = V_single_to_single[iA];
-    //             continue;
-    //         }
-
-    //         // Value conditional on meeting partner
-    //         double EV_cond = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
-
-    //         // expected value of starting single
-    //         EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
-    //         EV_cond_meet_partner[iA] = EV_cond;
-    //     }
-
-        
-    // }
-
-
     
     void calc_expected_value_single(int t, int type, int iK, int iA, int gender, double* V, double* EV, sol_struct* /*sol*/, par_struct* par)
     {
@@ -915,13 +848,8 @@ namespace single {
             #pragma omp for schedule(static)
             for (long long int idx = 0; idx < total; ++idx) {
 
-                // int tmp = idx;
-                // const int iK  = tmp % nK;
-                // tmp /= nK;
-                // const int type  = tmp;
-
-                const auto type = (int)par->idx_single_type[idx];
-                const auto iK = (int)par->idx_single_K[idx];
+                const auto type = par->idx_single_type[idx];
+                const auto iK = par->idx_single_K[idx];
 
                 for (int iA = 0; iA < par->num_A; iA++) {
                     auto idx = index::single(t, type, iK, iA, par); // CHANGED
@@ -943,15 +871,10 @@ namespace single {
             total = ntypes * nK;
 
             #pragma omp for schedule(static)
-            for (int idx = 0; idx < total; ++idx) {
+            for (long long int idx = 0; idx < total; ++idx) {
 
-                // int tmp = idx;
-                // const int iK  = tmp % nK;
-                // tmp /= nK;
-                // const int type  = tmp;
-
-                const auto type = (int)par->idx_single_type[idx];
-                const auto iK = (int)par->idx_single_K[idx];
+                const auto type = par->idx_single_type[idx];
+                const auto iK = par->idx_single_K[idx];
 
 
                 for (int iA = 0; iA < par->num_A; iA++) {
@@ -971,19 +894,13 @@ namespace single {
 
         const int ntypes   = par->num_types;
         const int nK   = par->num_K;
-        const int total = ntypes * nK;
+        const long long int total = ntypes * nK;
 
         #pragma omp for schedule(static)
-        for (int idx = 0; idx < total; ++idx) {
-
-            // int tmp = idx;
-            // const int iK  = tmp % nK;
-            // tmp /= nK;
-            // const int type  = tmp;
+        for (long long int idx = 0; idx < total; ++idx) {
             
-            const auto type = (int)par->idx_single_type[idx];
-            const auto iK = (int)par->idx_single_K[idx];
-            
+            const auto type = par->idx_single_type[idx];
+            const auto iK = par->idx_single_K[idx];
             
             auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
 

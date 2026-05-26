@@ -234,6 +234,82 @@ namespace sim {
         return par->num_types-1; // OBS: all cases should be resolved within loop. Ensure that happens when implementing remarriage
     }
 
+    int find_interpolated_labor_index_single(int t, int type, double K, double A, int gender, sol_struct* sol, par_struct* par){
+
+        //--- Set variables based on gender ---
+        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
+        double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
+        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
+
+        // find nearest index once
+        int iK = tools::binary_search(0, par->num_K, grid_K, K);
+        int iA = tools::binary_search(0, par->num_A, grid_A, A);
+
+        double maxV = -std::numeric_limits<double>::infinity();
+        int labor_index = 0;
+
+        //--- Loop over labor choices ---
+        for (int il = 0; il < par->num_l; il++) {
+            auto idx_d_A = index::single_d(t, type, il, 0, 0, par);
+            double V_now = tools::_interp_2d(grid_K, grid_A, par->num_K, par->num_A, &Vd_single_to_single[idx_d_A], K, A, iK, iA);
+            if (V_now > maxV) {
+                maxV = V_now;
+                labor_index = il;
+            }
+        }
+
+        return labor_index;
+    }
+
+    void find_interpolated_labor_index_couple(
+        int t, int type_w, int type_m, double power, double love, double Kw, double Km, double A,
+        int* ilw_out, int* ilm_out,
+        sol_struct* sol, par_struct* par)
+    {
+        int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
+        int iL = tools::binary_search(0, par->num_love, par->grid_love, love);
+        int iKw = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
+        int iKm = tools::binary_search(0, par->num_K, par->grid_Km, Km);
+        int iA = tools::binary_search(0, par->num_A, par->grid_A, A);
+
+
+        double maxV = -std::numeric_limits<double>::infinity();
+        int labor_index_w = 0;
+        int labor_index_m = 0;
+
+        for (int ilw = 0; ilw < par->num_l; ++ilw) {
+            for (int ilm = 0; ilm < par->num_l; ++ilm) {
+                auto idx_interp = index::couple_d(t, type_w, type_m, ilw, ilm, 0, 0, 0, 0, 0, par);
+
+                double Vw_now = tools::_interp_5d_index(
+                    par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                    &sol->Vwd_couple_to_couple[idx_interp],
+                    power, love, Kw, Km, A,
+                    iP, iL, iKw, iKm, iA
+                );
+                double Vm_now = tools::_interp_5d_index(
+                    par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                    &sol->Vmd_couple_to_couple[idx_interp],
+                    power, love, Kw, Km, A,
+                    iP, iL, iKw, iKm, iA
+                );
+
+                double V_now = power * Vw_now + (1.0 - power) * Vm_now;
+                if (maxV < V_now) {
+                    maxV = V_now;
+                    labor_index_w = ilw;
+                    labor_index_m = ilm;
+                }
+            }
+        }
+
+        //--- Return optimal labor choice ---
+        *ilw_out = labor_index_w;
+        *ilm_out = labor_index_m;
+    }
+
     void model(sim_struct *sim, sol_struct *sol, par_struct *par){
     
         #pragma omp for schedule(static)
@@ -336,7 +412,7 @@ namespace sim {
                     // Find labor choice
                     int ilw = -1;
                     int ilm = -1;
-                    couple::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
+                    find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw_lag, Km_lag, A_lag, &ilw, &ilm, sol, par);
                     double labor_w = par->grid_l[ilw];
                     double labor_m = par->grid_l[ilm];
                     sim->lw[it] = labor_w;
@@ -385,8 +461,8 @@ namespace sim {
 
                 } else { // single
                     // find labor choice
-                    int ilw = single::find_interpolated_labor_index_single(t, type_w, Kw_lag, Aw_lag, woman, sol, par);
-                    int ilm = single::find_interpolated_labor_index_single(t, type_m, Km_lag, Am_lag, man, sol, par);
+                    int ilw = find_interpolated_labor_index_single(t, type_w, Kw_lag, Aw_lag, woman, sol, par);
+                    int ilm = find_interpolated_labor_index_single(t, type_m, Km_lag, Am_lag, man, sol, par);
                     double labor_w = par->grid_l[ilw]; 
                     double labor_m = par->grid_l[ilm];
                     sim->lw[it] = labor_w;

@@ -36,13 +36,7 @@ namespace precompute{
         double h = x[1];
         double c = C_tot - c_priv;
 
-        double Q = 0.0;
-        // if(gender==woman){
-        //     Q = utils::Q(c, h, 0, solver_data->par);
-        // } else {
-        //     Q = utils::Q(c, 0, h, solver_data->par);
-        // }
-        Q = utils::Q_single(c, h, gender, solver_data->par);
+        double Q = utils::Q_single(c, h, gender, solver_data->par);
 
         // clip and penalty
         double penalty = 0.0;
@@ -104,12 +98,6 @@ namespace precompute{
         *C_priv = x[0];
         *h = x[1];
         *C_inter = C_tot - *C_priv;
-        *Q = 0.0;
-        // if(gender==woman){
-        //     *Q = utils::Q(*C_inter, *h, 0, par);
-        // } else {
-        //     *Q = utils::Q(*C_inter, 0, *h, par);
-        // }
         *Q = utils::Q_single(*C_inter, *h, gender, par);
 
         nlopt_destroy(opt);
@@ -137,12 +125,6 @@ namespace precompute{
             *C_priv = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &C_priv_grid[idx], C_tot, iC);
             *h = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot, iC);
             *C_inter = C_tot - *C_priv;
-            // if(gender==man){
-            //     *Q = utils::Q(*C_inter, *h, 0, par);
-            // } 
-            // else {
-            //     *Q = utils::Q(*C_inter, 0, *h, par);
-            // }
             *Q = utils::Q_single(*C_inter, *h, gender, par);
         } 
         else { // solve intraperiod problem for single numerically
@@ -208,7 +190,6 @@ namespace precompute{
 
         // home production
         double C_inter = C_tot - Cw_priv - Cm_priv;
-        // double Q = utils::Q(C_inter, hw, hm, par);
         double Q = utils::Q_couple(C_inter, hw, hm, par);
 
         // clip and penalty
@@ -432,9 +413,6 @@ namespace precompute{
                 solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_Cw_priv, &start_hm, man, par);
                 solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_Cm_priv, &start_hw, woman, par);
 
-                // start_hw = sol->pre_hmd_single[idx]; //update starting values for h
-                // start_hm = sol->pre_hmd_single[idx];
-
             } //C_tot
 
             if(strcmp(par->interp_method,"numerical")!=0){
@@ -449,23 +427,14 @@ namespace precompute{
         // precompute optimal allocation for couples
         const int nl = par->num_l;
         const int nP = par->num_power;
-
-        // total number of iterations
-        const long long total = (long long)nl * nl * nP;
+        const long long total = nl * nl * nP;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int ilm = tmp % nl;
-            // tmp /= nl;
-            // const int ilw = tmp;
-
-            const auto ilw = (int)par->idx_pre_couple_lw[idx];
-            const auto ilm = (int)par->idx_pre_couple_lm[idx];
-            const auto iP = (int)par->idx_pre_couple_power[idx];
+            const auto ilw = par->idx_pre_couple_lw[idx];
+            const auto ilm = par->idx_pre_couple_lm[idx];
+            const auto iP = par->idx_pre_couple_power[idx];
 
                     
             double lw = par->grid_l[ilw];
