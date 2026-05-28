@@ -21,51 +21,6 @@ namespace single {
     // Small constant to avoid exact-zero resources
     static constexpr double RESOURCES_EPS = 1.0e-4;
 
-    // Multistart factor in first multistart run
-    static constexpr double MULTISTART_FACTOR = 0.5;
-
-    // helper: run 1D multistart optimization given optimizer and bounds
-    double run_multistart_optimizer_1d(nlopt_opt optimizer_handle, double initial_guess,
-                            const double* lower_bounds, const double* upper_bounds,
-                            int num_starts) {
-        
-        // first run from provided initial guess
-        double x[1] = { initial_guess };
-        double minf_global = 0.0;
-        nlopt_optimize(optimizer_handle, x, &minf_global);
-        double best_Ctot = x[0];
-
-        // setup RNG for additional random starts if needed
-        // if (num_starts > 1) {
-        // static const int seed_rng = []() {
-        //     std::srand(123456789u);
-        //     return 0;
-        // }();
-        // (void)seed_rng;
-        // }
-
-        // setup placeholder for local minimum
-        // double minf_local = 0.0;
-
-        // // additional starts
-        // for (int s = 0; s < num_starts; ++s) {
-        // if (s == 0) {
-        //     x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
-        // } else {
-        //     double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-        //     x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
-        // }
-
-        // nlopt_optimize(optimizer_handle, x, &minf_local);
-        // if (minf_local < minf_global) {
-        //     best_Ctot = x[0];
-        //     minf_global = minf_local;
-        // }
-        // }
-
-        return best_Ctot;
-    };
-
     
     double tax_single(double income, par_struct* par) {
 
@@ -188,6 +143,7 @@ namespace single {
 
             constexpr int dim = 1;
             double lb[dim], ub[dim];
+            double x[dim] = { starting_val };
 
             auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
@@ -204,7 +160,22 @@ namespace single {
             if (starting_val < lb[0]) starting_val = lb[0];
             if (starting_val > ub[0]) starting_val = ub[0];
 
-            Cd_tot = run_multistart_optimizer_1d(opt, starting_val, lb, ub, par->num_multistart);
+            // first optimization run
+            double minf_global = 0.0;
+            nlopt_optimize(opt, x, &minf_global);
+            Cd_tot = x[0];
+
+            // second optimizatoin run with a different starting value for multistart
+            if (par->do_multistart) {
+                double minf_local = 0.0;
+                x[0] = starting_val * 0.5;
+                nlopt_optimize(opt, x, &minf_global);
+                if (minf_local < minf_global) {
+                    Cd_tot = x[0];
+                    minf_global = minf_local;
+                }
+                
+            }
             
             // cleanup
             nlopt_destroy(opt);
@@ -304,10 +275,10 @@ namespace single {
         SolverInvData* data = new SolverInvData{il, margU, gender, par, sol};
 
         constexpr int dim = 1;
-        double lb[dim], ub[dim], x[dim];
+        double lb[dim], ub[dim];
+        double x[dim] = { guess_C_tot };
 
         auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
-        double minf = 0.0;
 
         nlopt_set_min_objective(opt, obj_inv_marg_util_single, data);
         nlopt_set_maxeval(opt, 2000);
@@ -319,13 +290,28 @@ namespace single {
         nlopt_set_lower_bounds(opt, lb);
         nlopt_set_upper_bounds(opt, ub);
 
-        x[0] = guess_C_tot;
-        nlopt_optimize(opt, x, &minf);
-        nlopt_destroy(opt);
+        // first optimization run
+        double minf_global = 0.0;
+        nlopt_optimize(opt, x, &minf_global);
+        double C_tot = x[0];
 
-        double result = x[0];
+        // second optimizatoin run with a different starting value for multistart
+        if (par->do_multistart) {
+            double minf_local = 0.0;
+            x[0] = guess_C_tot * 0.5;
+            nlopt_optimize(opt, x, &minf_global);
+            if (minf_local < minf_global) {
+                C_tot = x[0];
+                minf_global = minf_local;
+            }
+            
+        }
+
+        // cleanup
+        nlopt_destroy(opt);
         delete data;
-        return result;
+
+        return C_tot;
     }
 
 
@@ -400,7 +386,7 @@ namespace single {
         auto idx_A_pd  = index::single_pd(t, type, il, iK, 0, par);
         auto idx_d_A   = index::single_d(t, type, il, iK, 0, par);
         auto idx_next  = index::single(t + 1, type, 0, 0, par);
-        auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u); // OBS: index::index3(type, il, 0, par->num_l, par->num_marg_u);
+        auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u);
         
         // 1. Setup: gender-specific pointers
         double* grid_A = par->grid_Aw;
@@ -487,33 +473,6 @@ namespace single {
         );
     }
 
-    int find_interpolated_labor_index_single(int t, int type, double K, double A, int gender, sol_struct* sol, par_struct* par){
-
-        //--- Set variables based on gender ---
-        double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
-        double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
-        double* Vd_single_to_single = (gender == woman) ? sol->Vwd_single_to_single : sol->Vmd_single_to_single;
-
-        // find nearest index once
-        int iK = tools::binary_search(0, par->num_K, grid_K, K);
-        int iA = tools::binary_search(0, par->num_A, grid_A, A);
-
-        double maxV = -std::numeric_limits<double>::infinity();
-        int labor_index = 0;
-
-        //--- Loop over labor choices ---
-        for (int il = 0; il < par->num_l; il++) {
-            auto idx_d_A = index::single_d(t, type, il, 0, 0, par);
-            double V_now = tools::_interp_2d(grid_K, grid_A, par->num_K, par->num_A, &Vd_single_to_single[idx_d_A], K, A, iK, iA);
-            if (V_now > maxV) {
-                maxV = V_now;
-                labor_index = il;
-            }
-        }
-
-        return labor_index;
-    }
-
     void calc_marginal_value_single_Agrid(double* V, double* margV, int gender, sol_struct* sol, par_struct* par)
     {
         double* grid_A = (gender == woman) ? par->grid_Aw : par->grid_Am;
@@ -568,8 +527,6 @@ namespace single {
     }
 
 
-    
-
     void solve_choice_specific_single_to_single(int t, int type, int il, int iK, int gender, sol_struct *sol, par_struct *par) {
 
         // Terminal period: no continuation value
@@ -597,20 +554,13 @@ namespace single {
         // 1. solve choice specific
         const int ntypes   = par->num_types;
         const int nK   = par->num_K;
-
-        // Total number of iterations
-        const int total = ntypes * nK;
+        const long long int total = ntypes * nK;
 
         #pragma omp for schedule(static)
-        for (int idx = 0; idx < total; ++idx) {
+        for (long long int idx = 0; idx < total; ++idx) {
 
-            // int tmp = idx;
-            // const int iK  = tmp % nK;
-            // tmp /= nK;
-            // const int type  = tmp;
-
-            const auto type = (int)par->idx_single_type[idx];
-            const auto iK = (int)par->idx_single_K[idx];
+            const auto type = par->idx_single_type[idx];
+            const auto iK = par->idx_single_K[idx];
 
             for (int il = 0; il < par->num_l; il++) {
                 solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par); // CHANGED
@@ -664,7 +614,6 @@ namespace single {
 
         //interpolate V_single_to_single
         auto idx_interp_single = index::single(t, type, 0, 0, par);
-        // double Vsts = tools::interp_1d_index(grid_A_single, par->num_A, &V_single_to_single[idx_interp_single], A, iA_single);
         double Vsts = tools::_interp_2d(
             grid_K_single, grid_A_single, 
             par->num_K, par->num_A, 
@@ -673,7 +622,7 @@ namespace single {
             iK_single, iA_single
         );
         // interpolate couple V_single_to_couple
-        auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par); // OBS: can we do something else than interpolating over all dimensions here? Does this even work with S?
+        auto idx_interp_couple = index::couple(t, type_w, type_m, 0, 0, 0, 0, 0, par);
         double Vstc = tools::_interp_5d_index(
             par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
             par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
@@ -831,7 +780,7 @@ namespace single {
                                     &V_single_to_couple[idx_interp_couple], 
                                     power, love, Kw, Km, A_tot
                                 );
-                                // OBS: actually onlu interpolation in power and A_tot is needed here
+                                // note: love, Kw, Km is currently on grid 
                             } else {
                                 val = V_single_to_single[idx_single];
                             }
@@ -844,37 +793,6 @@ namespace single {
         } // iL
         return Ev_cond;
     }
-
-
-    // void expected_value_start_single_Agrid(int t, int type, int iK, int gender, sol_struct* sol,par_struct* par){
-    //     auto idx_A = index::single(t, type, iK, 0, par);
-    //     // get variables
-    //     double* EV_start_as_single = (gender == man) ? &sol->EVm_start_as_single[idx_A] : &sol->EVw_start_as_single[idx_A];
-    //     double* EV_cond_meet_partner = (gender == man) ? &sol->EVm_cond_meet_partner[idx_A] : &sol->EVw_cond_meet_partner[idx_A];
-    //     double* V_single_to_single = (gender == man) ? &sol->Vm_single_to_single[idx_A] : &sol->Vw_single_to_single[idx_A];
-    //     double* EmargV_start_as_single = (gender == man) ? &sol->EmargVm_start_as_single[idx_A] : &sol->EmargVw_start_as_single[idx_A];
-
-    //     const double p_meet = par->prob_repartner[t];
-    //     const bool no_meet = (par->p_meet == 0.0);
-    //     for (int iA = 0; iA < par->num_A; iA++) {
-    //         if (no_meet) {
-    //             // expected value of starting single is just value of remaining single
-    //             EV_start_as_single[iA] = V_single_to_single[iA];
-    //             EV_cond_meet_partner[iA] = V_single_to_single[iA];
-    //             continue;
-    //         }
-
-    //         // Value conditional on meeting partner
-    //         double EV_cond = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
-
-    //         // expected value of starting single
-    //         EV_start_as_single[iA] = p_meet * EV_cond + (1.0 - p_meet) * V_single_to_single[iA];
-    //         EV_cond_meet_partner[iA] = EV_cond;
-    //     }
-
-        
-    // }
-
 
     
     void calc_expected_value_single(int t, int type, int iK, int iA, int gender, double* V, double* EV, sol_struct* /*sol*/, par_struct* par)
@@ -930,13 +848,8 @@ namespace single {
             #pragma omp for schedule(static)
             for (long long int idx = 0; idx < total; ++idx) {
 
-                // int tmp = idx;
-                // const int iK  = tmp % nK;
-                // tmp /= nK;
-                // const int type  = tmp;
-
-                const auto type = (int)par->idx_single_type[idx];
-                const auto iK = (int)par->idx_single_K[idx];
+                const auto type = par->idx_single_type[idx];
+                const auto iK = par->idx_single_K[idx];
 
                 for (int iA = 0; iA < par->num_A; iA++) {
                     auto idx = index::single(t, type, iK, iA, par); // CHANGED
@@ -958,15 +871,10 @@ namespace single {
             total = ntypes * nK;
 
             #pragma omp for schedule(static)
-            for (int idx = 0; idx < total; ++idx) {
+            for (long long int idx = 0; idx < total; ++idx) {
 
-                // int tmp = idx;
-                // const int iK  = tmp % nK;
-                // tmp /= nK;
-                // const int type  = tmp;
-
-                const auto type = (int)par->idx_single_type[idx];
-                const auto iK = (int)par->idx_single_K[idx];
+                const auto type = par->idx_single_type[idx];
+                const auto iK = par->idx_single_K[idx];
 
 
                 for (int iA = 0; iA < par->num_A; iA++) {
@@ -986,19 +894,13 @@ namespace single {
 
         const int ntypes   = par->num_types;
         const int nK   = par->num_K;
-        const int total = ntypes * nK;
+        const long long int total = ntypes * nK;
 
         #pragma omp for schedule(static)
-        for (int idx = 0; idx < total; ++idx) {
-
-            // int tmp = idx;
-            // const int iK  = tmp % nK;
-            // tmp /= nK;
-            // const int type  = tmp;
+        for (long long int idx = 0; idx < total; ++idx) {
             
-            const auto type = (int)par->idx_single_type[idx];
-            const auto iK = (int)par->idx_single_K[idx];
-            
+            const auto type = par->idx_single_type[idx];
+            const auto iK = par->idx_single_K[idx];
             
             auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
 

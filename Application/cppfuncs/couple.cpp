@@ -21,8 +21,6 @@ namespace couple {
         par_struct* par;
     };
 
-    // Multistart factor in first multistart run
-    static constexpr double MULTISTART_FACTOR = 0.5;
 
     double tax_couple(double income, par_struct* par) {
 
@@ -30,7 +28,6 @@ namespace couple {
         // Each row: {bracket top, rate applied up to that top}
         int    num_brackets     = 5;
         double bracket_tops[5]  = {43850.0, 105950.0, 161450.0, 288350.0, 1e308};
-        // double bracket_rates[5] = {20.0, 20.0, 20.0, 20.0, 20.0};
         double bracket_rates[5] = {15.0, 28.0, 31.0, 36.0, 39.6};
 
         double money_metric = 10000.0;
@@ -101,57 +98,17 @@ namespace couple {
             double A_next = M_resources - C_tot;
             double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
             double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
-            // obs: maybe use _interp_3d_2out here
-            double EVw_plus = tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, Kw_next, Km_next, A_next);
-            double EVm_plus = tools::interp_3d(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVm_next, Kw_next, Km_next, A_next);
+            
+            double EVw_plus = 0;
+            double EVm_plus = 0;
+            tools::interp_3d_2out(par->grid_Kw, par->grid_Km, par->grid_A, par->num_K, par->num_K, par->num_A, EVw_next, EVm_next, Kw_next, Km_next, A_next, &EVw_plus, &EVm_plus);
+            
             Vw[0] += par->beta * EVw_plus;
             Vm[0] += par->beta * EVm_plus;
         }
 
         return power * Vw[0] + (1.0 - power) * Vm[0];
     }
-
-    // helper: run 1D multistart optimization given optimizer and bounds
-    double run_multistart_optimizer_1d(nlopt_opt optimizer_handle, double initial_guess,
-                            const double* lower_bounds, const double* upper_bounds,
-                            int num_starts) {
-        
-        // first run from provided initial guess
-        double x[1] = { initial_guess };
-        double minf_global = 0.0;
-        nlopt_optimize(optimizer_handle, x, &minf_global);
-        double best_Ctot = x[0];
-
-        // setup RNG for additional random starts if needed
-        // if (num_starts > 1) {
-        // static const int seed_rng = []() {
-        //     std::srand(123456789u);
-        //     return 0;
-        // }();
-        // (void)seed_rng;
-        // }
-
-        // // setup placeholder for local minimum
-        // double minf_local = 0.0;
-
-        // // additional starts
-        // for (int s = 0; s < num_starts; ++s) {
-        //     if (s == 0) {
-        //         x[0] = x[0] * MULTISTART_FACTOR; // try a lower starting value
-        //     } else {
-        //         double u_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-        //         x[0] = lower_bounds[0] + u_rand * (upper_bounds[0] - lower_bounds[0]);
-        //     }
-
-        //     nlopt_optimize(optimizer_handle, x, &minf_local);
-        //     if (minf_local < minf_global) {
-        //         best_Ctot = x[0];
-        //         minf_global = minf_local;
-        //     }
-        // }
-
-        return best_Ctot;
-    };
 
     //////////////////
     // VFI solution
@@ -175,8 +132,9 @@ namespace couple {
         if (t < (par->T - 1)) {
             const int dim = 1;
             double lb[dim], ub[dim];
+            double x[dim] = { starting_val };
 
-            nlopt_opt opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
+            auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
             auto* data = new SolverData();
             data->t = t;
@@ -200,13 +158,21 @@ namespace couple {
             nlopt_set_upper_bounds(opt, ub);
 
             // first optimization run
-            double x[dim] = { starting_val };
             double minf_global = 0.0;
             nlopt_optimize(opt, x, &minf_global);
             C_tot = x[0];
-            
-            // multistart: try a lower starting consumption as well
-            C_tot = run_multistart_optimizer_1d(opt, starting_val, lb, ub, par->num_multistart);
+
+            // second optimizatoin run with a different starting value for multistart
+            if (par->do_multistart) {
+                double minf_local = 0.0;
+                x[0] = starting_val * 0.5;
+                nlopt_optimize(opt, x, &minf_global);
+                if (minf_local < minf_global) {
+                    C_tot = x[0];
+                    minf_global = minf_local;
+                }
+                
+            }
             
             // cleanup
             nlopt_destroy(opt);
@@ -248,8 +214,8 @@ namespace couple {
                 starting_val = Cwd_priv[iA - 1] + Cmd_priv[iA - 1] + Cd_inter[iA - 1];
             }
 
-                solve_couple_to_couple_step(&Cwd_priv[iA], &Cmd_priv[iA], &hwd[iA], &hmd[iA], &Cd_inter[iA], &Qd[iA],
-                &Vwd[iA], &Vmd[iA], Kw, Km, M_resources, t, ilw, ilm, iL, iP, EVw_next, EVm_next, starting_val, sol, par);
+            solve_couple_to_couple_step(&Cwd_priv[iA], &Cmd_priv[iA], &hwd[iA], &hmd[iA], &Cd_inter[iA], &Qd[iA],
+            &Vwd[iA], &Vmd[iA], Kw, Km, M_resources, t, ilw, ilm, iL, iP, EVw_next, EVm_next, starting_val, sol, par);
 
             Cd_tot[iA] = Cwd_priv[iA] + Cmd_priv[iA] + Cd_inter[iA];
         }
@@ -307,8 +273,10 @@ namespace couple {
 
         const int dim = 1;
         double lb[dim], ub[dim];
+        double x[dim] = { guess_Ctot };
 
-        nlopt_opt opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
+
+        auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
         if (do_print) logs::write("inverse_log.txt", 0, "margU: %f\n", margU);
 
@@ -322,80 +290,30 @@ namespace couple {
         nlopt_set_lower_bounds(opt, lb);
         nlopt_set_upper_bounds(opt, ub);
 
-        // call the helper (multistart count kept larger than original)
-        double C_tot = run_multistart_optimizer_1d(opt, guess_Ctot, lb, ub, par->num_multistart);
+        // first optimization run
+        double minf_global = 0.0;
+        nlopt_optimize(opt, x, &minf_global);
+        double C_tot = x[0];
 
+        // second optimizatoin run with a different starting value for multistart
+        if (par->do_multistart) {
+            double minf_local = 0.0;
+            x[0] = guess_Ctot * 0.5;
+            nlopt_optimize(opt, x, &minf_global);
+            if (minf_local < minf_global) {
+                C_tot = x[0];
+                minf_global = minf_local;
+            }
+            
+        }
+
+        // cleanup
         nlopt_destroy(opt);
         delete data;
 
         return C_tot;
     }
 
-    void precompute_couple(sol_struct* sol, par_struct* par){
-        
-        // precompute optimal allocation for couples
-        const int nL = par->num_l;
-        const int nP = par->num_power;
-
-        // total number of iterations
-        const long long total = (long long)nL * nL * nP;
-
-        #pragma omp for schedule(static)
-        for (long long idx = 0; idx < total; ++idx) {
-
-            long long tmp = idx;
-
-            const int iP  = tmp % nP;
-            tmp /= nP;
-
-            const int ilm = tmp % nL;
-            tmp /= nL;
-
-            const int ilw = tmp;
-                    
-            double lw = par->grid_l[ilw];
-            double lm = par->grid_l[ilm];
-            double power = par->grid_power[iP];
-            
-            double start_hw = (1.0 - lw)/2.0;
-            double start_hm = (1.0 - lm)/2.0;
-            
-            // uncomment if used instead
-            // for(int iC=par->num_Ctot - 1; iC>=0; iC--){ //solve in descending order to have correct starting values for h in first grid point
-                
-            //     double C_tot = par->grid_Ctot[iC];
-            //     double start_Cw_priv = (power+0.1)*C_tot/3.0;
-            //     double start_Cm_priv = (1-power+0.1)*C_tot/3.0;
-
-            //     if(iC<(par->num_Ctot - 1)){ // update starting values for private consumption based on previous solution
-            //         auto idx_last = index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot);
-            //         start_Cw_priv = sol->pre_Cwd_priv_couple[idx_last];
-            //         start_Cm_priv = sol->pre_Cmd_priv_couple[idx_last];
-
-            //         start_hw = sol->pre_hwd_couple[idx_last];
-            //         start_hm = sol->pre_hmd_couple[idx_last];
-            //     }
-
-            //     auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
-            //     precompute::solve_intraperiod_couple(&sol->pre_Cwd_priv_couple[idx], &sol->pre_Cmd_priv_couple[idx], &sol->pre_hwd_couple[idx], &sol->pre_hmd_couple[idx], 
-            //         &sol->pre_Cd_inter_couple[idx], &sol->pre_Qd_couple[idx],
-            //         C_tot, lw, lm, power, par,
-            //         start_Cw_priv, start_Cm_priv, start_hw, start_hm,
-            //         1.0e-8, 1.0e-7);
-            // } // iC
-
-            if(strcmp(par->interp_method,"numerical")!=0){
-                for(int i_marg_u=0; i_marg_u<par->num_Ctot; i_marg_u++){
-                    double margU = par->grid_Wpre[i_marg_u];
-                    auto idx = index::index4(ilw, ilm, iP, i_marg_u, par->num_l, par->num_l, par->num_power, par->num_Ctot);
-                    
-                    double guess_Ctot=0.2, guess_Cw_priv=0.2, guess_Cm_priv=0.2;
-                    sol->grid_Cinterp_couple[idx] = inv_marg_util_couple(margU, ilw, ilm, iP, par, sol,
-                    guess_Ctot, guess_Cw_priv, guess_Cm_priv, false);    
-                } // i_marg_u
-            } // interp method
-        } // idx
-    } // precompute
 
     //////////////////
     // EGM solution
@@ -637,31 +555,17 @@ namespace couple {
         const int nL  = par->num_love;
         const int ntypes  = par->num_types;
         const int nK  = par->num_K;
-
-        const long long total = (long long)ntypes * ntypes * nP * nL * nK * nK;
+        const long long total = ntypes * ntypes * nP * nL * nK * nK;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_type_w[idx];
-            const auto type_m = (int)par->idx_couple_type_m[idx];
-            const auto iP = (int)par->idx_couple_power[idx];
-            const auto iL = (int)par->idx_couple_love[idx];
-            const auto iKw = (int)par->idx_couple_Kw[idx];
-            const auto iKm = (int)par->idx_couple_Km[idx];
+            const auto type_w = par->idx_couple_type_w[idx];
+            const auto type_m = par->idx_couple_type_m[idx];
+            const auto iP = par->idx_couple_power[idx];
+            const auto iL = par->idx_couple_love[idx];
+            const auto iKw = par->idx_couple_Kw[idx];
+            const auto iKm = par->idx_couple_Km[idx];
 
             // Note: important to have discrete choice as inner loop
             //       to allow parallelization over outer loops while
@@ -724,7 +628,6 @@ namespace couple {
             surplus_m[iP] = calc_marital_surplus(sol->Vm_couple_to_couple[idx_couple], sol->Vm_couple_to_single[idx_single_m]);
         }
 
-        // logs::write("surplus_log.txt", 1, "\n - surplus_w: %f, surplus_m: %f\n", surplus_w[0], surplus_m[0]);
         list_start_as_couple[0] = sol->Vw_start_as_couple;
         list_start_as_couple[1] = sol->Vm_start_as_couple;
         list_couple_to_couple[0] = sol->Vw_couple_to_couple;
@@ -757,8 +660,11 @@ namespace couple {
         double Eval_w = 0.0;
         double Eval_m = 0.0;
 
-        // OBS: This interpolation thing and especially its indices needs to be handled properly
-        auto idx_A = tools::binary_search(0, par->num_A, par->grid_A, par->grid_A[iA]);
+        // Note: A is on grid, but can't interpolate from last point. Use iA as index for interpolation, except if last point
+        auto idx_A = iA;
+        if (idx_A == par->num_A - 1) {
+            idx_A = par->num_A - 2;
+        }
 
         for (int i_love_shock = 0; i_love_shock < par->num_shock_love; ++i_love_shock) {
             double love_shock = love + par->grid_shock_love[i_love_shock];
@@ -810,29 +716,16 @@ namespace couple {
         const int nL  = par->num_love;
         const int ntypes  = par->num_types;
         const int nK  = par->num_K;
-
-        // Total number of iterations
-        long long total = (long long)ntypes * ntypes * nL * nK * nK;
+        long long total = ntypes * ntypes * nL * nK * nK;
 
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_barg_type_w[idx];
-            const auto type_m = (int)par->idx_couple_barg_type_m[idx];
-            const auto iL = (int)par->idx_couple_barg_love[idx];
-            const auto iKw = (int)par->idx_couple_barg_Kw[idx];
-            const auto iKm = (int)par->idx_couple_barg_Km[idx];
+            const auto type_w = par->idx_couple_barg_type_w[idx];
+            const auto type_m = par->idx_couple_barg_type_m[idx];
+            const auto iL = par->idx_couple_barg_love[idx];
+            const auto iKw = par->idx_couple_barg_Kw[idx];
+            const auto iKm = par->idx_couple_barg_Km[idx];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
                 if (strcmp(par->bargaining, "limited") == 0) {
@@ -847,30 +740,17 @@ namespace couple {
         }
 
 
-        total = (long long)ntypes * ntypes * nP * nL * nK * nK;
+        total = ntypes * ntypes * nP * nL * nK * nK;
             
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_type_w[idx];
-            const auto type_m = (int)par->idx_couple_type_m[idx];
-            const auto iP = (int)par->idx_couple_power[idx];
-            const auto iL = (int)par->idx_couple_love[idx];
-            const auto iKw = (int)par->idx_couple_Kw[idx];
-            const auto iKm = (int)par->idx_couple_Km[idx];
+            const auto type_w = par->idx_couple_type_w[idx];
+            const auto type_m = par->idx_couple_type_m[idx];
+            const auto iP = par->idx_couple_power[idx];
+            const auto iL = par->idx_couple_love[idx];
+            const auto iKw = par->idx_couple_Kw[idx];
+            const auto iKm = par->idx_couple_Km[idx];
 
             for (int iA = 0; iA < par->num_A; ++iA) {
                 calc_expected_value_couple(
@@ -899,31 +779,17 @@ namespace couple {
         const int nL  = par->num_love;
         const int ntypes  = par->num_types;
         const int nK  = par->num_K;
-
-        const long long total = (long long)ntypes * ntypes * nP * nL * nK * nK;
+        const long long total = ntypes * ntypes * nP * nL * nK * nK;
             
         #pragma omp for schedule(static)
         for (long long idx = 0; idx < total; ++idx) {
 
-            // long long tmp = idx;
-            // const int iKm = tmp % nK;
-            // tmp /= nK;
-            // const int iKw = tmp % nK;
-            // tmp /= nK;
-            // const int iL  = tmp % nL;
-            // tmp /= nL;
-            // const int iP  = tmp % nP;
-            // tmp /= nP;
-            // const int type_m = tmp % ntypes;
-            // tmp /= ntypes;
-            // const int type_w = tmp;
-
-            const auto type_w = (int)par->idx_couple_type_w[idx];
-            const auto type_m = (int)par->idx_couple_type_m[idx];
-            const auto iP = (int)par->idx_couple_power[idx];
-            const auto iL = (int)par->idx_couple_love[idx];
-            const auto iKw = (int)par->idx_couple_Kw[idx];
-            const auto iKm = (int)par->idx_couple_Km[idx];
+            const auto type_w = par->idx_couple_type_w[idx];
+            const auto type_m = par->idx_couple_type_m[idx];
+            const auto iP = par->idx_couple_power[idx];
+            const auto iL = par->idx_couple_love[idx];
+            const auto iKw = par->idx_couple_Kw[idx];
+            const auto iKm = par->idx_couple_Km[idx];
 
             auto idx_A = index::couple(t, type_w, type_m, iP, iL, iKw, iKm, 0, par);
 
@@ -937,56 +803,6 @@ namespace couple {
                 Vm_single_to_couple[iA] = Vm_couple_to_couple[iA];
             }
         }
-    }
-
-
-    void find_interpolated_labor_index_couple(
-        int t, int type_w, int type_m, double power, double love, double Kw, double Km, double A,
-        int* ilw_out, int* ilm_out,
-        sol_struct* sol, par_struct* par)
-    {
-        int iP = tools::binary_search(0, par->num_power, par->grid_power, power);
-        int iL = tools::binary_search(0, par->num_love, par->grid_love, love);
-        int iKw = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
-        int iKm = tools::binary_search(0, par->num_K, par->grid_Km, Km);
-        int iA = tools::binary_search(0, par->num_A, par->grid_A, A);
-
-
-        double maxV = -std::numeric_limits<double>::infinity();
-        int labor_index_w = 0;
-        int labor_index_m = 0;
-
-        for (int ilw = 0; ilw < par->num_l; ++ilw) {
-            for (int ilm = 0; ilm < par->num_l; ++ilm) {
-                auto idx_interp = index::couple_d(t, type_w, type_m, ilw, ilm, 0, 0, 0, 0, 0, par);
-
-                double Vw_now = tools::_interp_5d_index(
-                    par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                    &sol->Vwd_couple_to_couple[idx_interp],
-                    power, love, Kw, Km, A,
-                    iP, iL, iKw, iKm, iA
-                );
-                double Vm_now = tools::_interp_5d_index(
-                    par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                    par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                    &sol->Vmd_couple_to_couple[idx_interp],
-                    power, love, Kw, Km, A,
-                    iP, iL, iKw, iKm, iA
-                );
-
-                double V_now = power * Vw_now + (1.0 - power) * Vm_now;
-                if (maxV < V_now) {
-                    maxV = V_now;
-                    labor_index_w = ilw;
-                    labor_index_m = ilm;
-                }
-            }
-        }
-
-        //--- Return optimal labor choice ---
-        *ilw_out = labor_index_w;
-        *ilm_out = labor_index_m;
     }
 
 }

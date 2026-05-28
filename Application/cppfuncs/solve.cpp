@@ -17,9 +17,6 @@ EXPORT void solve(sol_struct *sol, par_struct *par){
         // // pre-compute intra-temporal optimal allocation
         precompute::precompute(sol,par);
 
-        // TJ:
-        // couple::precompute_couple(sol,par);
-
         // loop backwards
         for (int t = par->T-1; t >= 0; t--){
             single::solve_single_to_single(t,sol,par); 
@@ -42,35 +39,7 @@ EXPORT void simulate(sim_struct *sim, sol_struct *sol, par_struct *par){
 }
 
 
-EXPORT void compute_margEV(sol_struct* sol, par_struct* par){
-    // for (int t = 0; t < par->T; t++){
-    //     single::calc_marginal_value_single(t, woman, sol, par);
-    //     single::calc_marginal_value_single(t, man, sol, par);
-
-    //     for (int iP=0; iP<par->num_power; iP++){
-    //         for (int iL=0; iL<par->num_love; iL++){
-    //             auto idx = index::couple(t,iP,iL,0,par);
-    //             double* EVw = &sol->EVw_start_as_couple[idx];
-    //             double* EVm = &sol->EVm_start_as_couple[idx];
-    //             double* EmargV = &sol->EmargV_start_as_couple[idx];
-    //             couple::calc_marginal_value_couple(t, iP, iL, EVw, EVm, EmargV, sol, par);
-    //         }
-    //     }
-    // }
-    ;
-}
-
-
-EXPORT double calc_init_mu(int t, double love, double Aw, double Am, sol_struct* sol, par_struct* par){
-    // logs::write("barg_log.txt", 0, "calc_init_mu\n");
-    // double power =  single::calc_initial_bargaining_weight(t, love, Aw, Am, sol, par);
-    // logs::write("barg_log.txt", 1, "poewr: %f\n", power);
-    // return power;
-    return 0.0;
-}
-
-
-EXPORT void random_C_points(double* labor_w, double* labor_m, double* power_update, double* power_diff, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
+EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_update, double* power_diff, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
 
     int t = 0;
 
@@ -110,7 +79,7 @@ EXPORT void random_C_points(double* labor_w, double* labor_m, double* power_upda
                                 // labor points
                                 int ilw_update = -1;
                                 int ilm_update = -1;
-                                couple::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw, Km, A, &ilw_update, &ilm_update, sol, par);
+                                sim::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw, Km, A, &ilw_update, &ilm_update, sol, par);
                                 labor_w[idx] = ilw_update;
                                 labor_m[idx] = ilm_update;
                                 
