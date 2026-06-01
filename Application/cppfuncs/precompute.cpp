@@ -126,6 +126,10 @@ namespace precompute{
             *h = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot, iC);
             *C_inter = C_tot - *C_priv;
             *Q = utils::Q_single(*C_inter, *h, gender, par);
+
+            // ensure constraints are satisfied after interpolation
+            *C_priv = tools::min(tools::max(*C_priv, 0.0), C_tot);
+            *h = tools::min(tools::max(*h, 0.0), 1.0 - l);
         } 
         else { // solve intraperiod problem for single numerically
             double start_c_priv = C_tot/2.0;
@@ -331,9 +335,17 @@ namespace precompute{
                 *hw = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hwd_couple[idx], power, C_tot, iP_, iC);
                 *hm = tools::_interp_2d(par->grid_power, par->grid_Ctot, par->num_power, par->num_Ctot, &sol->pre_hmd_couple[idx], power, C_tot, iP_, iC);
             }
+
+            // ensure constraints are satisfied after interpolation
+            *Cw_priv = tools::min(tools::max(*Cw_priv, 0.0), C_tot);
+            *Cm_priv = tools::min(tools::max(*Cm_priv, 0.0), C_tot);
+            *hw = tools::min(tools::max(*hw, 0.0), 1.0 - par->grid_l[ilw]);
+            *hm = tools::min(tools::max(*hm, 0.0), 1.0 - par->grid_l[ilm]);
+
             *C_inter = C_tot - *Cw_priv - *Cm_priv;
-            // *Q = utils::Q(*C_inter, *hw, *hm, par);
+            *C_inter = tools::min(tools::max(*C_inter, 0.0), C_tot);
             *Q = utils::Q_couple(*C_inter, *hw, *hm, par);
+
         } else {
             double lw = par->grid_l[ilw];
             double lm = par->grid_l[ilm];

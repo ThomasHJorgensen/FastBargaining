@@ -453,8 +453,11 @@ namespace single {
             } else {
                 if (strcmp(par->interp_method, "linear") == 0) {
                     C_tot_pd[iA_pd] = tools::interp_1d(&grid_marg_u_single_for_inv[idx_interp], par->num_marg_u, par->grid_inv_marg_u, EmargU_pd[iA_pd]);
+                    C_tot_pd[iA_pd] = std::max(C_tot_pd[iA_pd], 0.0);
                 }
-                if (par->interp_inverse) C_tot_pd[iA_pd] = 1.0 / C_tot_pd[iA_pd];
+                if (par->interp_inverse) { // if the grid is for inverse marginal utility, invert it back to get consumption
+                    C_tot_pd[iA_pd] = 1.0 / C_tot_pd[iA_pd];
+                }
             }
 
             // endogenous grid over resources
