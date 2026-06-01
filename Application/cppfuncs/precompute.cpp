@@ -128,7 +128,7 @@ namespace precompute{
             *Q = utils::Q_single(*C_inter, *h, gender, par);
 
             // ensure constraints are satisfied after interpolation
-            *C_priv = tools::max(*C_priv, 0.0);
+            *C_priv = tools::min(tools::max(*C_priv, 0.0), C_tot);
             *h = tools::min(tools::max(*h, 0.0), 1.0 - l);
         } 
         else { // solve intraperiod problem for single numerically
@@ -337,12 +337,13 @@ namespace precompute{
             }
 
             // ensure constraints are satisfied after interpolation
-            *Cw_priv = tools::max(*Cw_priv, 0.0);
-            *Cm_priv = tools::max(*Cm_priv, 0.0);
+            *Cw_priv = tools::min(tools::max(*Cw_priv, 0.0), C_tot);
+            *Cm_priv = tools::min(tools::max(*Cm_priv, 0.0), C_tot);
             *hw = tools::min(tools::max(*hw, 0.0), 1.0 - par->grid_l[ilw]);
             *hm = tools::min(tools::max(*hm, 0.0), 1.0 - par->grid_l[ilm]);
 
             *C_inter = C_tot - *Cw_priv - *Cm_priv;
+            *C_inter = tools::min(tools::max(*C_inter, 0.0), C_tot);
             *Q = utils::Q_couple(*C_inter, *hw, *hm, par);
 
         } else {
