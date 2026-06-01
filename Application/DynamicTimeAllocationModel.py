@@ -356,13 +356,13 @@ class HouseholdModelClass(EconModelClass):
         self.setup_gender_parameters()
         self.setup_grids()
 
-        self.allocate_sol()
-        self.allocate_sim()
+        self.setup_sol(allocate=True)
+        self.setup_sim(allocate=True)
         self.draw_shocks_and_initial_states()
             
     @staticmethod
-    def _alloc(obj, name, shape, dtype=np.float64, value=np.nan, reset=False):
-        if not reset:
+    def _alloc(obj, name, shape, dtype=np.float64, value=np.nan, allocate=True):
+        if allocate:
             setattr(obj, name, np.empty(shape, dtype=dtype))
         # can't use nan if dtype is int or bool, so set to other value in that case
         if np.isnan(value):
@@ -374,18 +374,18 @@ class HouseholdModelClass(EconModelClass):
                 value = False
         getattr(obj, name)[...] = value
 
-    def allocate_sol(self, reset=False):
+    def setup_sol(self, allocate=True):
         """
         Allocate solution storage (memory) and initialize all values.
         
         args:
-            - reset: bool, if True, only fill existing arrays with value (without allocating new memory)
+            - allocate: bool, if True, allocate memory for all arrays.
         """
         par = self.par
         sol = self.sol
         
         def alloc(name, shape, dtype=np.float64, value=np.nan):
-            self._alloc(sol, name, shape, dtype=dtype, value=value, reset=reset)
+            self._alloc(sol, name, shape, dtype=dtype, value=value, allocate=allocate)
 
         # singles
         shape_single = (par.T, par.num_types, par.num_K, par.num_A)
@@ -550,18 +550,18 @@ class HouseholdModelClass(EconModelClass):
     
 
 
-    def allocate_sim(self, reset=False):
+    def setup_sim(self, allocate=True):
         """
         Allocate simulation storage (memory) and initialize all values.
 
         args:
-            - reset: bool, if True, only refill output arrays (leave draw/init arrays untouched).
+            - allocate: bool, if True, allocate memory for all arrays.
         """
         par = self.par
         sim = self.sim
 
         def alloc(name, shape, dtype=np.float64, value=np.nan):
-            self._alloc(sim, name, shape, dtype=dtype, value=value, reset=reset)
+            self._alloc(sim, name, shape, dtype=dtype, value=value, allocate=allocate)
 
         # simulation
         shape_sim = (par.simN, par.simT)
@@ -584,7 +584,7 @@ class HouseholdModelClass(EconModelClass):
         alloc("C_ineq_90_10", (1, par.simT), value=np.nan)
 
         # --- shock draw arrays ---
-        if not reset:
+        if allocate:
             for name in (
                 "draw_shock_Kw", "draw_shock_Km", "draw_love", "draw_meet",
                 "draw_uniform_partner_Kw", "draw_uniform_partner_Km",
@@ -595,7 +595,7 @@ class HouseholdModelClass(EconModelClass):
                 alloc(name, shape_sim, value=np.nan)
 
         # --- initial state arrays ---
-        if not reset:
+        if allocate:
             for name in (
                 "init_love", "init_Kw", "init_Km",
                 "init_A", "init_Aw", "init_Am", "init_divorces",
@@ -661,7 +661,7 @@ class HouseholdModelClass(EconModelClass):
         # always ensure sizes/grids are up-to-date (needed for shape checks)
         self.setup_gender_parameters()
         self.setup_grids()
-        self.allocate_sol(reset=True)
+        self.setup_sol(allocate=False)
 
         self.cpp.solve(sol, par)
 
@@ -672,7 +672,7 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
 
         # Reset simulated outcomes (except for initial conditions and shocks)
-        self.allocate_sim(reset=True)
+        self.setup_sim(allocate=False)
         if redraw:
             self.draw_shocks_and_initial_states()
         self.cpp.simulate(sim,sol,par)
