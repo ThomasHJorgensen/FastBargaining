@@ -144,17 +144,5 @@ venv.bak/
 *.out
 *.app
 
-# Ignore all _struct.cpp files
-*_struct.cpp
-
-# Ignore dll
-*.dll
-
-# Don't track output files
-output/
-
-# nlopt
-nlopt-2.4.2-dll64/
-
 # Other
 */compile.bat
