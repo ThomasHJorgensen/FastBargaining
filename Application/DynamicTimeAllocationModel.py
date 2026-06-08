@@ -957,9 +957,9 @@ class HouseholdModelClass(EconModelClass):
         is_power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
         power_updated = power[is_power_updated_true & (~divorced) & (~divorced_true)]
         power_updated_true = power_true[is_power_updated_true & (~divorced) & (~divorced_true)]
-        power_MAD = np.mean(np.abs(power_updated - power_updated_true))
+        power_MAD = np.mean(np.abs(power_updated / power_updated_true - 1.0) * 100.0)
         
-        C_MAD = np.mean(np.abs(C - C_true))
+        C_MAD = np.mean(np.abs(C / C_true - 1.0) * 100.0)
         
         return l_ERROR, divorce_ERROR, power_MAD, C_MAD
             
