@@ -1,6 +1,6 @@
 # FastBargaining: Fast Solution of Dynamic Intra-Household Bargaining Models
 
-This repository implements a dynamic intra-household bargaining model in which couples and singles make endogenous choices over time allocation (market work, home production) and consumption. The core contribution is the use of the **inverse Endogenous Grid Method (iEGM)**, which solves the model roughly 50 times faster than standard Value Function Iteration while maintaining comparable accuracy.
+This repository implements a dynamic intra-household bargaining model in which couples and singles make endogenous choices over time allocation (market work, home production) and consumption. The core contribution is the use of the **interpolated Endogenous Grid Method (iEGM)**, which solves the model roughly 50 times faster than standard Value Function Iteration while maintaining comparable accuracy.
 
 The model is built on the [EconModel](https://github.com/NumEconCopenhagen/EconModel) framework and uses [consav](https://github.com/NumEconCopenhagen/consav) for interpolation and numerical utilities. The inner optimization loop is compiled to C++ via [NLopt](https://nlopt.readthedocs.io/).
 
