@@ -49,10 +49,10 @@ typedef struct sim_struct
  double* init_A;
  double* init_Aw;
  double* init_Am;
+ double* init_power;
  double* init_divorces;
  int* init_type_w;
  int* init_type_m;
- int* init_power_idx;
  bool* init_couple;
 } sim_struct;
 
@@ -107,6 +107,7 @@ double* get_double_p_sim_struct(sim_struct* x, char* name){
  else if( strcmp(name,"init_A") == 0 ){ return x->init_A; }
  else if( strcmp(name,"init_Aw") == 0 ){ return x->init_Aw; }
  else if( strcmp(name,"init_Am") == 0 ){ return x->init_Am; }
+ else if( strcmp(name,"init_power") == 0 ){ return x->init_power; }
  else if( strcmp(name,"init_divorces") == 0 ){ return x->init_divorces; }
  else {return NULL;}
 
@@ -117,7 +118,6 @@ int* get_int_p_sim_struct(sim_struct* x, char* name){
 
  if( strcmp(name,"init_type_w") == 0 ){ return x->init_type_w; }
  else if( strcmp(name,"init_type_m") == 0 ){ return x->init_type_m; }
- else if( strcmp(name,"init_power_idx") == 0 ){ return x->init_power_idx; }
  else {return NULL;}
 
 }

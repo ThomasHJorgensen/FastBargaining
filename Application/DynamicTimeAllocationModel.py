@@ -150,6 +150,7 @@ class HouseholdModelClass(EconModelClass):
         par.simT = 40
         par.simN = 100_000
         par.init_couple_share = 0.80
+        par.init_nash_bargaining = True
 
         # -------- misc --------
         par.threads = 8
@@ -157,6 +158,10 @@ class HouseholdModelClass(EconModelClass):
         par.interp_method = "linear"
         par.centered_gradient = True
         par.bargaining = "limited"
+        
+        # counterfactual shocks
+        par.mu_shock_low = 0.0
+        par.mu_shock_high = 0.0
 
     def setup_gender_parameters(self):
         par = self.par
@@ -261,10 +266,11 @@ class HouseholdModelClass(EconModelClass):
 
         # ---------- 1) types ----------
         par.grid_type = np.arange(par.num_types, dtype=np.float64)
-        par.grid_mu_w, par.type_w_share = quadrature.normal_gauss_hermite(par.sigma_mu, par.num_types, mu=par.mu)
+        par.grid_mu_w, par.type_w_share = quadrature.normal_gauss_hermite(
+            par.sigma_mu, par.num_types, mu=par.mu)
         par.grid_mu_m, par.type_m_share = quadrature.normal_gauss_hermite(
             par.sigma_mu * par.sigma_mu_mult, par.num_types, mu=par.mu * par.mu_mult
-        )
+        )    
 
         # ---------- 2) discrete choices ----------
         par.grid_l = np.array([0.0, par.part_time, 1.0]) * par.full_time_hours
@@ -598,12 +604,13 @@ class HouseholdModelClass(EconModelClass):
         if allocate:
             for name in (
                 "init_love", "init_Kw", "init_Km",
-                "init_A", "init_Aw", "init_Am", "init_divorces",
+                "init_A", "init_Aw", "init_Am", 
+                "init_power", "init_divorces",
             ):
                 alloc(name, (par.simN,), value=np.nan)
 
             for name in (
-                "init_type_w", "init_type_m", "init_power_idx",
+                "init_type_w", "init_type_m",
             ):
                 alloc(name, (par.simN,), dtype=np.int32, value=-1000)
 
@@ -640,7 +647,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Aw[...] = sim.init_A * par.div_A_share
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        sim.init_power_idx[...] = (par.num_power // 2)
+        sim.init_power[...] = 0.5
         sim.init_love[...] = 0.0
         # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
         sim.init_divorces[...] = 0.0
@@ -652,7 +659,21 @@ class HouseholdModelClass(EconModelClass):
         # draws = np.random.rand(probs.shape[0])
         # sim.init_type_m[sim.init_couple] = (draws[:, None] > np.cumsum(probs, axis=1)).sum(axis=1)
 
+    def shock_parameters(self):
+        """Update parameters that are shocked. For more control this is done after setup_grids"""
 
+        par = self.par
+        
+        # shock to mu
+        type_split = par.num_types // 2
+        low_type_mask = np.arange(par.num_types) < type_split
+        high_type_mask = ~low_type_mask
+        
+        par.grid_mu_w[low_type_mask] += par.mu_shock_low
+        par.grid_mu_m[low_type_mask] += par.mu_shock_low
+        par.grid_mu_w[high_type_mask] += par.mu_shock_high
+        par.grid_mu_m[high_type_mask] += par.mu_shock_high
+        
     def solve(self):
 
         sol = self.sol
@@ -661,6 +682,7 @@ class HouseholdModelClass(EconModelClass):
         # always ensure sizes/grids are up-to-date (needed for shape checks)
         self.setup_gender_parameters()
         self.setup_grids()
+        self.shock_parameters()
         self.setup_sol(allocate=False)
 
         self.cpp.solve(sol, par)

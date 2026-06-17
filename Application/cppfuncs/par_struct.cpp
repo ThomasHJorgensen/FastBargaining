@@ -64,11 +64,14 @@ typedef struct par_struct
  int simT;
  int simN;
  double init_couple_share;
+ bool init_nash_bargaining;
  int threads;
  bool do_multistart;
  char* interp_method;
  bool centered_gradient;
  char* bargaining;
+ double mu_shock_low;
+ double mu_shock_high;
  double mu_w;
  double mu_m;
  double gamma_w;
@@ -138,7 +141,6 @@ typedef struct par_struct
  long long* idx_pre_couple_lw;
  long long* idx_pre_couple_lm;
  long long* idx_pre_couple_power;
- char* table_name;
 } par_struct;
 
 double get_double_par_struct(par_struct* x, char* name){
@@ -184,6 +186,8 @@ double get_double_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"p_meet") == 0 ){ return x->p_meet; }
  else if( strcmp(name,"max_Ctot") == 0 ){ return x->max_Ctot; }
  else if( strcmp(name,"init_couple_share") == 0 ){ return x->init_couple_share; }
+ else if( strcmp(name,"mu_shock_low") == 0 ){ return x->mu_shock_low; }
+ else if( strcmp(name,"mu_shock_high") == 0 ){ return x->mu_shock_high; }
  else if( strcmp(name,"mu_w") == 0 ){ return x->mu_w; }
  else if( strcmp(name,"mu_m") == 0 ){ return x->mu_m; }
  else if( strcmp(name,"gamma_w") == 0 ){ return x->gamma_w; }
@@ -281,6 +285,7 @@ bool get_bool_par_struct(par_struct* x, char* name){
  if( strcmp(name,"interp_inverse") == 0 ){ return x->interp_inverse; }
  else if( strcmp(name,"precompute_intratemporal") == 0 ){ return x->precompute_intratemporal; }
  else if( strcmp(name,"do_egm") == 0 ){ return x->do_egm; }
+ else if( strcmp(name,"init_nash_bargaining") == 0 ){ return x->init_nash_bargaining; }
  else if( strcmp(name,"do_multistart") == 0 ){ return x->do_multistart; }
  else if( strcmp(name,"centered_gradient") == 0 ){ return x->centered_gradient; }
  else {return false;}
@@ -292,7 +297,6 @@ char* get_char_p_par_struct(par_struct* x, char* name){
 
  if( strcmp(name,"interp_method") == 0 ){ return x->interp_method; }
  else if( strcmp(name,"bargaining") == 0 ){ return x->bargaining; }
- else if( strcmp(name,"table_name") == 0 ){ return x->table_name; }
  else {return NULL;}
 
 }

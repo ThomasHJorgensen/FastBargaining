@@ -336,12 +336,14 @@ namespace sim {
                     Am_lag = sim->init_Am[i];
                     couple_lag = sim->init_couple[i];
                     love = sim->init_love[i];
-                    sim->love[it] = love;
                     type_w = sim->init_type_w[i];
                     type_m = sim->init_type_m[i];
                     sim->divorces[it] = sim->init_divorces[i];
-                    // power_lag = par->grid_power[sim->init_power_idx[i]];
-                    power_lag = single::calc_initial_bargaining_weight(t, type_w, type_m, love, Kw_lag, Km_lag, Aw_lag, Am_lag, sol, par); 
+                    if (par->init_nash_bargaining){
+                        power_lag = single::calc_initial_bargaining_weight(t, type_w, type_m, love, Kw_lag, Km_lag, Aw_lag, Am_lag, sol, par); 
+                    } else {
+                        power_lag = sim->init_power[i];
+                    }
                 } else {
                     int it_1 = index::index2(i,t-1,par->simN,par->simT);
                     Kw_lag = sim->Kw[it_1];
@@ -351,7 +353,7 @@ namespace sim {
                     Am_lag = sim->Am[it_1];
                     couple_lag = sim->couple[it_1];
                     power_lag = sim->power[it_1];
-                    love = sim->love[it];
+                    love = sim->love[it_1];
                     type_w = sim->init_type_w[i];
                     type_m = sim->init_type_m[i];
                     sim->divorces[it] = sim->divorces[it_1];
@@ -394,7 +396,6 @@ namespace sim {
                             Km_lag = Kp;
                             type_w = type_w;
                             type_m = type_p;
-                            sim->love[it] = love;
                         } else { // if meet but do not agree to couple
                             power = -1.0;
                             sim->couple[it] = false;
@@ -452,11 +453,9 @@ namespace sim {
                     sim->Aw[it] = par->div_A_share * sim->A[it];
                     sim->Am[it] = (1.0-par->div_A_share) * sim->A[it];
                     sim->power[it] = power;
-                    if(t<par->simT-1){
-                        int it1 = index::index2(i,t+1,par->simN,par->simT);
-                        sim->love[it1] = love + sim->draw_love[it1];
-                        sim->love[it1] = tools::max(par->grid_love[0], tools::min(sim->love[it1], par->grid_love[par->num_love-1]));
-                    }
+                    sim->love[it] = love + sim->draw_love[it]; // note: love draws on grid.
+                    sim->love[it] = tools::max(par->grid_love[0], tools::min(sim->love[it], par->grid_love[par->num_love-1])); // enforce love bounds
+
 
 
                 } else { // single
@@ -525,7 +524,7 @@ namespace sim {
                 // iii) utility of women
                 double love_now = 0.0;
                 if (sim->couple[it]){
-                    love_now = sim->love[it];
+                    love_now = love;
                 }
                 double lh_w = (sim->lw[it] + sim->hw[it]);
                 sim->util_w[it] = pow(par->beta , t) * utils::util(sim->Cw_priv[it], lh_w, sim->Qw[it],woman,par,love_now);
