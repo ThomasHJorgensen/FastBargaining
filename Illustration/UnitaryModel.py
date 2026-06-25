@@ -639,7 +639,10 @@ class UnitaryModelClass(EconModelClass):
         diff = true_C - model_C
         self.sim.MSE = np.mean(diff**2)
         MAD = np.mean(np.abs(diff))
-        return self.sim.MSE, MAD
+        
+        # percent deviation from true model
+        MAPCT = np.mean(np.abs((model_C - true_C)/true_C * 100.0))
+        return self.sim.MSE, MAD, MAPCT
     
     def lifetime_utility(self,HH_util=None,true_model=None):
         # a. unpack
