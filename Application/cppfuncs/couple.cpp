@@ -166,7 +166,7 @@ namespace couple {
             if (par->do_multistart) {
                 double minf_local = 0.0;
                 x[0] = starting_val * 0.5;
-                nlopt_optimize(opt, x, &minf_global);
+                nlopt_optimize(opt, x, &minf_local);
                 if (minf_local < minf_global) {
                     C_tot = x[0];
                     minf_global = minf_local;
@@ -222,8 +222,7 @@ namespace couple {
     }
 
     ////////////////////////////// EGM numerical solution //////////////////////////////
-    double marg_util_C_couple(double C_tot, int ilw, int ilm, int iP, par_struct* par, sol_struct* sol,
-        double /*guess_Cw_priv*/, double /*guess_Cm_priv*/)
+    double marg_util_C_couple(double C_tot, int ilw, int ilm, int iP, par_struct* par, sol_struct* sol)
     {
         // Use forward difference to approximate marginal utility
         const double delta = 1.0e-4;
@@ -241,8 +240,6 @@ namespace couple {
         par_struct* par;
         sol_struct* sol;
         bool do_print;
-        double guess_Cw_priv;
-        double guess_Cm_priv;
     };
 
     double obj_inv_marg_util_couple(unsigned /*n*/, const double* x, double* /*grad*/, void* solver_data_in) {
@@ -251,11 +248,11 @@ namespace couple {
 
         double penalty = 0.0;
         if (C_tot <= 0.0) {
-            penalty = 1000.0 * C_tot * C_tot;
+            penalty += 1000.0 * C_tot * C_tot;
             C_tot = 1.0e-6;
         }
 
-        double diff = marg_util_C_couple(C_tot, d->ilm, d->ilw, d->iP, d->par, d->sol, d->guess_Cw_priv, d->guess_Cm_priv) - d->margU;
+        double diff = marg_util_C_couple(C_tot, d->ilw, d->ilm, d->iP, d->par, d->sol) - d->margU;
 
         if (d->do_print) {
             logs::write("inverse_log.txt", 1, "C_tot: %f, diff: %f, penalty: %f\n", C_tot, diff, penalty);
@@ -264,12 +261,11 @@ namespace couple {
     }
 
     double inv_marg_util_couple(double margU, int ilw, int ilm, int iP, par_struct* par, sol_struct* sol,
-        double guess_Ctot, double guess_Cw_priv, double guess_Cm_priv, bool do_print = false)
+        double guess_Ctot, bool do_print = false)
     {
         auto* data = new SolverInvData();
         data->ilw = ilw; data->ilm = ilm; data->margU = margU; data->iP = iP;
         data->par = par; data->sol = sol; data->do_print = do_print;
-        data->guess_Cw_priv = guess_Cw_priv; data->guess_Cm_priv = guess_Cm_priv;
 
         const int dim = 1;
         double lb[dim], ub[dim];
@@ -299,7 +295,7 @@ namespace couple {
         if (par->do_multistart) {
             double minf_local = 0.0;
             x[0] = guess_Ctot * 0.5;
-            nlopt_optimize(opt, x, &minf_global);
+            nlopt_optimize(opt, x, &minf_local);
             if (minf_local < minf_global) {
                 C_tot = x[0];
                 minf_global = minf_local;
@@ -404,10 +400,14 @@ namespace couple {
         double* Md_pd = &sol->Md_pd[idx_A_pd];
         double* Vd_couple_to_couple_pd = &sol->Vd_couple_to_couple_pd[idx_A_pd];
 
+        double labor_w = par->grid_l[ilw];
+        double labor_m = par->grid_l[ilm];
         double Kw = par->grid_Kw[iKw];
         double Km = par->grid_Km[iKm];
         double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
         double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
+
+        double M_resources_0 = resources_couple(type_w, type_m, labor_w, labor_m, Kw, Km, par->grid_A_pd[0], par);
 
         // Loop over endogenous asset grid
         for (int iA_pd = 0; iA_pd < par->num_A_pd; ++iA_pd) {
@@ -418,22 +418,12 @@ namespace couple {
             if (strcmp(par->interp_method, "numerical") == 0) {
 
                 // starting values
-                double guess_Ctot = 3.0;
-                double guess_Cw_priv = guess_Ctot / 3.0;
-                double guess_Cm_priv = guess_Ctot / 3.0;
-
-                if (iA_pd > 0) {
-                    // last found solution
+                double guess_Ctot = M_resources_0;
+                if (iA_pd > 0) { // last found solution
                     guess_Ctot = Cd_tot_pd[iA_pd - 1];
-                    guess_Cw_priv = Cw_priv;
-                    guess_Cm_priv = Cm_priv;
-
-                } else if (t < (par->T - 2)) {
-                    guess_Ctot = Cd_tot_pd_next[iA_pd]; // if not first period, use next period solution as starting value
                 }
 
-                Cd_tot_pd[iA_pd] = inv_marg_util_couple(EmargUd_pd[iA_pd], ilw, ilm, iP, par, sol,
-                    guess_Ctot, guess_Cw_priv, guess_Cm_priv);
+                Cd_tot_pd[iA_pd] = inv_marg_util_couple(EmargUd_pd[iA_pd], ilw, ilm, iP, par, sol, guess_Ctot);
             } else {
                 if (strcmp(par->interp_method, "linear") == 0) {
                     auto idx_interp = index::index4(ilw, ilm, iP, 0, par->num_l, par->num_l, par->num_power, par->num_marg_u);

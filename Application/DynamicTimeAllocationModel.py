@@ -422,7 +422,7 @@ class HouseholdModelClass(EconModelClass):
         for name in (
             "EmargUwd_single_to_single_pd", "Cwd_tot_single_to_single_pd",
             "Mwd_single_to_single_pd", "Vwd_single_to_single_pd",
-            "EmargUmd_single_to_single_pd", "Cmd_totm_single_to_single_pd",
+            "EmargUmd_single_to_single_pd", "Cmd_tot_single_to_single_pd",
             "Mmd_single_to_single_pd", "Vmd_single_to_single_pd",
         ):
             alloc(name, shape_single_egm, value=0.0)

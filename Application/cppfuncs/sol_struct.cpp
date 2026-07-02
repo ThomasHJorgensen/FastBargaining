@@ -19,7 +19,7 @@ typedef struct sol_struct
  double* Mwd_single_to_single_pd;
  double* Vwd_single_to_single_pd;
  double* EmargUmd_single_to_single_pd;
- double* Cmd_totm_single_to_single_pd;
+ double* Cmd_tot_single_to_single_pd;
  double* Mmd_single_to_single_pd;
  double* Vmd_single_to_single_pd;
  double* Vw_couple_to_single;
@@ -116,7 +116,7 @@ double* get_double_p_sol_struct(sol_struct* x, char* name){
  else if( strcmp(name,"Mwd_single_to_single_pd") == 0 ){ return x->Mwd_single_to_single_pd; }
  else if( strcmp(name,"Vwd_single_to_single_pd") == 0 ){ return x->Vwd_single_to_single_pd; }
  else if( strcmp(name,"EmargUmd_single_to_single_pd") == 0 ){ return x->EmargUmd_single_to_single_pd; }
- else if( strcmp(name,"Cmd_totm_single_to_single_pd") == 0 ){ return x->Cmd_totm_single_to_single_pd; }
+ else if( strcmp(name,"Cmd_tot_single_to_single_pd") == 0 ){ return x->Cmd_tot_single_to_single_pd; }
  else if( strcmp(name,"Mmd_single_to_single_pd") == 0 ){ return x->Mmd_single_to_single_pd; }
  else if( strcmp(name,"Vmd_single_to_single_pd") == 0 ){ return x->Vmd_single_to_single_pd; }
  else if( strcmp(name,"Vw_couple_to_single") == 0 ){ return x->Vw_couple_to_single; }
