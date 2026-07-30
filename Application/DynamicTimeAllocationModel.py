@@ -7,6 +7,7 @@ import numba as nb
 from scipy.stats import norm, multivariate_normal
 import scipy.optimize as optimize
 from scipy.optimize import minimize
+from scipy.optimize import brentq
 from collections import OrderedDict
 
 from EconModel import EconModelClass
@@ -93,11 +94,11 @@ class HouseholdModelClass(EconModelClass):
         par.T = 40
 
         # wealth
-        par.num_A = 30
+        par.num_A = 25
         par.max_A = 300.0
 
         # human capital
-        par.num_K = 10
+        par.num_K = 5
         par.max_K = 10.0
         par.sigma_K = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         par.sigma_K_mult = 1.0
@@ -108,7 +109,7 @@ class HouseholdModelClass(EconModelClass):
 
         # love / match quality
         par.num_love = 11
-        par.max_love = 100.0
+        par.max_love = 50.0
         par.sigma_love = 7.0
         par.mean_love = 0.0 # normalization
         par.num_shock_love = 5  # cannot be 1 due to interpolation
@@ -118,7 +119,7 @@ class HouseholdModelClass(EconModelClass):
         par.type_corr = 0.45 # (Bronson, Haanwinckel, and Mazzocco (2025))
         
         # EGM
-        par.num_A_pd = 30
+        par.num_A_pd = 25
         par.max_A_pd = 300.0
         
         # precomputation of intratemporal solution (for iEGM)
@@ -277,8 +278,8 @@ class HouseholdModelClass(EconModelClass):
         par.grid_Am = (1.0 - par.div_A_share) * par.grid_A
 
         # 3.2 human capital
-        par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
-        par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.1)
+        par.grid_Kw = nonlinspace(0.0, par.max_K, par.num_K, 1.0)
+        par.grid_Km = nonlinspace(0.0, par.max_K, par.num_K, 1.0)
 
         # 3.3 bargaining power (more mass in tails)
         odd_num = np.mod(par.num_power, 2)
@@ -962,39 +963,36 @@ class HouseholdModelClass(EconModelClass):
         C_MAD = np.mean(np.abs(C / C_true - 1.0) * 100.0)
         
         return l_ERROR, divorce_ERROR, power_MAD, C_MAD
-            
+
+      
     def wealth_compensation(self,true_model):
         # search for level of initial wealth that makes mean lifetime utility similar with true model
         sim = self.sim
-                
+
         mean_lifetime_util_true = true_model.sim.mean_lifetime_util[0]
-        
-        
-        def obj_func(a_init):
+        expected_income = (true_model.sim.after_tax_inc_w.mean() + true_model.sim.after_tax_inc_m.mean()) / 2.0
+
+        def signed_diff(percent_expected_income_compensation):
             init_A_orig = sim.init_A.copy()
             init_Aw_orig = sim.init_Aw.copy()
             init_Am_orig = sim.init_Am.copy()
-            
-            
-            # measure is in percent relative to expected income 
-            sim.init_A += a_init * (2*4.73) * 0.01
-            sim.init_Aw += a_init * 4.73 * 0.01
-            sim.init_Am += a_init * 4.73 * 0.01
-            self.simulate()
-            
-            # reset initial wealth for next evaluation
-            sim.init_A = init_A_orig 
-            sim.init_Aw = init_Aw_orig 
-            sim.init_Am = init_Am_orig 
-            
-            mean_lifetime_util = sim.mean_lifetime_util[0] 
-            
-            diff = (mean_lifetime_util - mean_lifetime_util_true)*1.0
-            return diff*diff
 
-        res = minimize(obj_func,np.array([0.3]),bounds=((0.0,None),),method='nelder-mead')
-        
+            # measure is in percent relative to expected income
+            sim.init_A += percent_expected_income_compensation * (2*expected_income) * 0.01 # *0.01 to get percent (not in decimal)
+            sim.init_Aw += percent_expected_income_compensation * expected_income * 0.01
+            sim.init_Am += percent_expected_income_compensation * expected_income * 0.01
+            self.simulate()
+
+            # reset initial wealth for next evaluation
+            sim.init_A = init_A_orig
+            sim.init_Aw = init_Aw_orig
+            sim.init_Am = init_Am_orig
+
+            return sim.mean_lifetime_util[0] - mean_lifetime_util_true
+
+        percent_expected_income_compensation = brentq(signed_diff, -500.0, 500.0)
+
         # reset
         self.simulate()
-        
-        return res.x[0]
+
+        return percent_expected_income_compensation

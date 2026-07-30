@@ -493,7 +493,7 @@ class model_plotter():
                     else:
                         line.set_color('grey')
                     line.set_linestyle('-')
-                    line.set_alpha(0.1)
+                    line.set_alpha(1/np.min([y.shape[1], 510]))  # Set alpha to 1/n, where n is the number of lines, but not less than 1/510
                     line.set_marker('')
         
         return ax
