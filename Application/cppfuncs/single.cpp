@@ -169,7 +169,7 @@ namespace single {
             if (par->do_multistart) {
                 double minf_local = 0.0;
                 x[0] = starting_val * 0.5;
-                nlopt_optimize(opt, x, &minf_global);
+                nlopt_optimize(opt, x, &minf_local);
                 if (minf_local < minf_global) {
                     Cd_tot = x[0];
                     minf_global = minf_local;
@@ -299,7 +299,7 @@ namespace single {
         if (par->do_multistart) {
             double minf_local = 0.0;
             x[0] = guess_C_tot * 0.5;
-            nlopt_optimize(opt, x, &minf_global);
+            nlopt_optimize(opt, x, &minf_local);
             if (minf_local < minf_global) {
                 C_tot = x[0];
                 minf_global = minf_local;
@@ -384,6 +384,7 @@ namespace single {
     void solve_single_to_single_Agrid_egm(int t, int type, int il, int iK, int gender, sol_struct* sol, par_struct* par){
         // get index
         auto idx_A_pd  = index::single_pd(t, type, il, iK, 0, par);
+        auto idx_A_pd_next = index::single_pd(t + 1, type, il, iK, 0, par);
         auto idx_d_A   = index::single_d(t, type, il, iK, 0, par);
         auto idx_next  = index::single(t + 1, type, 0, 0, par);
         auto idx_interp = index::index2(il, 0, par->num_l, par->num_marg_u);
@@ -420,7 +421,7 @@ namespace single {
             C_inter = sol->Cmd_inter_single_to_single;
             Q = sol->Qmd_single_to_single;
             EmargU_pd = &sol->EmargUmd_single_to_single_pd[idx_A_pd];
-            C_tot_pd = &sol->Cmd_totm_single_to_single_pd[idx_A_pd];
+            C_tot_pd = &sol->Cmd_tot_single_to_single_pd[idx_A_pd];
             M_pd = &sol->Mmd_single_to_single_pd[idx_A_pd];
             V_pd = &sol->Vmd_single_to_single_pd[idx_A_pd];
         }
@@ -434,9 +435,12 @@ namespace single {
 
         // 2. EGM step
         int min_point_A = 0;
+        double labor = par->grid_l[il];
         double K = grid_K[iK];
         double K_next = utils::human_capital_transition(K, par->grid_l[il], par);
         int min_point_K = tools::binary_search(0, par->num_K, grid_K, K_next);
+        
+        double M_resources_0 = resources_single(type, labor, K, grid_A_pd[0], gender, par);
 
         for (int iA_pd = 0; iA_pd < par->num_A_pd; iA_pd++) {
             double A_next = grid_A_pd[iA_pd];
@@ -447,8 +451,10 @@ namespace single {
 
             // invert marginal utility
             if (strcmp(par->interp_method, "numerical") == 0) {
-                double guess_C_tot = 3.0;
-                if (iA_pd > 0) guess_C_tot = C_tot_pd[iA_pd - 1];
+                double guess_C_tot = M_resources_0;
+                if (iA_pd > 0) { // last found solution
+                    guess_C_tot = C_tot_pd[iA_pd - 1];
+                }
                 C_tot_pd[iA_pd] = inv_marg_util_single(EmargU_pd[iA_pd], il, gender, par, sol, guess_C_tot);
             } else {
                 if (strcmp(par->interp_method, "linear") == 0) {

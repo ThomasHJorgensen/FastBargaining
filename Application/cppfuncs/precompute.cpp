@@ -121,15 +121,17 @@ namespace precompute{
             }
 
             int iC = tools::binary_search(0, par->num_Ctot, par->grid_Ctot, C_tot);
-
+            
             *C_priv = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &C_priv_grid[idx], C_tot, iC);
             *h = tools::interp_1d_index(par->grid_Ctot, par->num_Ctot, &h_grid[idx], C_tot, iC);
-            *C_inter = C_tot - *C_priv;
-            *Q = utils::Q_single(*C_inter, *h, gender, par);
-
+            
             // ensure constraints are satisfied after interpolation
             *C_priv = tools::min(tools::max(*C_priv, 0.0), C_tot);
             *h = tools::min(tools::max(*h, 0.0), 1.0 - l);
+
+            *C_inter = C_tot - *C_priv;
+            *Q = utils::Q_single(*C_inter, *h, gender, par);
+
         } 
         else { // solve intraperiod problem for single numerically
             double start_c_priv = C_tot/2.0;
