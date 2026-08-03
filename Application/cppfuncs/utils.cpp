@@ -51,8 +51,8 @@ namespace utils {
         if (gender == man) {
             log_wage = par->grid_mu_m[type] + par->gamma_m*K;
         }
-        // double full_time = par->grid_l[par->num_l-1]; // wage could be normalized with full time hours, to make wage a full time equivalent
-        return exp(log_wage); 
+        double full_time = par->grid_l[par->num_l-1]; // wage could be normalized with full time hours, to make wage a full time equivalent
+        return exp(log_wage) / full_time; 
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {

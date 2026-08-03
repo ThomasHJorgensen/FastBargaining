@@ -72,7 +72,7 @@ class HouseholdModelClass(EconModelClass):
         par.pi = 0.6
 
         # -------- income / wages (baseline + multipliers) --------
-        par.mu = 1.8
+        par.mu = 0.8
         par.sigma_mu = 0.54
         par.gamma = 0.13
         par.gamma2 = 0.00
@@ -401,6 +401,8 @@ class HouseholdModelClass(EconModelClass):
         # precomputations
         shape_pre_single = (par.num_l, par.num_Ctot)
         shape_pre_couple = (par.num_l, par.num_l, par.num_power, par.num_Ctot)
+        shape_iegm_single = (par.num_l, par.num_marg_u)
+        shape_iegm_couple = (par.num_l, par.num_l, par.num_power, par.num_marg_u)
         
 
         # --- single to single (discrete l choices) ---
@@ -521,19 +523,26 @@ class HouseholdModelClass(EconModelClass):
             "pre_Cwd_inter_single", "pre_Cmd_inter_single",
             "pre_Qwd_single", "pre_Qmd_single",
             "pre_hwd_single", "pre_hmd_single",
+        ):
+            alloc(name, shape_pre_single, value=np.nan)
+        
+        for name in (
             "grid_marg_u_single_w", "grid_marg_u_single_m",
             "grid_marg_u_single_w_for_inv", "grid_marg_u_single_m_for_inv",
         ):
-            alloc(name, shape_pre_single, value=np.nan)
+            alloc(name, shape_iegm_single, value=np.nan)
 
         for name in (
             "pre_Cwd_priv_couple", "pre_Cmd_priv_couple",
             "pre_Cd_inter_couple", "pre_Qd_couple",
             "pre_hwd_couple", "pre_hmd_couple",
-            "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
-            "grid_Cinterp_couple",
         ):
             alloc(name, shape_pre_couple, value=np.nan)
+            
+        for name in (
+            "grid_marg_u_couple", "grid_marg_u_couple_for_inv",
+        ):
+            alloc(name, shape_iegm_couple, value=np.nan)
             
         # timing
         for name in (
@@ -747,7 +756,7 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
         sim = self.sim
         moms = OrderedDict()
-        money_metric = 10 #_000
+        money_metric = 10 # 10 thousends, so that 1.0 = 10,000 (DKK)
         hours_metric = 7*16  # full time hours per week
         
         # b) samples

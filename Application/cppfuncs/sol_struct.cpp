@@ -91,7 +91,6 @@ typedef struct sol_struct
  double* pre_hmd_couple;
  double* grid_marg_u_couple;
  double* grid_marg_u_couple_for_inv;
- double* grid_Cinterp_couple;
  double* solution_time;
 } sol_struct;
 
@@ -187,7 +186,6 @@ double* get_double_p_sol_struct(sol_struct* x, char* name){
  else if( strcmp(name,"pre_hmd_couple") == 0 ){ return x->pre_hmd_couple; }
  else if( strcmp(name,"grid_marg_u_couple") == 0 ){ return x->grid_marg_u_couple; }
  else if( strcmp(name,"grid_marg_u_couple_for_inv") == 0 ){ return x->grid_marg_u_couple_for_inv; }
- else if( strcmp(name,"grid_Cinterp_couple") == 0 ){ return x->grid_Cinterp_couple; }
  else if( strcmp(name,"solution_time") == 0 ){ return x->solution_time; }
  else {return NULL;}
 
