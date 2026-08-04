@@ -94,11 +94,11 @@ class HouseholdModelClass(EconModelClass):
         par.T = 40
 
         # wealth
-        par.num_A = 25
+        par.num_A = 30
         par.max_A = 300.0
 
         # human capital
-        par.num_K = 5
+        par.num_K = 10
         par.max_K = 10.0
         par.sigma_K = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         par.sigma_K_mult = 1.0
@@ -119,7 +119,7 @@ class HouseholdModelClass(EconModelClass):
         par.type_corr = 0.45 # (Bronson, Haanwinckel, and Mazzocco (2025))
         
         # EGM
-        par.num_A_pd = 25
+        par.num_A_pd = 30
         par.max_A_pd = 300.0
         
         # precomputation of intratemporal solution (for iEGM)

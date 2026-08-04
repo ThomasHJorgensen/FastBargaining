@@ -138,6 +138,7 @@ typedef struct par_struct
  long long* idx_pre_couple_lw;
  long long* idx_pre_couple_lm;
  long long* idx_pre_couple_power;
+ char* table_name;
 } par_struct;
 
 double get_double_par_struct(par_struct* x, char* name){
@@ -291,6 +292,7 @@ char* get_char_p_par_struct(par_struct* x, char* name){
 
  if( strcmp(name,"interp_method") == 0 ){ return x->interp_method; }
  else if( strcmp(name,"bargaining") == 0 ){ return x->bargaining; }
+ else if( strcmp(name,"table_name") == 0 ){ return x->table_name; }
  else {return NULL;}
 
 }
