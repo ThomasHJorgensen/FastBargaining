@@ -59,7 +59,7 @@ namespace single {
     }
 
     double after_tax_income_single(int type, double labor, double K, double A, int gender, par_struct* par) {
-        if (labor == 0.0) return RESOURCES_EPS;
+        if (labor == 0.0) return RESOURCES_EPS + (par->R - 1.0) * A;
 
         double w = utils::wage(type, K, gender, par);
         double gross_wage_income = w * labor * par->available_hours;

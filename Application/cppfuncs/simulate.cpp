@@ -314,6 +314,11 @@ namespace sim {
     
         #pragma omp for schedule(static)
         for (int i=0; i<par->simN; i++){
+            // type_w never changes; type_m persists across periods so that a newly
+            // matched partner's type (drawn on repartnering below) carries forward
+            // instead of reverting to the original init_type_m every period.
+            int type_w = sim->init_type_w[i];
+            int type_m = sim->init_type_m[i];
             for (int t=0; t < par->simT; t++){
                 int it = index::index2(i,t,par->simN,par->simT);
 
@@ -326,8 +331,6 @@ namespace sim {
                 bool   couple_lag = false;
                 double power_lag = 0.0;
                 double love = 0.0;
-                int type_w = 0;
-                int type_m = 0;
                 if (t==0){
                     Kw_lag = sim->init_Kw[i];
                     Km_lag = sim->init_Km[i];
@@ -337,11 +340,9 @@ namespace sim {
                     couple_lag = sim->init_couple[i];
                     love = sim->init_love[i];
                     sim->love[it] = love;
-                    type_w = sim->init_type_w[i];
-                    type_m = sim->init_type_m[i];
                     sim->divorces[it] = sim->init_divorces[i];
                     // power_lag = par->grid_power[sim->init_power_idx[i]];
-                    power_lag = single::calc_initial_bargaining_weight(t, type_w, type_m, love, Kw_lag, Km_lag, Aw_lag, Am_lag, sol, par); 
+                    power_lag = single::calc_initial_bargaining_weight(t, type_w, type_m, love, Kw_lag, Km_lag, Aw_lag, Am_lag, sol, par);
                 } else {
                     int it_1 = index::index2(i,t-1,par->simN,par->simT);
                     Kw_lag = sim->Kw[it_1];
@@ -352,11 +353,9 @@ namespace sim {
                     couple_lag = sim->couple[it_1];
                     power_lag = sim->power[it_1];
                     love = sim->love[it];
-                    type_w = sim->init_type_w[i];
-                    type_m = sim->init_type_m[i];
                     sim->divorces[it] = sim->divorces[it_1];
-                } 
-                
+                }
+
                 // a) Find transitions in couple/single status and calculate power 
                 double power = 1000.0; // nonsense value
                 if (couple_lag) { // if start as couple

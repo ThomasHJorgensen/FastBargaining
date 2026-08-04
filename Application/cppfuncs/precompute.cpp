@@ -170,7 +170,7 @@ namespace precompute{
         grid_marg_u_single[idx] = (util_delta - util)/delta;
 
         auto idx_inv = index::index2(il, par->num_marg_u-1 - i_marg_u, par->num_l, par->num_marg_u);
-        grid_marg_u_single_for_inv[idx_inv] = grid_marg_u_single[i_marg_u];
+        grid_marg_u_single_for_inv[idx_inv] = grid_marg_u_single[idx];
     }
 
     ////////////////////////////// Couple precompute functions //////////////////////////////
@@ -424,8 +424,8 @@ namespace precompute{
                     start_hm = sol->pre_hmd_single[idx_last];
                 }
 
-                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_Cw_priv, &start_hm, man, par);
-                solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_Cm_priv, &start_hw, woman, par);
+                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_Cm_priv, &start_hm, man, par);
+                solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_Cw_priv, &start_hw, woman, par);
 
             } //C_tot
 

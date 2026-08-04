@@ -60,7 +60,7 @@ namespace couple {
     double after_tax_income_couple(int type_w, int type_m, double labor_w, double labor_m, double Kw, double Km, double A, par_struct* par) {
         // If no labor income, return asset income plus small epsilon to avoid zero
         if ((labor_w == 0.0) && (labor_m == 0.0)) {
-            return 1.0e-4;
+            return 1.0e-4 + (par->R - 1.0) * A;
         }
 
         double wage_w = utils::wage(type_w, Kw, woman, par);
