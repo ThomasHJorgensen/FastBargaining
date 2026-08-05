@@ -402,7 +402,7 @@ namespace precompute{
     ////////////////////////////// Precomputation //////////////////////////////
     void precompute(sol_struct* sol, par_struct* par){
         // pre-compute optimal allocation for single
-        # pragma omp parallel for num_threads(par->threads)
+        #pragma omp for schedule(static)
         for (int il=0; il<par->num_l; il++){
             
             double l = par->grid_l[il];
