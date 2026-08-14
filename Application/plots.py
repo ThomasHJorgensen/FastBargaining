@@ -34,6 +34,7 @@ class model_plotter():
                 'iA': 'grid_A',
                 # 'iA_pd': 'grid_A_pd',
                 'il': 'grid_l',
+                'iu': 'grid_C_for_marg_u',
             }
         elif isinstance(grid_names, dict):
             self.grid_names = grid_names
@@ -384,7 +385,7 @@ class model_plotter():
     def plot_female_single_pd(self, ax, grid, index, **kwargs):
         variables = [
             "EmargUwd_single_to_single_pd",
-            "Cd_totw_single_to_single_pd",
+            "Cwd_tot_single_to_single_pd",
             "Mwd_single_to_single_pd",
             "Vwd_single_to_single_pd",
         ]
@@ -393,7 +394,7 @@ class model_plotter():
     def plot_male_single_pd(self, ax, grid, index, **kwargs):
         variables = [
             "EmargUmd_single_to_single_pd",
-            "Cd_totm_single_to_single_pd",
+            "Cmd_tot_single_to_single_pd",
             "Mmd_single_to_single_pd",
             "Vmd_single_to_single_pd",
         ]
@@ -405,8 +406,22 @@ class model_plotter():
             'Cd_tot_pd',
             'Md_pd',
             'Vd_couple_to_couple_pd',
+            
         ]
         return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
+    def plot_iegm_grids(self, ax, grid, index, **kwargs):
+        variables = [
+            'grid_marg_u_single_w',
+            'grid_marg_u_single_w_for_inv',
+            'grid_marg_u_single_m',
+            'grid_marg_u_single_m_for_inv',
+            'grid_marg_u_couple',
+            'grid_marg_u_couple_for_inv',
+        ]
+        return self.plot_vars_over_grid(ax, variables, grid, index, namespace='sol', **kwargs)
+    
+            
     
     def plot_power(self, ax, grid, index, **kwargs):
         variables = [

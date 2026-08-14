@@ -30,11 +30,9 @@ namespace couple {
         double bracket_tops[5]  = {43850.0, 105950.0, 161450.0, 288350.0, 1e308};
         double bracket_rates[5] = {15.0, 28.0, 31.0, 36.0, 39.6};
 
-        double money_metric = 10000.0;
-        double percent = 100.0;
         for (int i = 0; i < num_brackets; i++) {
-            bracket_tops[i] = bracket_tops[i] / money_metric;
-            bracket_rates[i] = bracket_rates[i] / percent;
+            bracket_tops[i] = bracket_tops[i] / par->money_metric;
+            bracket_rates[i] = bracket_rates[i] / 100.0;
         }
 
         double tax        = 0.0;
@@ -63,9 +61,9 @@ namespace couple {
             return 1.0e-4 + (par->R - 1.0) * A;
         }
 
-        double wage_w = utils::wage(type_w, Kw, woman, par);
-        double wage_m = utils::wage(type_m, Km, man, par);
-        double gross_wage_income = wage_w * labor_w * par->available_hours + wage_m * labor_m * par->available_hours;
+        double wage_w = utils::wage_income(type_w, labor_w, Kw, woman, par);
+        double wage_m = utils::wage_income(type_m, labor_m, Km, man, par);
+        double gross_wage_income = wage_w + wage_m;
 
         // income floor
         if (gross_wage_income < 0.0001) {
@@ -224,7 +222,6 @@ namespace couple {
     ////////////////////////////// EGM numerical solution //////////////////////////////
     double marg_util_C_couple(double C_tot, int ilw, int ilm, int iP, par_struct* par, sol_struct* sol)
     {
-        // Use forward difference to approximate marginal utility
         const double delta = 1.0e-4;
         double util = precompute::util_C_couple(C_tot, ilw, ilm, iP, 0.0, par, sol, par->precompute_intratemporal);
         double util_delta = precompute::util_C_couple(C_tot + delta, ilw, ilm, iP, 0.0, par, sol, par->precompute_intratemporal);
@@ -291,7 +288,7 @@ namespace couple {
         nlopt_optimize(opt, x, &minf_global);
         double C_tot = x[0];
 
-        // second optimizatoin run with a different starting value for multistart
+        // second optimization run with a different starting value for multistart
         if (par->do_multistart) {
             double minf_local = 0.0;
             x[0] = guess_Ctot * 0.5;
@@ -407,8 +404,6 @@ namespace couple {
         double Kw_next = utils::human_capital_transition(Kw, par->grid_l[ilw], par);
         double Km_next = utils::human_capital_transition(Km, par->grid_l[ilm], par);
 
-        double M_resources_0 = resources_couple(type_w, type_m, labor_w, labor_m, Kw, Km, par->grid_A_pd[0], par);
-
         // Loop over endogenous asset grid
         for (int iA_pd = 0; iA_pd < par->num_A_pd; ++iA_pd) {
             double A_next = par->grid_A_pd[iA_pd];
@@ -417,11 +412,10 @@ namespace couple {
 
             if (strcmp(par->interp_method, "numerical") == 0) {
 
-                // starting values
-                double guess_Ctot = M_resources_0;
-                if (iA_pd > 0) { // last found solution
-                    guess_Ctot = Cd_tot_pd[iA_pd - 1];
-                }
+                // starting value: closed-form CRRA inverse-marginal-utility guess (C_tot ~ 3*C_priv)
+                double rho_approx = 0.5 * (par->rho_w + par->rho_m);
+                double guess_Ctot = 3.0 * pow(tools::max(EmargUd_pd[iA_pd], 1.0e-8), -1.0 / rho_approx);
+                guess_Ctot = tools::max(tools::min(guess_Ctot, 2.0 * par->max_Ctot), 1.0e-4);
 
                 Cd_tot_pd[iA_pd] = inv_marg_util_couple(EmargUd_pd[iA_pd], ilw, ilm, iP, par, sol, guess_Ctot);
             } else {

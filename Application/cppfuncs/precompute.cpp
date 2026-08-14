@@ -153,7 +153,7 @@ namespace precompute{
     }
 
 
-    void precompute_cons_interp_single(int i_marg_u, int il, int gender, par_struct *par, sol_struct *sol, bool interpolate = true){ 
+    void precompute_cons_interp_single(int i_marg_u, int il, int gender, par_struct *par, sol_struct *sol, bool interpolate = true){
         // get baseline utility
         double* grid_marg_u_single = sol->grid_marg_u_single_w;
         double* grid_marg_u_single_for_inv = sol->grid_marg_u_single_w_for_inv;
@@ -162,15 +162,18 @@ namespace precompute{
             grid_marg_u_single_for_inv = sol->grid_marg_u_single_m_for_inv;
         }
 
-        double delta = 0.0001;
-        double util = util_C_single(par->grid_C_for_marg_u[i_marg_u], il, gender, par, sol, interpolate);
-        double util_delta = util_C_single(par->grid_C_for_marg_u[i_marg_u] + delta, il, gender, par, sol, interpolate);
+       double C_now = par->grid_C_for_marg_u[i_marg_u];
+        const double delta = 1.0e-4;
+
+        double util = util_C_single(C_now, il, gender, par, sol, interpolate);
+        double util_delta = util_C_single(C_now + delta, il, gender, par, sol, interpolate);
+        double marg_u = (util_delta - util) / delta;
 
         auto idx = index::index2(il, i_marg_u, par->num_l, par->num_marg_u);
-        grid_marg_u_single[idx] = (util_delta - util)/delta;
+        grid_marg_u_single[idx] = marg_u;
 
         auto idx_inv = index::index2(il, par->num_marg_u-1 - i_marg_u, par->num_l, par->num_marg_u);
-        grid_marg_u_single_for_inv[idx_inv] = grid_marg_u_single[idx];
+        grid_marg_u_single_for_inv[idx_inv] = marg_u;
     }
 
     ////////////////////////////// Couple precompute functions //////////////////////////////
@@ -388,15 +391,18 @@ namespace precompute{
 
     void precompute_cons_interp_couple(int i_marg_u, int iP, int ilw, int ilm, par_struct *par, sol_struct *sol, bool interpolate = true){
 
-        double delta = 0.0001;
-        double util = util_C_couple(par->grid_C_for_marg_u[i_marg_u], ilw, ilm, iP, 0.0, par, sol, interpolate);
-        double util_delta = util_C_couple(par->grid_C_for_marg_u[i_marg_u] + delta, ilw, ilm, iP, 0.0, par, sol, interpolate);
+        double C_now = par->grid_C_for_marg_u[i_marg_u];
+        const double delta = 1.0e-4;
+
+        double util = util_C_couple(C_now, ilw, ilm, iP, 0.0, par, sol, interpolate);
+        double util_delta = util_C_couple(C_now + delta, ilw, ilm, iP, 0.0, par, sol, interpolate);
+        double marg_u = (util_delta - util) / delta;
 
         auto idx = index::index4(ilw, ilm, iP, i_marg_u, par->num_l, par->num_l, par->num_power, par->num_marg_u);
-        sol->grid_marg_u_couple[idx] = (util_delta - util)/delta;
+        sol->grid_marg_u_couple[idx] = marg_u;
 
         auto idx_inv = index::index4(ilw, ilm, iP, par->num_marg_u-1 - i_marg_u, par->num_l, par->num_l, par->num_power, par->num_marg_u);
-        sol->grid_marg_u_couple_for_inv[idx_inv] = sol->grid_marg_u_couple[idx];
+        sol->grid_marg_u_couple_for_inv[idx_inv] = marg_u;
     }
     
     ////////////////////////////// Precomputation //////////////////////////////
@@ -418,18 +424,18 @@ namespace precompute{
 
                 if (iC < par->num_Ctot - 1){ // reuse starting values when Ctot is low
                     auto idx_last = index::index2(il, iC+1, par->num_l, par->num_Ctot);
-                    start_Cw_priv = sol->pre_Cwd_priv_single[idx_last];
-                    start_Cm_priv = sol->pre_Cmd_priv_single[idx_last];
                     start_hw = sol->pre_hwd_single[idx_last];
                     start_hm = sol->pre_hmd_single[idx_last];
+                    start_Cw_priv = tools::min(sol->pre_Cwd_priv_single[idx_last], C_tot * 0.5);
+                    start_Cm_priv = tools::min(sol->pre_Cmd_priv_single[idx_last], C_tot * 0.5);
                 }
 
-                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_Cm_priv, &start_hm, man, par);
                 solve_intraperiod_single(&sol->pre_Cwd_priv_single[idx], &sol->pre_hwd_single[idx], &sol->pre_Cwd_inter_single[idx], &sol->pre_Qwd_single[idx], C_tot, l, &start_Cw_priv, &start_hw, woman, par);
+                solve_intraperiod_single(&sol->pre_Cmd_priv_single[idx], &sol->pre_hmd_single[idx], &sol->pre_Cmd_inter_single[idx], &sol->pre_Qmd_single[idx], C_tot, l, &start_Cm_priv, &start_hm, man, par);
 
             } //C_tot
 
-            if(strcmp(par->interp_method,"numerical")!=0){
+            if(((strcmp(par->interp_method,"linear")==0) && (par->do_egm))){ // only precompute marginal utility if using iegm
                 for (int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){ 
                     bool interpolate = true;
                     precompute_cons_interp_single(i_marg_u, il, woman, par, sol, interpolate);
@@ -468,8 +474,8 @@ namespace precompute{
                     auto idx_last = index::index4(ilw, ilm, iP, iC+1, par->num_l, par->num_l, par->num_power, par->num_Ctot);
                     start_hw = sol->pre_hwd_couple[idx_last];
                     start_hm = sol->pre_hmd_couple[idx_last];
-                    start_Cw_priv = sol->pre_Cwd_priv_couple[idx_last];
-                    start_Cm_priv = sol->pre_Cmd_priv_couple[idx_last];
+                    start_Cw_priv = tools::min(sol->pre_Cwd_priv_couple[idx_last], C_tot / 3.0);
+                    start_Cm_priv = tools::min(sol->pre_Cmd_priv_couple[idx_last], C_tot / 3.0);
                 }
 
                 auto idx = index::index4(ilw, ilm, iP, iC, par->num_l, par->num_l, par->num_power, par->num_Ctot);
@@ -480,7 +486,7 @@ namespace precompute{
                     1.0e-8, 1.0e-7);
             } // iC
 
-            if(strcmp(par->interp_method,"numerical")!=0){
+            if(((strcmp(par->interp_method,"linear")==0) && (par->do_egm))){ // only precompute marginal utility if using iegm
                 for(int i_marg_u=0; i_marg_u<par->num_marg_u; i_marg_u++){
                     bool interpolate = true; // this is sometimes a bit unstable when resolve numerically
                     precompute_cons_interp_couple(i_marg_u, iP, ilw, ilm, par, sol, interpolate);

@@ -31,11 +31,9 @@ namespace single {
         // double bracket_rates[5] = {20.0, 20.0, 20.0, 20.0, 20.0};
         double bracket_rates[5] = {15.0, 28.0, 31.0, 36.0, 39.6};
         
-        double money_metric = 10000.0;
-        double percent = 100.0;
         for (int i = 0; i < num_brackets; i++) {
-            bracket_tops[i] = bracket_tops[i] / money_metric;
-            bracket_rates[i] = bracket_rates[i] / percent;
+            bracket_tops[i] = bracket_tops[i] / par->money_metric;
+            bracket_rates[i] = bracket_rates[i] / 100.0;
         }
 
 
@@ -61,9 +59,8 @@ namespace single {
     double after_tax_income_single(int type, double labor, double K, double A, int gender, par_struct* par) {
         if (labor == 0.0) return RESOURCES_EPS + (par->R - 1.0) * A;
 
-        double w = utils::wage(type, K, gender, par);
-        double gross_wage_income = w * labor * par->available_hours;
-        
+        double gross_wage_income = utils::wage_income(type, labor, K, gender, par);
+
         // income floor
         if (gross_wage_income < 0.0001) { 
             gross_wage_income = 0.0001;
@@ -234,7 +231,6 @@ namespace single {
         //////////////////// EGM ////////////////////////
         ////// numerical EGM //////
     double marg_util_C_single(double C_tot, int il, int gender, par_struct* par, sol_struct* sol) {
-        // closed form (precomputed) utility at C_tot and a small forward perturbation
         double util = precompute::util_C_single(C_tot, il, gender, par, sol, par->precompute_intratemporal);
         constexpr double delta = 1.0e-4;
         double util_delta = precompute::util_C_single(C_tot + delta, il, gender, par, sol, par->precompute_intratemporal);
@@ -440,8 +436,6 @@ namespace single {
         double K_next = utils::human_capital_transition(K, par->grid_l[il], par);
         int min_point_K = tools::binary_search(0, par->num_K, grid_K, K_next);
         
-        double M_resources_0 = resources_single(type, labor, K, grid_A_pd[0], gender, par);
-
         for (int iA_pd = 0; iA_pd < par->num_A_pd; iA_pd++) {
             double A_next = grid_A_pd[iA_pd];
 
@@ -451,10 +445,10 @@ namespace single {
 
             // invert marginal utility
             if (strcmp(par->interp_method, "numerical") == 0) {
-                double guess_C_tot = M_resources_0;
-                if (iA_pd > 0) { // last found solution
-                    guess_C_tot = C_tot_pd[iA_pd - 1];
-                }
+                // starting value: closed-form CRRA inverse-marginal-utility guess (C_tot ~ 2*C_priv)
+                double rho_gender = (gender == man) ? par->rho_m : par->rho_w;
+                double guess_C_tot = 2.0 * pow(tools::max(EmargU_pd[iA_pd], 1.0e-8), -1.0 / rho_gender);
+                guess_C_tot = tools::max(tools::min(guess_C_tot, 2.0 * par->max_Ctot), 1.0e-4);
                 C_tot_pd[iA_pd] = inv_marg_util_single(EmargU_pd[iA_pd], il, gender, par, sol, guess_C_tot);
             } else {
                 if (strcmp(par->interp_method, "linear") == 0) {

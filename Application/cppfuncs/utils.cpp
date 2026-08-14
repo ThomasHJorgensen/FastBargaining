@@ -52,7 +52,12 @@ namespace utils {
             log_wage = par->grid_mu_m[type] + par->gamma_m*K;
         }
         double full_time = par->grid_l[par->num_l-1]; // wage could be normalized with full time hours, to make wage a full time equivalent
-        return exp(log_wage) / full_time; 
+        return exp(log_wage) ;/// full_time; 
+    }
+
+    double wage_income(int type, double labor, double K, int gender, par_struct* par) {
+        double w = wage(type, K, gender, par);
+        return w * labor * par->available_hours;
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {

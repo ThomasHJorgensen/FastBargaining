@@ -50,7 +50,11 @@ class HouseholdModelClass(EconModelClass):
         par.div_A_share = 0.5  # divorce share of wealth to wife (Bronson (2019) - Voena (2015) estimates something slightly different)
         par.div_cost = 0.0
 
-        par.available_hours = 1.0 # normalization
+        par.available_hours = 7*16.0 * 52 / 1000 # 1 = thousends of awake hours a year
+        par.full_time_hours = 40.0 * 52 / 1000 # ~0.36 (40 hours per week - out of 16 hours per day, 7 days per week)
+        par.part_time_hours = 20.0 * 52 / 1000 # ~0.18 (20 hours per week - out of 16 hours per day, 7 days per week)
+        
+        par.money_metric = 1000.0 # 1 = thousands of USD
 
         # -------- preferences (baseline + multipliers) --------
         par.rho = 1.5 # (Bronson, Haanwinckel, and Mazzocco (2025) / Attanasio, Low, and Sánchez-Marcos (2008))
@@ -86,19 +90,15 @@ class HouseholdModelClass(EconModelClass):
         par.phi_k = 1.0 # (Jakobsen, Jørgensen and Low (2024))
         par.delta = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         
-        # -------- discrete choices --------
-        par.part_time = 0.5 # as share of full time hours - it seems standard to assume that part time hours are about half of full time hours (Eckstein does it)
-        par.full_time_hours = 40.0 / (16 * 7) # ~0.36 (40 hours per week - out of 16 hours per day, 7 days per week) - 40 hours from Bronson, Haanwinckel, and Mazzocco (2025)
-        
         # -------- model horizon / state space sizes --------
         par.T = 40
 
         # wealth
-        par.num_A = 30
-        par.max_A = 300.0
+        par.num_A = 15
+        par.max_A = 3000.0
 
         # human capital
-        par.num_K = 10
+        par.num_K = 5
         par.max_K = 10.0
         par.sigma_K = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         par.sigma_K_mult = 1.0
@@ -108,7 +108,7 @@ class HouseholdModelClass(EconModelClass):
         par.num_power = 11
 
         # love / match quality
-        par.num_love = 11
+        par.num_love = 5
         par.max_love = 50.0
         par.sigma_love = 7.0
         par.mean_love = 0.0 # normalization
@@ -120,7 +120,7 @@ class HouseholdModelClass(EconModelClass):
         
         # EGM
         par.num_A_pd = 30
-        par.max_A_pd = 300.0
+        par.max_A_pd = 3000.0
         
         # precomputation of intratemporal solution (for iEGM)
         par.num_marg_u = 200
@@ -141,7 +141,7 @@ class HouseholdModelClass(EconModelClass):
 
         # intratemporal precomputation
         par.num_Ctot = 200
-        par.max_Ctot = 300.0
+        par.max_Ctot = 3000.0
 
         # EGM
         par.do_egm = False
@@ -268,7 +268,7 @@ class HouseholdModelClass(EconModelClass):
         )
 
         # ---------- 2) discrete choices ----------
-        par.grid_l = np.array([0.0, par.part_time, 1.0]) * par.full_time_hours
+        par.grid_l = np.array([0.0, par.part_time_hours, par.full_time_hours]) / par.available_hours # discrete labor choices as share of available hours
         par.num_l = len(par.grid_l) 
 
         # ---------- 3) state grids ----------
@@ -756,9 +756,8 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
         sim = self.sim
         moms = OrderedDict()
-        money_metric = 10 # 10 thousends, so that 1.0 = 10,000 (DKK)
-        hours_metric = 7*16  # full time hours per week
-        
+        money_metric = 1.0 # 10 thousends, so that 1.0 = 10,000 (DKK)
+        hours_metric = par.available_hours * 1000 / 52  # full time hours per week
         # b) samples
         ## age groups
         t_array = np.tile(np.arange(par.simT, dtype=int), (par.simN, 1))

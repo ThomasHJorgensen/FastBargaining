@@ -5,6 +5,9 @@ typedef struct par_struct
  double div_A_share;
  double div_cost;
  double available_hours;
+ double full_time_hours;
+ double part_time_hours;
+ double money_metric;
  double rho;
  double rho_mult;
  double phi;
@@ -27,8 +30,6 @@ typedef struct par_struct
  double gamma2_mult;
  double phi_k;
  double delta;
- double part_time;
- double full_time_hours;
  int T;
  int num_A;
  double max_A;
@@ -147,6 +148,9 @@ double get_double_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"div_A_share") == 0 ){ return x->div_A_share; }
  else if( strcmp(name,"div_cost") == 0 ){ return x->div_cost; }
  else if( strcmp(name,"available_hours") == 0 ){ return x->available_hours; }
+ else if( strcmp(name,"full_time_hours") == 0 ){ return x->full_time_hours; }
+ else if( strcmp(name,"part_time_hours") == 0 ){ return x->part_time_hours; }
+ else if( strcmp(name,"money_metric") == 0 ){ return x->money_metric; }
  else if( strcmp(name,"rho") == 0 ){ return x->rho; }
  else if( strcmp(name,"rho_mult") == 0 ){ return x->rho_mult; }
  else if( strcmp(name,"phi") == 0 ){ return x->phi; }
@@ -169,8 +173,6 @@ double get_double_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"gamma2_mult") == 0 ){ return x->gamma2_mult; }
  else if( strcmp(name,"phi_k") == 0 ){ return x->phi_k; }
  else if( strcmp(name,"delta") == 0 ){ return x->delta; }
- else if( strcmp(name,"part_time") == 0 ){ return x->part_time; }
- else if( strcmp(name,"full_time_hours") == 0 ){ return x->full_time_hours; }
  else if( strcmp(name,"max_A") == 0 ){ return x->max_A; }
  else if( strcmp(name,"max_K") == 0 ){ return x->max_K; }
  else if( strcmp(name,"sigma_K") == 0 ){ return x->sigma_K; }
