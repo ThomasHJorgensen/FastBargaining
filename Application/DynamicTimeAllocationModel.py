@@ -94,11 +94,11 @@ class HouseholdModelClass(EconModelClass):
         par.T = 40
 
         # wealth
-        par.num_A = 15
+        par.num_A = 30
         par.max_A = 3000.0
 
         # human capital
-        par.num_K = 5
+        par.num_K = 10
         par.max_K = 10.0
         par.sigma_K = 0.1 # (Jakobsen, Jørgensen and Low (2024))
         par.sigma_K_mult = 1.0
@@ -108,7 +108,7 @@ class HouseholdModelClass(EconModelClass):
         par.num_power = 11
 
         # love / match quality
-        par.num_love = 5
+        par.num_love = 11
         par.max_love = 50.0
         par.sigma_love = 7.0
         par.mean_love = 0.0 # normalization
