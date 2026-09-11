@@ -67,6 +67,7 @@ typedef struct par_struct
  double init_couple_share;
  int threads;
  bool do_multistart;
+ bool init_bargaining_in_sim;
  char* interp_method;
  bool centered_gradient;
  char* bargaining;
@@ -139,6 +140,7 @@ typedef struct par_struct
  long long* idx_pre_couple_lw;
  long long* idx_pre_couple_lm;
  long long* idx_pre_couple_power;
+ double* init_power;
 } par_struct;
 
 double get_double_par_struct(par_struct* x, char* name){
@@ -272,6 +274,7 @@ double* get_double_p_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"cdf_partner_type_w") == 0 ){ return x->cdf_partner_type_w; }
  else if( strcmp(name,"cdf_partner_type_m") == 0 ){ return x->cdf_partner_type_m; }
  else if( strcmp(name,"prob_partner_love") == 0 ){ return x->prob_partner_love; }
+ else if( strcmp(name,"init_power") == 0 ){ return x->init_power; }
  else {return NULL;}
 
 }
@@ -283,6 +286,7 @@ bool get_bool_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"precompute_intratemporal") == 0 ){ return x->precompute_intratemporal; }
  else if( strcmp(name,"do_egm") == 0 ){ return x->do_egm; }
  else if( strcmp(name,"do_multistart") == 0 ){ return x->do_multistart; }
+ else if( strcmp(name,"init_bargaining_in_sim") == 0 ){ return x->init_bargaining_in_sim; }
  else if( strcmp(name,"centered_gradient") == 0 ){ return x->centered_gradient; }
  else {return false;}
 

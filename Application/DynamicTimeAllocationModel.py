@@ -155,6 +155,7 @@ class HouseholdModelClass(EconModelClass):
         # -------- misc --------
         par.threads = 8
         par.do_multistart = True
+        par.init_bargaining_in_sim = True
         par.interp_method = "linear"
         par.centered_gradient = True
         par.bargaining = "limited"
@@ -608,12 +609,13 @@ class HouseholdModelClass(EconModelClass):
         if allocate:
             for name in (
                 "init_love", "init_Kw", "init_Km",
-                "init_A", "init_Aw", "init_Am", "init_divorces",
+                "init_A", "init_Aw", "init_Am", 
+                "init_divorces", "init_power",
             ):
                 alloc(name, (par.simN,), value=np.nan)
 
             for name in (
-                "init_type_w", "init_type_m", "init_power_idx",
+                "init_type_w", "init_type_m",
             ):
                 alloc(name, (par.simN,), dtype=np.int32, value=-1000)
 
@@ -650,7 +652,7 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Aw[...] = sim.init_A * par.div_A_share
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        sim.init_power_idx[...] = (par.num_power // 2)
+        sim.init_power[...] = 0.5
         sim.init_love[...] = 0.0
         # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
         sim.init_divorces[...] = 0.0
