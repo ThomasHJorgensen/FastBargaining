@@ -159,7 +159,9 @@ class UnitaryModelClass(EconModelClass):
             par.alpha=1.0 # no public consumption
             
             # scales
-            _scale = 0.5*(par.mu/(1.0-par.mu))**(1.0/par.rho_w)
+            _scale1 = (par.mu)**(1.0/par.rho_w)
+            _scale2 = (1.0-par.mu)**(1.0/par.rho_w)
+            _scale = _scale1 / (_scale1 + _scale2)
             par.scale_w = (_scale)
             par.scale_m = (1.0-_scale)
             par.scale = par.scale_w**(1.0-par.rho_w) * par.mu + par.scale_m**(1.0-par.rho_w) * (1.0-par.mu)
