@@ -1,3 +1,5 @@
+# To update an already existing "fastbargaining" env after requirements.txt changes:
+#   conda env update -n fastbargaining -f environment.yml --prune
 name: fastbargaining
 channels:
   - conda-forge
