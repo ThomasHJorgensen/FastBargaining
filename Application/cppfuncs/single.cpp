@@ -841,7 +841,7 @@ namespace single {
             double* EmargV_start_as_single = (gender == man) ? sol->EmargVm_start_as_single : sol->EmargVw_start_as_single;
             
             const double p_meet = par->prob_repartner[t];
-            const bool repartnering = (par->p_meet > 0.0);
+            const bool repartnering = (p_meet > 0.0);
             double EV_uncondtitional;
             
             // Total number of iterations
