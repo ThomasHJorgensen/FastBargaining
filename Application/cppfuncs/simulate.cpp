@@ -121,10 +121,12 @@ namespace sim {
         // unpack
         double* cdf_partner_A = par->cdf_partner_Aw;
         double* grid_A = par->grid_Aw;
+        double* grid_Ap = par->grid_Am;
         double* uniform_partner_A = sim->draw_uniform_partner_Aw;
         if (gender == man){
             cdf_partner_A = par->cdf_partner_Am;
             grid_A = par->grid_Am;
+            grid_Ap = par->grid_Aw;
             uniform_partner_A = sim->draw_uniform_partner_Am;
         }
 
@@ -139,7 +141,7 @@ namespace sim {
         // b. find inverted cdf of random uniform draw
         int index_sim = index::index2(i,t,par->simN,par->simT);
         double random = uniform_partner_A[index_sim];
-        double A_sim = tools::interp_1d(cdf_Ap_cond,par->num_A,grid_A,random);
+        double A_sim = tools::interp_1d(cdf_Ap_cond,par->num_A,grid_Ap,random); // note: the inverted cdf returns the PARTNER's assets, so use the partner's grid
 
         delete[] cdf_Ap_cond;
         cdf_Ap_cond = nullptr;
@@ -155,10 +157,12 @@ namespace sim {
         // unpack
         double* cdf_partner_A = par->cdf_partner_Aw;
         double* grid_A = par->grid_Aw;
+        double* grid_Ap = par->grid_Am;
         double* uniform_partner_A = sim->draw_uniform_partner_Aw;
         if (gender == man){
             cdf_partner_A = par->cdf_partner_Am;
             grid_A = par->grid_Am;
+            grid_Ap = par->grid_Aw;
             uniform_partner_A = sim->draw_uniform_partner_Am;
         }
 
@@ -171,11 +175,11 @@ namespace sim {
         for (int iAp=0; iAp<par->num_A; iAp++){
             double cdf_Ap_cond = tools::interp_1d_index_delta(grid_A,par->num_A,cdf_partner_A,A, index_iA,par->num_A, iAp,1,0); // OBS: Is 1,0 right? We think so, but make sure when implementing remarriage
             if(cdf_Ap_cond >= random){
-                return grid_A[iAp]; // OBS: should this be grid_Ap (for partner)
+                return grid_Ap[iAp]; // note: the cdf is over the PARTNER's assets, so read the level off the partner's grid
             }
         }
 
-        return grid_A[par->num_A-1]; // OBS: all cases should be resolved within loop. Ensure that happens when implementing remarriage
+        return grid_Ap[par->num_A-1]; // OBS: all cases should be resolved within loop. Ensure that happens when implementing remarriage
 
     }
 

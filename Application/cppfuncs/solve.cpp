@@ -43,6 +43,9 @@ EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_up
 
     int t = 0;
 
+    // sample each state dimension on the fractional range [trunc_min, trunc_max] of its grid span,
+    // staying away from the grid boundaries. Note: the fractional weight must be computed in
+    // floating point - integer division would collapse every dimension onto its two endpoints.
     double trunc_min = 0.2;
     double trunc_max = 0.8; 
 
@@ -52,23 +55,23 @@ EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_up
         for (int type_m = 0; type_m < par->num_types; type_m++){
             for (int iP = 0; iP < num_P; iP++){
                 double len_power = par->grid_power[par->num_power-1] - par->grid_power[0];
-                double power = par->grid_power[0] + trunc_min * len_power + trunc_max * len_power * (iP / (num_P-1));
+                double power = par->grid_power[0] + len_power * (trunc_min + (trunc_max - trunc_min) * ((double)iP / (double)(num_P-1)));
                 int iP_left = tools::binary_search(0, par->num_power, par->grid_power, power);
                 for (int iL = 0; iL < num_love; iL++){
                     double len_love = par->grid_love[par->num_love-1] - par->grid_love[0];
-                    double love = par->grid_love[0] + trunc_min * len_love + trunc_max * len_love * (iL / (num_love-1));
+                    double love = par->grid_love[0] + len_love * (trunc_min + (trunc_max - trunc_min) * ((double)iL / (double)(num_love-1)));
                     int iL_left = tools::binary_search(0, par->num_love, par->grid_love, love);
                     for (int iKw = 0; iKw < num_Kw; iKw++){
                         double len_Kw = par->grid_Kw[par->num_K-1] - par->grid_Kw[0];
-                        double Kw = par->grid_Kw[0] + trunc_min * len_Kw + trunc_max * len_Kw * (iKw / (num_Kw-1));
+                        double Kw = par->grid_Kw[0] + len_Kw * (trunc_min + (trunc_max - trunc_min) * ((double)iKw / (double)(num_Kw-1)));
                         int iKw_left = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
                         for (int iKm = 0; iKm < num_Km; iKm++){
                             double len_Km = par->grid_Km[par->num_K-1] - par->grid_Km[0];
-                            double Km = par->grid_Km[0] + trunc_min * len_Km + trunc_max * len_Km * (iKm / (num_Km-1));
+                            double Km = par->grid_Km[0] + len_Km * (trunc_min + (trunc_max - trunc_min) * ((double)iKm / (double)(num_Km-1)));
                             int iKm_left = tools::binary_search(0, par->num_K, par->grid_Km, Km);
                             for (int iA = 0; iA < num_A; iA++){
                                 double len_A = par->grid_A[par->num_A-1] - par->grid_A[0];
-                                double A = par->grid_A[0] + trunc_min * len_A + trunc_max * len_A * (iA / (num_A-1));
+                                double A = par->grid_A[0] + len_A * (trunc_min + (trunc_max - trunc_min) * ((double)iA / (double)(num_A-1)));
                                 int iA_left = tools::binary_search(0, par->num_A, par->grid_A, A);
                                 
                                 auto idx = index::index7(
