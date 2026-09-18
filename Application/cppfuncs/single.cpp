@@ -153,9 +153,10 @@ namespace single {
             nlopt_set_lower_bounds(opt, lb);
             nlopt_set_upper_bounds(opt, ub);
 
-            // clamp starting value
+            // clamp starting value (x[0] too - it was copied from starting_val before the clamp)
             if (starting_val < lb[0]) starting_val = lb[0];
             if (starting_val > ub[0]) starting_val = ub[0];
+            x[0] = starting_val;
 
             // first optimization run
             double minf_global = 0.0;
@@ -711,18 +712,13 @@ namespace single {
         double* prob_partner_A = par->prob_partner_A_w;
         double* prob_partner_K = par->prob_partner_Kw;
         double* prob_partner_type = par->prob_partner_type_w;
-        double* grid_A = par->grid_Aw;
-        double* grid_K = par->grid_Kw;
         if (gender == man){
             V_single_to_single = sol->Vm_single_to_single;
             V_single_to_couple = sol->Vm_single_to_couple;
             prob_partner_A = par->prob_partner_A_m;
             prob_partner_K = par->prob_partner_Km;
             prob_partner_type = par->prob_partner_type_m;
-            grid_A = par->grid_Am;
-            grid_K = par->grid_Km;
         }
-        // // value of remaining single
         auto idx_single = index::single(t, type, iK, iA, par); // CHANGED
 
         // loop over potential partners conditional on meeting a partner
@@ -766,10 +762,10 @@ namespace single {
                             }
                             
                             // meet person with same level of wealth and human capital
-                            const double Aw = grid_A[iAw];
-                            const double Am = grid_A[iAm];
-                            const double Kw = grid_K[iKw]; 
-                            const double Km = grid_K[iKm];
+                            const double Aw = par->grid_Aw[iAw];
+                            const double Am = par->grid_Am[iAm];
+                            const double Kw = par->grid_Kw[iKw];
+                            const double Km = par->grid_Km[iKm];
                             
                             const double love = par->grid_shock_love[iL_shock] + par->mean_love;
                             double power = calc_initial_bargaining_weight(t, type_w, type_m, love, Kw, Km, Aw, Am, sol, par, -1);

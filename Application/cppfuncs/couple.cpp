@@ -152,8 +152,14 @@ namespace couple {
 
             lb[0] = 1.0e-6;
             ub[0] = data->M - 1.0e-6;
+            if (ub[0] < lb[0]) ub[0] = lb[0];
             nlopt_set_lower_bounds(opt, lb);
             nlopt_set_upper_bounds(opt, ub);
+
+            // clamp starting value into the bounds
+            if (starting_val < lb[0]) starting_val = lb[0];
+            if (starting_val > ub[0]) starting_val = ub[0];
+            x[0] = starting_val;
 
             // first optimization run
             double minf_global = 0.0;

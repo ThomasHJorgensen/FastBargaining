@@ -427,7 +427,12 @@ namespace bargaining {
         double Sw_x = surplus_func(x[0],solver_data->state_couple, solver_data->state_single_w, woman, par, sol);
         double Sm_x = surplus_func(x[0],solver_data->state_couple, solver_data->state_single_m, man, par, sol);
 
-        return -(Sw_x*Sm_x); 
+        double surplus_w = tools::max(Sw_x, 0.0);
+        double surplus_m = tools::max(Sm_x, 0.0);
+        double shortfall_w = tools::min(Sw_x, 0.0);
+        double shortfall_m = tools::min(Sm_x, 0.0);
+
+        return -(surplus_w*surplus_m) + (shortfall_w*shortfall_w + shortfall_m*shortfall_m);
     }
 
     

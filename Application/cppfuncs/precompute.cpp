@@ -34,11 +34,7 @@ namespace precompute{
 
         double c_priv = x[0];
         double h = x[1];
-        double c = C_tot - c_priv;
 
-        double Q = utils::Q_single(c, h, gender, solver_data->par);
-
-        // clip and penalty
         double penalty = 0.0;
         if (c_priv < 1.0e-8) {
             penalty += 1000.0*(c_priv*c_priv);
@@ -49,9 +45,27 @@ namespace precompute{
             h = 1.0e-6;
         }
 
+        constexpr double MAX_HOURS = 1.0 - 1.0e-6;
+        double hl = l + h;
+        if (hl > MAX_HOURS) {
+            penalty += 1000.0*(hl - MAX_HOURS)*(hl - MAX_HOURS);
+            hl = MAX_HOURS;
+            h = tools::max(hl - l, 1.0e-6);
+        }
+
+        // consumption constraint
+        double c = C_tot - c_priv;
+        if (c < 1.0e-8) {
+            penalty += 1000.0*(c*c);
+            c = 1.0e-6;
+        }
+
+        // home production (evaluated on the clipped allocation)
+        double Q = utils::Q_single(c, h, gender, par);
+
         // utility of choice
         double love = 0.0;
-        double val = utils::util(c_priv, l+h, Q, gender, par, love);
+        double val = utils::util(c_priv, hl, Q, gender, par, love);
 
         // return negative of value
         return - val + penalty;
@@ -193,15 +207,6 @@ namespace precompute{
         double hw = x[2];
         double hm = x[3];
 
-        // total hours
-        double hlw = hw + lw;
-        double hlm = hm + lm;
-
-        // home production
-        double C_inter = C_tot - Cw_priv - Cm_priv;
-        double Q = utils::Q_couple(C_inter, hw, hm, par);
-
-        // clip and penalty
         double penalty = 0.0;
         if(Cw_priv < 1.0e-8){
             penalty += 1000.0*(Cw_priv*Cw_priv);
@@ -220,21 +225,29 @@ namespace precompute{
             hm = 1.0e-6;
         }
 
-        // time constraint
-        if(hlw >= 1){
-            penalty += 1000.0*(hlw - 1)*(hlw - 1);
-            hw = 1 - lw - 1.0e-6;
+        constexpr double MAX_HOURS = 1.0 - 1.0e-6;
+        double hlw = hw + lw;
+        if(hlw > MAX_HOURS){
+            penalty += 1000.0*(hlw - MAX_HOURS)*(hlw - MAX_HOURS);
+            hlw = MAX_HOURS;
+            hw = tools::max(hlw - lw, 1.0e-6);
         }
-        if(hlm >= 1){
-            penalty += 1000.0*(hlm - 1)*(hlm - 1);
-            hm = 1 - lm - 1.0e-6;
+        double hlm = hm + lm;
+        if(hlm > MAX_HOURS){
+            penalty += 1000.0*(hlm - MAX_HOURS)*(hlm - MAX_HOURS);
+            hlm = MAX_HOURS;
+            hm = tools::max(hlm - lm, 1.0e-6);
         }
 
         // consumption constraint
+        double C_inter = C_tot - Cw_priv - Cm_priv;
         if(C_inter < 1.0e-8){
             penalty += 1000.0*(C_inter*C_inter);
             C_inter = 1.0e-6;
         }
+
+        // home production (evaluated on the clipped allocation)
+        double Q = utils::Q_couple(C_inter, hw, hm, par);
 
         // utility of choice
         double uw = utils::util(Cw_priv, hlw, Q, woman, par, 0.0); // love not important for intratemporal allocation

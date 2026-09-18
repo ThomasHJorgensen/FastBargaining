@@ -652,6 +652,10 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Aw[...] = sim.init_A * par.div_A_share
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
+        # NOTE: the C++ reads sim.init_power, never par.init_power. To override the initial
+        # bargaining weights (e.g. to hold a full-commitment counterfactual at the baseline's
+        # Nash weights) assign to sim.init_power *after* this function runs - it is reset here
+        # on every redraw.
         sim.init_power[...] = 0.5
         sim.init_love[...] = 0.0
         # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
@@ -765,8 +769,7 @@ class HouseholdModelClass(EconModelClass):
         t_array = np.tile(np.arange(par.simT, dtype=int), (par.simN, 1))
         age_25 = 0
         age_25_to_34_mask = (t_array >= age_25) & (t_array <= age_25 + 9)
-        age_35_to_41_mask = (t_array >= age_25 + 10) & (t_array <= age_25 + 19)
-        age_25_to_41_mask = (t_array >= age_25) & (t_array <= age_25 + 16)
+        age_35_to_44_mask = (t_array >= age_25 + 10) & (t_array <= age_25 + 19)
         
         ## full time
         full_time = par.grid_l[-1]
@@ -786,18 +789,18 @@ class HouseholdModelClass(EconModelClass):
         # wages (should be stored in simulation. Now just use labor supply, e.g. lw, for illustration)
         moms['wage_level_w_25_34'] = np.nanmean(sim.wage_inc_w[age_25_to_34_mask & couple_mask & full_time_w_mask]) * money_metric 
         moms['wage_level_m_25_34'] = np.nanmean(sim.wage_inc_m[age_25_to_34_mask & couple_mask & full_time_m_mask]) * money_metric
-        moms['wage_level_w_35_41'] = np.nanmean(sim.wage_inc_w[age_35_to_41_mask & couple_mask & full_time_w_mask]) * money_metric
-        moms['wage_level_m_35_41'] = np.nanmean(sim.wage_inc_m[age_35_to_41_mask & couple_mask & full_time_m_mask]) * money_metric
+        moms['wage_level_w_35_44'] = np.nanmean(sim.wage_inc_w[age_35_to_44_mask & couple_mask & full_time_w_mask]) * money_metric
+        moms['wage_level_m_35_44'] = np.nanmean(sim.wage_inc_m[age_35_to_44_mask & couple_mask & full_time_m_mask]) * money_metric
 
         # employment rates
-        moms['employment_rate_w_35_41'] = np.nanmean(sim.lw[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
-        moms['employment_rate_m_35_41'] = np.nanmean(sim.lm[age_35_to_41_mask & couple_mask] > unemployed) * 100.0
-        moms['work_hours_w'] = np.nanmean(sim.lw[age_25_to_41_mask]) * hours_metric
-        moms['work_hours_m'] = np.nanmean(sim.lm[age_25_to_41_mask]) * hours_metric
+        moms['employment_rate_w_35_44'] = np.nanmean(sim.lw[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
+        moms['employment_rate_m_35_44'] = np.nanmean(sim.lm[age_35_to_44_mask & couple_mask] > unemployed) * 100.0
+        moms['work_hours_w'] = np.nanmean(sim.lw[age_35_to_44_mask]) * hours_metric
+        moms['work_hours_m'] = np.nanmean(sim.lm[age_35_to_44_mask]) * hours_metric
         
         # home production
-        moms['home_prod_w'] = np.nanmean(sim.hw[age_25_to_41_mask]) * hours_metric
-        moms['home_prod_m'] = np.nanmean(sim.hm[age_25_to_41_mask]) * hours_metric
+        moms['home_prod_w'] = np.nanmean(sim.hw[age_35_to_44_mask]) * hours_metric
+        moms['home_prod_m'] = np.nanmean(sim.hm[age_35_to_44_mask]) * hours_metric
         
         # consumption
         equivalence_scale_BPS = 2**0.5 # equivalence scaled used in the code of Blundell, Pistaferri, Saporta-Eksten (2018)
@@ -806,9 +809,9 @@ class HouseholdModelClass(EconModelClass):
         
         # marriage
         moms['marriage_rate_25_34'] = np.nanmean(sim.couple[age_25_to_34_mask]) * 100.0
-        moms['marriage_rate_35_41'] = np.nanmean(sim.couple[age_35_to_41_mask]) * 100.0
+        moms['marriage_rate_35_44'] = np.nanmean(sim.couple[age_35_to_44_mask]) * 100.0
         moms['divorce_rate_25_34'] = np.nanmean(sim.divorces[age_25_to_34_mask & ever_couple_mask]>0) * 100.0
-        moms['divorce_rate_35_41'] = np.nanmean(sim.divorces[age_35_to_41_mask & ever_couple_mask]>0) * 100.0
+        moms['divorce_rate_35_44'] = np.nanmean(sim.divorces[age_35_to_44_mask & ever_couple_mask]>0) * 100.0
         
         # inequality
         adults = np.where(sim.couple == 1, 2.0, 1.0)
@@ -930,7 +933,6 @@ class HouseholdModelClass(EconModelClass):
         sol = self.sol
         
         # grids
-        num = 13
         num_P = num
         num_love = num
         num_Kw = num

@@ -438,8 +438,8 @@ namespace sim {
                     // consumpton allocation
                     double C_inter = 0.0; // placeholder for public consumption
                     double Q = 0.0; // placeholder for public goods
-                    precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, -1000, power, C_tot, par, sol, 
-                        true, // interpolate 
+                    precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, -1000, power, C_tot, par, sol,
+                        par->precompute_intratemporal, // interpolate - must match what the solver used
                         false // do not use power index
                     );
                     sim->Cw_inter[it] = C_inter;
@@ -488,8 +488,8 @@ namespace sim {
                     Cm_tot = tools::max(0, tools::min(Cm_tot, Mm));
                     
                     // consumption allocation
-                    precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol);
-                    precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol);
+                    precompute::intraperiod_allocation_single(&sim->Cw_priv[it],&sim->hw[it], &sim->Cw_inter[it], &sim->Qw[it], Cw_tot, ilw, woman,par, sol, par->precompute_intratemporal);
+                    precompute::intraperiod_allocation_single(&sim->Cm_priv[it],&sim->hm[it], &sim->Cm_inter[it], &sim->Qm[it], Cm_tot, ilm, man,par, sol, par->precompute_intratemporal);
                     sim->Cw_tot[it] = sim->Cw_priv[it] + sim->Cw_inter[it];
                     sim->Cm_tot[it] = sim->Cm_priv[it] + sim->Cm_inter[it];
 

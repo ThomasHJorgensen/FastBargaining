@@ -140,7 +140,6 @@ typedef struct par_struct
  long long* idx_pre_couple_lw;
  long long* idx_pre_couple_lm;
  long long* idx_pre_couple_power;
- double* init_power;
 } par_struct;
 
 double get_double_par_struct(par_struct* x, char* name){
@@ -274,7 +273,6 @@ double* get_double_p_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"cdf_partner_type_w") == 0 ){ return x->cdf_partner_type_w; }
  else if( strcmp(name,"cdf_partner_type_m") == 0 ){ return x->cdf_partner_type_m; }
  else if( strcmp(name,"prob_partner_love") == 0 ){ return x->prob_partner_love; }
- else if( strcmp(name,"init_power") == 0 ){ return x->init_power; }
  else {return NULL;}
 
 }
