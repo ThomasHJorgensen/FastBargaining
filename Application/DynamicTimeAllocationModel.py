@@ -357,7 +357,6 @@ class HouseholdModelClass(EconModelClass):
         par.prob_partner_love = np.append(np.diff(love_cdf, 1), 0.0)
 
         # ---------- 7) accuracy grids ----------
-        # equally spaced on the fractional range [trunc_min, trunc_max] of each state grid's span (away from the boundaries)
         def _acc_grid(grid):
             return grid[0] + (grid[-1] - grid[0]) * np.linspace(par.trunc_min, par.trunc_max, par.num_acc)
 
@@ -668,10 +667,6 @@ class HouseholdModelClass(EconModelClass):
         sim.init_Aw[...] = sim.init_A * par.div_A_share
         sim.init_Am[...] = sim.init_A * (1.0 - par.div_A_share)
         sim.init_couple[...] = np.random.choice([True, False], par.simN, p=[par.init_couple_share, 1 - par.init_couple_share])
-        # NOTE: the C++ reads sim.init_power, never par.init_power. To override the initial
-        # bargaining weights (e.g. to hold a full-commitment counterfactual at the baseline's
-        # Nash weights) assign to sim.init_power *after* this function runs - it is reset here
-        # on every redraw.
         sim.init_power[...] = 0.5
         sim.init_love[...] = 0.0
         # sim.init_love[...] = np.random.normal(par.mean_love, par.sigma_love, size=par.simN)
@@ -948,14 +943,13 @@ class HouseholdModelClass(EconModelClass):
         par = self.par
         sol = self.sol
 
-        # accuracy grids are set in par (setup_grids) - both models must be evaluated in the same states
         for name in ('grid_power_acc', 'grid_love_acc', 'grid_Kw_acc', 'grid_Km_acc', 'grid_A_acc'):
             assert np.array_equal(getattr(par, name), getattr(true_model.par, name)), f'{name} differs between models'
         num = par.num_acc
 
         assert par.T == true_model.par.T, 'T differs between models'
 
-        # shapes for allocation (all periods t - the accuracy measures are means over all T periods)
+        # shapes for allocation
         shape = (par.T, par.num_types, par.num_types, num, num, num, num, num)
         shape_d = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, num, num, num, num, num)
 
@@ -982,7 +976,6 @@ class HouseholdModelClass(EconModelClass):
         divorced_true = (power_diff_true<-1.0)
         divorce_ERROR = np.mean((divorced) != (divorced_true))
         
-        # share of states where the models disagree on whether power is updated (among states where neither model divorces)
         married = (~divorced) & (~divorced_true)
         is_power_updated = (power_diff != 0.0)
         is_power_updated_true = (power_diff_true != 0.0)

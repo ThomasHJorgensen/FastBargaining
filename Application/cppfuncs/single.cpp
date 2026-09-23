@@ -154,7 +154,6 @@ namespace single {
             nlopt_set_lower_bounds(opt, lb);
             nlopt_set_upper_bounds(opt, ub);
 
-            // clamp starting value (x[0] too - it was copied from starting_val before the clamp)
             if (starting_val < lb[0]) starting_val = lb[0];
             if (starting_val > ub[0]) starting_val = ub[0];
             x[0] = starting_val;
@@ -445,7 +444,6 @@ namespace single {
 
             // invert marginal utility
             if (strcmp(par->interp_method, "numerical") == 0) {
-                // starting value: closed-form CRRA inverse-marginal-utility guess (C_tot ~ 2*C_priv)
                 double rho_gender = (gender == man) ? par->rho_m : par->rho_w;
                 double guess_C_tot = 2.0 * pow(tools::max(EmargU_pd[iA_pd], 1.0e-8), -1.0 / rho_gender);
                 guess_C_tot = tools::max(tools::min(guess_C_tot, 2.0 * par->max_Ctot), 1.0e-4);
@@ -457,7 +455,6 @@ namespace single {
                 if (par->interp_inverse) { // if the grid is for inverse marginal utility, invert it back to get consumption
                     C_tot_pd[iA_pd] = 1.0 / C_tot_pd[iA_pd];
                 }
-                // clamp the final consumption to ensure non-negativity and not exceeding total resources
                 C_tot_pd[iA_pd] = std::max(C_tot_pd[iA_pd], 0.0);
             }
 

@@ -141,7 +141,7 @@ namespace sim {
         // b. find inverted cdf of random uniform draw
         int index_sim = index::index2(i,t,par->simN,par->simT);
         double random = uniform_partner_A[index_sim];
-        double A_sim = tools::interp_1d(cdf_Ap_cond,par->num_A,grid_Ap,random); // note: the inverted cdf returns the PARTNER's assets, so use the partner's grid
+        double A_sim = tools::interp_1d(cdf_Ap_cond,par->num_A,grid_Ap,random);
 
         delete[] cdf_Ap_cond;
         cdf_Ap_cond = nullptr;
@@ -175,7 +175,7 @@ namespace sim {
         for (int iAp=0; iAp<par->num_A; iAp++){
             double cdf_Ap_cond = tools::interp_1d_index_delta(grid_A,par->num_A,cdf_partner_A,A, index_iA,par->num_A, iAp,1,0); // OBS: Is 1,0 right? We think so, but make sure when implementing remarriage
             if(cdf_Ap_cond >= random){
-                return grid_Ap[iAp]; // note: the cdf is over the PARTNER's assets, so read the level off the partner's grid
+                return grid_Ap[iAp];
             }
         }
 
@@ -318,9 +318,6 @@ namespace sim {
     
         #pragma omp for schedule(static)
         for (int i=0; i<par->simN; i++){
-            // type_w never changes; type_m persists across periods so that a newly
-            // matched partner's type (drawn on repartnering below) carries forward
-            // instead of reverting to the original init_type_m every period.
             int type_w = sim->init_type_w[i];
             int type_m = sim->init_type_m[i];
             for (int t=0; t < par->simT; t++){
@@ -439,7 +436,7 @@ namespace sim {
                     double C_inter = 0.0; // placeholder for public consumption
                     double Q = 0.0; // placeholder for public goods
                     precompute::intraperiod_allocation_couple(&sim->Cw_priv[it], &sim->Cm_priv[it], &sim->hw[it], &sim->hm[it], &C_inter, &Q, ilw, ilm, -1000, power, C_tot, par, sol,
-                        par->precompute_intratemporal, // interpolate - must match what the solver used
+                        par->precompute_intratemporal, // interpolate
                         false // do not use power index
                     );
                     sim->Cw_inter[it] = C_inter;

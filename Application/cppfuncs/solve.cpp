@@ -41,7 +41,6 @@ EXPORT void simulate(sim_struct *sim, sol_struct *sol, par_struct *par){
 
 EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_update, double* power_diff, double* consumption, par_struct* par, sol_struct* sol){
 
-    // evaluate on the accuracy grids (of length num_acc) in par
     int num_P = par->num_acc;
     int num_love = par->num_acc;
     int num_Kw = par->num_acc;

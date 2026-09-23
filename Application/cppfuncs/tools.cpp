@@ -93,7 +93,7 @@ int binary_search_over_descending_function(long long int idx, int Nx, double *x,
         return Nx-2;
     }
     // b. binary search
-    Nx = Nx-(int)idx; // rescale the remaining length by the starting offset (as in binary_search above)
+    Nx = Nx-(int)idx;
     while((half = Nx/2)){
         imid = (int)idx + half;
         idx = (x[imid] >= target) ? imid:idx;

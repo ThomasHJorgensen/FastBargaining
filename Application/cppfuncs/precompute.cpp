@@ -60,7 +60,7 @@ namespace precompute{
             c = 1.0e-6;
         }
 
-        // home production (evaluated on the clipped allocation)
+        // home production
         double Q = utils::Q_single(c, h, gender, par);
 
         // utility of choice
@@ -244,7 +244,7 @@ namespace precompute{
             C_inter = 1.0e-6;
         }
 
-        // home production (evaluated on the clipped allocation)
+        // home production
         double Q = utils::Q_couple(C_inter, hw, hm, par);
 
         // utility of choice
