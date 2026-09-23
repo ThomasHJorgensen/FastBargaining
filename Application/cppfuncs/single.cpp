@@ -145,6 +145,7 @@ namespace single {
             auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
             nlopt_set_min_objective(opt, objfunc_single_to_single, solver_data);
+            nlopt_set_xtol_rel(opt, XTOL);
 
             // bounds
             lb[0] = 1.0e-8;
@@ -278,9 +279,7 @@ namespace single {
         auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
 
         nlopt_set_min_objective(opt, obj_inv_marg_util_single, data);
-        nlopt_set_maxeval(opt, 2000);
-        nlopt_set_ftol_rel(opt, 1.0e-6);
-        nlopt_set_xtol_rel(opt, 1.0e-5);
+        nlopt_set_xtol_rel(opt, XTOL);
 
         lb[0] = 0.0;
         ub[0] = 2.0 * par->max_Ctot;

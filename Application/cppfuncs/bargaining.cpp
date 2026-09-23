@@ -447,6 +447,7 @@ namespace bargaining {
         int const dim = 1;
         auto opt = nlopt_create(NLOPT_LN_BOBYQA, dim);
         nlopt_set_min_objective(opt, objfunc_nash_bargain, nash_struct);
+        nlopt_set_xtol_rel(opt, XTOL);
 
         // set bounds
         double lb[dim], ub[dim];

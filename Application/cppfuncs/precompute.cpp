@@ -87,9 +87,7 @@ namespace precompute{
         solver_data->par = par;
         solver_data->gender = gender; // NOTE!!!!
         nlopt_set_min_objective(opt, objfunc_precompute_single, solver_data);
-        nlopt_set_maxeval(opt, 2000);
-        nlopt_set_ftol_rel(opt, 1.0e-6);
-        nlopt_set_xtol_rel(opt, 1.0e-5);
+        nlopt_set_xtol_rel(opt, XTOL);
 
         // bounds
         lb[0] = 1.0e-6;
@@ -261,8 +259,7 @@ namespace precompute{
 
     EXPORT void solve_intraperiod_couple(double* Cw_priv, double* Cm_priv, double* hw, double* hm, double* C_inter, double* Q,
                 double C_tot, double lw, double lm, double power, par_struct* par, 
-                double start_Cw_priv, double start_Cm_priv, double start_hw, double start_hm,
-                double ftol = 1.0e-6, double xtol = 1.0e-5){
+                double start_Cw_priv, double start_Cm_priv, double start_hw, double start_hm){
         // setup numerical solver
         solver_precompute_couple_struct* solver_data = new solver_precompute_couple_struct;
 
@@ -280,9 +277,7 @@ namespace precompute{
         solver_data->par = par;
 
         nlopt_set_min_objective(opt, objfunc_precompute_couple, solver_data);
-        nlopt_set_maxeval(opt, 2000);
-        nlopt_set_ftol_rel(opt, ftol);
-        nlopt_set_xtol_rel(opt, xtol);
+        nlopt_set_xtol_rel(opt, XTOL);
 
         // bounds
         lb[0] = 1.0e-6; // Cw_priv
@@ -495,8 +490,7 @@ namespace precompute{
                 solve_intraperiod_couple(&sol->pre_Cwd_priv_couple[idx], &sol->pre_Cmd_priv_couple[idx], &sol->pre_hwd_couple[idx], &sol->pre_hmd_couple[idx], 
                     &sol->pre_Cd_inter_couple[idx], &sol->pre_Qd_couple[idx],
                     C_tot, lw, lm, power, par,
-                    start_Cw_priv, start_Cm_priv, start_hw, start_hm,
-                    1.0e-8, 1.0e-7);
+                    start_Cw_priv, start_Cm_priv, start_hw, start_hm);
             } // iC
 
             if(((strcmp(par->interp_method,"linear")==0) && (par->do_egm))){ // only precompute marginal utility if using iegm

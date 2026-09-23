@@ -30,6 +30,7 @@
 ////////////////
 #define woman 1
 #define man 2
+#define XTOL 1.0e-10 // relative x-tolerance for all NLopt solvers
 
 ////////////////
 // 5. Logs    //
