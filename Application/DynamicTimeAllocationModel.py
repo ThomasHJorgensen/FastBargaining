@@ -160,6 +160,11 @@ class HouseholdModelClass(EconModelClass):
         par.centered_gradient = True
         par.bargaining = "limited"
 
+        # -------- accuracy measures --------
+        par.num_acc = 12 # length of all accuracy grids
+        par.trunc_min = 0.2 # accuracy grids span the fractional range [trunc_min, trunc_max] of each state grid
+        par.trunc_max = 0.8
+
     def setup_gender_parameters(self):
         par = self.par
         
@@ -350,6 +355,17 @@ class HouseholdModelClass(EconModelClass):
         else:
             love_cdf = stats.norm.cdf(par.grid_love,par.mean_love,par.sigma_love)
         par.prob_partner_love = np.append(np.diff(love_cdf, 1), 0.0)
+
+        # ---------- 7) accuracy grids ----------
+        # equally spaced on the fractional range [trunc_min, trunc_max] of each state grid's span (away from the boundaries)
+        def _acc_grid(grid):
+            return grid[0] + (grid[-1] - grid[0]) * np.linspace(par.trunc_min, par.trunc_max, par.num_acc)
+
+        par.grid_power_acc = _acc_grid(par.grid_power)
+        par.grid_love_acc = _acc_grid(par.grid_love)
+        par.grid_Kw_acc = _acc_grid(par.grid_Kw)
+        par.grid_Km_acc = _acc_grid(par.grid_Km)
+        par.grid_A_acc = _acc_grid(par.grid_A)
 
 
     def allocate(self):
@@ -928,36 +944,36 @@ class HouseholdModelClass(EconModelClass):
             pickle.dump(par_dict, f)
             
             
-    def measure_accuracy(self,true_model, num=13):
+    def measure_accuracy(self,true_model):
         par = self.par
         sol = self.sol
-        
-        # grids
-        num_P = num
-        num_love = num
-        num_Kw = num
-        num_Km = num
-        num_A = num
-        
-        # shapes for allocation
-        shape = (par.num_types, par.num_types, num_P, num_love, num_Kw, num_Km, num_A)
-        shape_d = (par.num_types, par.num_types, par.num_l, par.num_l, num_P, num_love, num_Kw, num_Km, num_A)
-        
+
+        # accuracy grids are set in par (setup_grids) - both models must be evaluated in the same states
+        for name in ('grid_power_acc', 'grid_love_acc', 'grid_Kw_acc', 'grid_Km_acc', 'grid_A_acc'):
+            assert np.array_equal(getattr(par, name), getattr(true_model.par, name)), f'{name} differs between models'
+        num = par.num_acc
+
+        assert par.T == true_model.par.T, 'T differs between models'
+
+        # shapes for allocation (all periods t - the accuracy measures are means over all T periods)
+        shape = (par.T, par.num_types, par.num_types, num, num, num, num, num)
+        shape_d = (par.T, par.num_types, par.num_types, par.num_l, par.num_l, num, num, num, num, num)
+
         # local model
         lw = np.empty(shape, dtype=np.float64)
         lm = np.empty(shape, dtype=np.float64)
         power = np.empty(shape, dtype=np.float64)
         power_diff = np.empty(shape, dtype=np.float64)
         C = np.empty(shape_d, dtype=np.float64)
-        self.cpp.accuracy_measures(lw, lm, power, power_diff, C, num_P, num_love, num_Kw, num_Km, num_A, par, sol)
-        
+        self.cpp.accuracy_measures(lw, lm, power, power_diff, C, par, sol)
+
         # true model
         lw_true = np.empty(shape, dtype=np.float64)
         lm_true = np.empty(shape, dtype=np.float64)
         power_true = np.empty(shape, dtype=np.float64)
         power_diff_true = np.empty(shape, dtype=np.float64)
         C_true = np.empty(shape_d, dtype=np.float64)
-        true_model.cpp.accuracy_measures(lw_true, lm_true, power_true, power_diff_true, C_true, num_P, num_love, num_Kw, num_Km, num_A, true_model.par, true_model.sol)
+        true_model.cpp.accuracy_measures(lw_true, lm_true, power_true, power_diff_true, C_true, true_model.par, true_model.sol)
 
         # deviations
         l_ERROR = (np.sum(lw != lw_true) + np.sum(lm != lm_true)) / (2.0 * lw.size) # average of lw and lm deviations
@@ -966,15 +982,15 @@ class HouseholdModelClass(EconModelClass):
         divorced_true = (power_diff_true<-1.0)
         divorce_ERROR = np.mean((divorced) != (divorced_true))
         
-        # evaluate power where true model updates and neither model divorces
-        is_power_updated_true = (power_diff_true != 0.0) & (power_diff_true>-1.0)
-        power_updated = power[is_power_updated_true & (~divorced) & (~divorced_true)]
-        power_updated_true = power_true[is_power_updated_true & (~divorced) & (~divorced_true)]
-        power_MAD = np.mean(np.abs(power_updated / power_updated_true - 1.0) * 100.0)
-        
+        # share of states where the models disagree on whether power is updated (among states where neither model divorces)
+        married = (~divorced) & (~divorced_true)
+        is_power_updated = (power_diff != 0.0)
+        is_power_updated_true = (power_diff_true != 0.0)
+        power_ERROR = np.mean((is_power_updated != is_power_updated_true)[married])
+
         C_MAD = np.mean(np.abs(C / C_true - 1.0) * 100.0)
-        
-        return l_ERROR, divorce_ERROR, power_MAD, C_MAD
+
+        return l_ERROR, divorce_ERROR, power_ERROR, C_MAD
 
       
     def wealth_compensation(self,true_model):

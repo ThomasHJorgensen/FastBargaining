@@ -39,75 +39,70 @@ EXPORT void simulate(sim_struct *sim, sol_struct *sol, par_struct *par){
 }
 
 
-EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_update, double* power_diff, double* consumption, int num_P, int num_love, int num_Kw, int num_Km, int num_A, par_struct* par, sol_struct* sol){
+EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_update, double* power_diff, double* consumption, par_struct* par, sol_struct* sol){
 
-    int t = 0;
+    // evaluate on the accuracy grids (of length num_acc) in par
+    int num_P = par->num_acc;
+    int num_love = par->num_acc;
+    int num_Kw = par->num_acc;
+    int num_Km = par->num_acc;
+    int num_A = par->num_acc;
 
-    // sample each state dimension on the fractional range [trunc_min, trunc_max] of its grid span,
-    // staying away from the grid boundaries. Note: the fractional weight must be computed in
-    // floating point - integer division would collapse every dimension onto its two endpoints.
-    double trunc_min = 0.2;
-    double trunc_max = 0.8; 
-
-    int num_total = par->num_types * par->num_types * par->num_l * par->num_l * num_P * num_love * num_Kw * num_Km * num_A;
-
-    for (int type_w = 0; type_w < par->num_types; type_w++){
-        for (int type_m = 0; type_m < par->num_types; type_m++){
-            for (int iP = 0; iP < num_P; iP++){
-                double len_power = par->grid_power[par->num_power-1] - par->grid_power[0];
-                double power = par->grid_power[0] + len_power * (trunc_min + (trunc_max - trunc_min) * ((double)iP / (double)(num_P-1)));
-                int iP_left = tools::binary_search(0, par->num_power, par->grid_power, power);
-                for (int iL = 0; iL < num_love; iL++){
-                    double len_love = par->grid_love[par->num_love-1] - par->grid_love[0];
-                    double love = par->grid_love[0] + len_love * (trunc_min + (trunc_max - trunc_min) * ((double)iL / (double)(num_love-1)));
-                    int iL_left = tools::binary_search(0, par->num_love, par->grid_love, love);
-                    for (int iKw = 0; iKw < num_Kw; iKw++){
-                        double len_Kw = par->grid_Kw[par->num_K-1] - par->grid_Kw[0];
-                        double Kw = par->grid_Kw[0] + len_Kw * (trunc_min + (trunc_max - trunc_min) * ((double)iKw / (double)(num_Kw-1)));
-                        int iKw_left = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
-                        for (int iKm = 0; iKm < num_Km; iKm++){
-                            double len_Km = par->grid_Km[par->num_K-1] - par->grid_Km[0];
-                            double Km = par->grid_Km[0] + len_Km * (trunc_min + (trunc_max - trunc_min) * ((double)iKm / (double)(num_Km-1)));
-                            int iKm_left = tools::binary_search(0, par->num_K, par->grid_Km, Km);
-                            for (int iA = 0; iA < num_A; iA++){
-                                double len_A = par->grid_A[par->num_A-1] - par->grid_A[0];
-                                double A = par->grid_A[0] + len_A * (trunc_min + (trunc_max - trunc_min) * ((double)iA / (double)(num_A-1)));
-                                int iA_left = tools::binary_search(0, par->num_A, par->grid_A, A);
+    #pragma omp parallel for num_threads(par->threads) schedule(dynamic)
+    for (int t = 0; t < par->T; t++){
+        for (int type_w = 0; type_w < par->num_types; type_w++){
+            for (int type_m = 0; type_m < par->num_types; type_m++){
+                for (int iP = 0; iP < num_P; iP++){
+                    double power = par->grid_power_acc[iP];
+                    int iP_left = tools::binary_search(0, par->num_power, par->grid_power, power);
+                    for (int iL = 0; iL < num_love; iL++){
+                        double love = par->grid_love_acc[iL];
+                        int iL_left = tools::binary_search(0, par->num_love, par->grid_love, love);
+                        for (int iKw = 0; iKw < num_Kw; iKw++){
+                            double Kw = par->grid_Kw_acc[iKw];
+                            int iKw_left = tools::binary_search(0, par->num_K, par->grid_Kw, Kw);
+                            for (int iKm = 0; iKm < num_Km; iKm++){
+                                double Km = par->grid_Km_acc[iKm];
+                                int iKm_left = tools::binary_search(0, par->num_K, par->grid_Km, Km);
+                                for (int iA = 0; iA < num_A; iA++){
+                                    double A = par->grid_A_acc[iA];
+                                    int iA_left = tools::binary_search(0, par->num_A, par->grid_A, A);
                                 
-                                auto idx = index::index7(
-                                    type_w, type_m, iP, iL, iKw, iKm, iA, 
-                                    par->num_types, par->num_types, num_P, num_love, num_Kw, num_Km, num_A
-                                );
+                                    auto idx = index::index8(
+                                        t, type_w, type_m, iP, iL, iKw, iKm, iA, 
+                                        par->T, par->num_types, par->num_types, num_P, num_love, num_Kw, num_Km, num_A
+                                    );
 
-                                // labor points
-                                int ilw_update = -1;
-                                int ilm_update = -1;
-                                sim::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw, Km, A, &ilw_update, &ilm_update, sol, par);
-                                labor_w[idx] = ilw_update;
-                                labor_m[idx] = ilm_update;
+                                    // labor points
+                                    int ilw_update = -1;
+                                    int ilm_update = -1;
+                                    sim::find_interpolated_labor_index_couple(t, type_w, type_m, power, love, Kw, Km, A, &ilw_update, &ilm_update, sol, par);
+                                    labor_w[idx] = ilw_update;
+                                    labor_m[idx] = ilm_update;
                                 
-                                // power
-                                double Aw = par->div_A_share * A;
-                                double Am = (1.0 - par->div_A_share) * A;
-                                power_update[idx] = sim::update_power(t,type_w, type_m, power, love, Kw, Km, A, Aw, Am, sol, par);
-                                power_diff[idx] = power_update[idx] - power;
+                                    // power
+                                    double Aw = par->div_A_share * A;
+                                    double Am = (1.0 - par->div_A_share) * A;
+                                    power_update[idx] = sim::update_power(t,type_w, type_m, power, love, Kw, Km, A, Aw, Am, sol, par);
+                                    power_diff[idx] = power_update[idx] - power;
 
-                                // consumption points
-                                for (int ilw = 0; ilw < par->num_l; ilw++){
-                                    for (int ilm = 0; ilm < par->num_l; ilm++){
-                                        auto idx_interp = index::couple_d(t, type_w, type_m, ilw, ilm, 0, 0, 0, 0, 0, par);
-                                        double C = tools::_interp_5d_index(
-                                            par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
-                                            par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
-                                            &sol->Cd_tot_couple_to_couple[idx_interp],
-                                            power, love, Kw, Km, A,
-                                            iP_left, iL_left, iKw_left, iKm_left, iA_left
-                                        );
-                                        auto idx_d = index::index9(
-                                            type_w, type_m, ilw, ilm, iP, iL, iKw, iKm, iA,
-                                            par->num_types, par->num_types, par->num_l, par->num_l, num_P, num_love, num_Kw, num_Km, num_A
-                                        );
-                                        consumption[idx_d] = C;
+                                    // consumption points
+                                    for (int ilw = 0; ilw < par->num_l; ilw++){
+                                        for (int ilm = 0; ilm < par->num_l; ilm++){
+                                            auto idx_interp = index::couple_d(t, type_w, type_m, ilw, ilm, 0, 0, 0, 0, 0, par);
+                                            double C = tools::_interp_5d_index(
+                                                par->grid_power, par->grid_love, par->grid_Kw, par->grid_Km, par->grid_A,
+                                                par->num_power, par->num_love, par->num_K, par->num_K, par->num_A,
+                                                &sol->Cd_tot_couple_to_couple[idx_interp],
+                                                power, love, Kw, Km, A,
+                                                iP_left, iL_left, iKw_left, iKm_left, iA_left
+                                            );
+                                            auto idx_d = index::index10(
+                                                t, type_w, type_m, ilw, ilm, iP, iL, iKw, iKm, iA,
+                                                par->T, par->num_types, par->num_types, par->num_l, par->num_l, num_P, num_love, num_Kw, num_Km, num_A
+                                            );
+                                            consumption[idx_d] = C;
+                                        }
                                     }
                                 }
                             }
@@ -116,6 +111,6 @@ EXPORT void accuracy_measures(double* labor_w, double* labor_m, double* power_up
                 }
             }
         }
-    }
+    } // t
 
 }
