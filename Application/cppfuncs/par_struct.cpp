@@ -71,6 +71,9 @@ typedef struct par_struct
  char* interp_method;
  bool centered_gradient;
  char* bargaining;
+ int num_acc;
+ double trunc_min;
+ double trunc_max;
  double mu_w;
  double mu_m;
  double gamma_w;
@@ -124,6 +127,11 @@ typedef struct par_struct
  double* cdf_partner_type_w;
  double* cdf_partner_type_m;
  double* prob_partner_love;
+ double* grid_power_acc;
+ double* grid_love_acc;
+ double* grid_Kw_acc;
+ double* grid_Km_acc;
+ double* grid_A_acc;
  long long* idx_single_type;
  long long* idx_single_K;
  long long* idx_couple_type_w;
@@ -186,6 +194,8 @@ double get_double_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"p_meet") == 0 ){ return x->p_meet; }
  else if( strcmp(name,"max_Ctot") == 0 ){ return x->max_Ctot; }
  else if( strcmp(name,"init_couple_share") == 0 ){ return x->init_couple_share; }
+ else if( strcmp(name,"trunc_min") == 0 ){ return x->trunc_min; }
+ else if( strcmp(name,"trunc_max") == 0 ){ return x->trunc_max; }
  else if( strcmp(name,"mu_w") == 0 ){ return x->mu_w; }
  else if( strcmp(name,"mu_m") == 0 ){ return x->mu_m; }
  else if( strcmp(name,"gamma_w") == 0 ){ return x->gamma_w; }
@@ -224,6 +234,7 @@ int get_int_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"simT") == 0 ){ return x->simT; }
  else if( strcmp(name,"simN") == 0 ){ return x->simN; }
  else if( strcmp(name,"threads") == 0 ){ return x->threads; }
+ else if( strcmp(name,"num_acc") == 0 ){ return x->num_acc; }
  else if( strcmp(name,"num_l") == 0 ){ return x->num_l; }
  else {return -9999;}
 
@@ -273,6 +284,11 @@ double* get_double_p_par_struct(par_struct* x, char* name){
  else if( strcmp(name,"cdf_partner_type_w") == 0 ){ return x->cdf_partner_type_w; }
  else if( strcmp(name,"cdf_partner_type_m") == 0 ){ return x->cdf_partner_type_m; }
  else if( strcmp(name,"prob_partner_love") == 0 ){ return x->prob_partner_love; }
+ else if( strcmp(name,"grid_power_acc") == 0 ){ return x->grid_power_acc; }
+ else if( strcmp(name,"grid_love_acc") == 0 ){ return x->grid_love_acc; }
+ else if( strcmp(name,"grid_Kw_acc") == 0 ){ return x->grid_Kw_acc; }
+ else if( strcmp(name,"grid_Km_acc") == 0 ){ return x->grid_Km_acc; }
+ else if( strcmp(name,"grid_A_acc") == 0 ){ return x->grid_A_acc; }
  else {return NULL;}
 
 }
