@@ -61,7 +61,7 @@ namespace utils {
     }
 
     double human_capital_transition(double K, double labor, par_struct* par) {
-        double K_next = (1.0 - par->delta) * K + par->phi_k * labor;
+        double K_next = (1.0 - par->delta) * K + par->phi_k * labor * par->available_hours;
         return tools::max(0.0, tools::min(K_next, par->max_K));
     }
 
