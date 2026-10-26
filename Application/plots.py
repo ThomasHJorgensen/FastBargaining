@@ -6,7 +6,7 @@ class model_plotter():
         
         self.model = model
         self.model_name = model_name if model_name is not None else model.name
-        self.index_labels_per_row = kwargs.get('index_labels_per_row', 3)  # Default to 3 if not provided
+        self.index_labels_per_row = kwargs.get('index_labels_per_row', 3)
         self.sim_data = self.sim_to_df()
         
         if isinstance(titles, str):
@@ -80,9 +80,7 @@ class model_plotter():
         for value in my_dict.values():
             hashable_value = value
             if isinstance(value, np.ndarray):
-                # Convert numpy array to a tuple to make it hashable
-                # This works for arrays of any dimension
-                hashable_value = tuple(value.flatten()) # Flatten and convert to tuple
+                hashable_value = tuple(value.flatten())
             
             if hashable_value in seen_values:
                 return False
@@ -501,14 +499,13 @@ class model_plotter():
             if self.titles:
                 self.add_title(ax[i], var)
             if agg_fct is None:
-                # Set all lines to grey, alpha=0.1, and no markers
                 for line in ax[i].get_lines():
                     if 'color' in kwargs and kwargs['color'] is not None:
                         line.set_color(kwargs['color'])
                     else:
                         line.set_color('grey')
                     line.set_linestyle('-')
-                    line.set_alpha(1/np.min([y.shape[1], 510]))  # Set alpha to 1/n, where n is the number of lines, but not less than 1/510
+                    line.set_alpha(1/np.min([y.shape[1], 510]))
                     line.set_marker('')
         
         return ax

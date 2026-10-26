@@ -564,8 +564,8 @@ namespace single {
             const auto iK = par->idx_single_K[idx];
 
             for (int il = 0; il < par->num_l; il++) {
-                solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par); // CHANGED
-                solve_choice_specific_single_to_single(t, type, il, iK, man, sol, par); // CHANGED
+                solve_choice_specific_single_to_single(t, type, il, iK, woman, sol, par);
+                solve_choice_specific_single_to_single(t, type, il, iK, man, sol, par);
             }
         }
     }
@@ -695,7 +695,7 @@ namespace single {
     
     
     double expected_value_cond_not_meet_partner(int t, int type, int iK, int iA, int gender, sol_struct* sol, par_struct* par){
-        auto idx = index::single(t, type, iK, iA, par); // CHANGED
+        auto idx = index::single(t, type, iK, iA, par);
         double* V_single_to_single = (gender == man) ? sol->Vm_single_to_single : sol->Vw_single_to_single;
         return V_single_to_single[idx];
     
@@ -715,7 +715,7 @@ namespace single {
             prob_partner_K = par->prob_partner_Km;
             prob_partner_type = par->prob_partner_type_m;
         }
-        auto idx_single = index::single(t, type, iK, iA, par); // CHANGED
+        auto idx_single = index::single(t, type, iK, iA, par);
 
         // loop over potential partners conditional on meeting a partner
         double Ev_cond = 0.0;
@@ -794,7 +794,7 @@ namespace single {
     void calc_expected_value_single(int t, int type, int iK, int iA, int gender, double* V, double* EV, sol_struct* /*sol*/, par_struct* par)
     {
 
-        auto idx = index::single(t, type, iK, iA, par); // CHANGED
+        auto idx = index::single(t, type, iK, iA, par);
 
         double* grid_K = (gender == woman) ? par->grid_Kw : par->grid_Km;
         double* grid_shock_K = (gender == woman) ? par->grid_shock_Kw : par->grid_shock_Km;
@@ -848,12 +848,12 @@ namespace single {
                 const auto iK = par->idx_single_K[idx];
 
                 for (int iA = 0; iA < par->num_A; iA++) {
-                    auto idx = index::single(t, type, iK, iA, par); // CHANGED
+                    auto idx = index::single(t, type, iK, iA, par);
 
-                    double EV_cond_not_meet = expected_value_cond_not_meet_partner(t, type, iK, iA, gender, sol, par); // CHANGED
+                    double EV_cond_not_meet = expected_value_cond_not_meet_partner(t, type, iK, iA, gender, sol, par);
 
                     if (repartnering) {
-                        double EV_cond_meet = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par); // CHANGED
+                        double EV_cond_meet = expected_value_cond_meet_partner(t, type, iK, iA, gender, sol, par);
                         EV_cond_meet_partner[idx] = EV_cond_meet;
                         EV_uncond_meet_partner[idx] = p_meet * EV_cond_meet + (1.0 - p_meet) * EV_cond_not_meet;
                     } else {
@@ -874,11 +874,11 @@ namespace single {
 
 
                 for (int iA = 0; iA < par->num_A; iA++) {
-                    calc_expected_value_single(t, type, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par); // CHANGED
+                    calc_expected_value_single(t, type, iK, iA, gender, EV_uncond_meet_partner, EV_start_as_single, sol, par);
                 }
 
                 if (par->do_egm){
-                    auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
+                    auto idx_A = index::single(t, type, iK, 0, par);
                     calc_marginal_value_single_Agrid(&EV_start_as_single[idx_A], &EmargV_start_as_single[idx_A], gender, sol, par);
                 }
             }
@@ -898,7 +898,7 @@ namespace single {
             const auto type = par->idx_single_type[idx];
             const auto iK = par->idx_single_K[idx];
             
-            auto idx_A = index::single(t, type, iK, 0, par); // CHANGED
+            auto idx_A = index::single(t, type, iK, 0, par);
 
             double* Vw_couple_to_single = &sol->Vw_couple_to_single[idx_A];
             double* Vm_couple_to_single = &sol->Vm_couple_to_single[idx_A];

@@ -40,20 +40,16 @@ namespace index {
         return i10 + (i9 + (i8 + (i7 + (i6 + (i5 + (i4 + (i3 + (i2 + i1*N2)*N3)*N4)*N5)*N6)*N7)*N8)*N9)*N10;
     }
 
-    // New canonical couple indexing with two K indices: (t, iP, iL, iKw, iKm, iA)
     long long int couple(long long int t, long long int type_w, long long int type_m, long long int iP, long long int iL, long long int iKw, long long int iKm, long long int iA, par_struct* par){
         return index8(t, type_w, type_m, iP, iL, iKw, iKm, iA, par->T, par->num_types, par->num_types, par->num_power, par->num_love, par->num_K, par->num_K, par->num_A);
     }
-    // Discrete couple index with two K indices: (t, ilw, ilm, iP, iL, iKw, iKm, iA)
     long long int couple_d(long long int t, long long int type_w, long long int type_m, long long int ilw, long long int ilm, long long int iP, long long int iL, long long int iKw, long long int iKm, long long int iA, par_struct* par){
         return index10(t, type_w, type_m, ilw, ilm, iP, iL, iKw, iKm, iA, par->T, par->num_types, par->num_types, par->num_l, par->num_l, par->num_power, par->num_love, par->num_K, par->num_K, par->num_A);
     }
-    // Endogenous asset grid variant with two K indices: (t, ilw, ilm, iP, iL, iKw, iKm, iA_pd)
     long long int couple_pd(long long int t, long long int type_w, long long int type_m, long long int ilw, long long int ilm, long long int iP, long long int iL, long long int iKw, long long int iKm, long long int iA_pd, par_struct* par){
         return index10(t, type_w, type_m, ilw, ilm, iP, iL, iKw, iKm, iA_pd, par->T, par->num_types, par->num_types, par->num_l, par->num_l, par->num_power, par->num_love, par->num_K, par->num_K, par->num_A_pd);
     }
 
-    // Single-state indexing now uses (t, il, iK, iA)
     long long int single(long long int t, long long int type, long long int iK, long long int iA, par_struct* par){
         return index4(t, type, iK, iA, par->T, par->num_types, par->num_K, par->num_A);
     }
