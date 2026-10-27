@@ -74,7 +74,7 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# .python-version is tracked: it pins the Python version for uv
 
 # celery beat schedule file
 celerybeat-schedule
@@ -138,6 +138,8 @@ venv.bak/
 *.la
 *.a
 *.lib
+# NLopt import library, needed to link the C++ code
+!Application/cppfuncs/nlopt-2.4.2-dll64/libnlopt-0.lib
 
 # Executables
 *.exe
