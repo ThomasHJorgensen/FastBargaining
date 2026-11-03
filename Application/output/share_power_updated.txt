@@ -1,0 +1,1 @@
+Share of couple periods in which the bargaining weight is updated (true model): 0.85%
