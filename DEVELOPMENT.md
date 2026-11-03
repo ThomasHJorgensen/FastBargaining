@@ -124,8 +124,16 @@ To use another Python 3.13 release, run `uv python pin 3.13.<patch>`, which upda
    .venv\Scripts\python make_replication_package.py
    ```
 
-4. Check the printed warnings and look through `dist\Replication package\`, in particular README.pdf.
-5. Submit `dist\Replication package.zip`. Commit README.pdf if it changed.
+   or, with uv:
+
+   ```bat
+   uv run --frozen --group build python make_replication_package.py
+   ```
+
+   `uv run` syncs `.venv` before it runs the script. `--group build` keeps pandoc installed, and `--frozen` keeps `uv.lock` unchanged.
+
+4. Check the printed warnings and open `dist\Replication package.zip` to look through its contents, in particular README.pdf.
+5. Submit `dist\Replication package.zip`. Commit the zip file and README.pdf.
 
 To build a test version from a working tree with uncommitted changes, add `--allow-dirty`. The script then prints the uncommitted changes as a warning.
 
@@ -133,10 +141,9 @@ To build a test version from a working tree with uncommitted changes, add `--all
 
 1. **Checks.** It stops if tracked files have uncommitted changes (unless `--allow-dirty` is passed). It warns if any exhibit of the paper listed in `OUTPUT_FILES` is missing.
 2. **README.pdf.** pandoc converts README.md to HTML with a small style sheet, and Edge prints the HTML to `README.pdf` in the root of the repository. The PDF is overwritten every time.
-3. **Copy.** It copies all files tracked by git, plus the files in `EXTRA_FILES`, minus the files and folders in `EXCLUDE` (`Archive/`, `.gitignore` and the script itself), to `dist\Replication package\`. It stops if a listed file does not exist.
-4. **Zip.** It zips that folder to `dist\Replication package.zip`, with `Replication package` as the top folder in the zip file, and prints the number of files and the size. It warns if the zip file is larger than 100 MB, the upload limit of Editorial Express.
+3. **Zip.** It zips all files tracked by git, plus the files in `EXTRA_FILES`, minus the files and folders in `EXCLUDE` (`Archive/`, `dist/`, `.gitignore` and the script itself), to `dist\Replication package.zip`, with `Replication package` as the top folder in the zip file. It stops if a listed file does not exist. It prints the number of files and the size, and warns if the zip file is larger than 100 MB, the upload limit of Editorial Express.
 
-`dist\` is ignored by git, and each run replaces its contents.
+Each run replaces `dist\Replication package.zip`. The zip file is tracked by git, so commit it after a build. Other files in `dist\` are ignored. Because `dist/` is excluded, a new package never contains an old one.
 
 ### Changing what goes into the package
 

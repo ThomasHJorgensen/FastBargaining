@@ -11,7 +11,9 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/ holds the replication package built by make_replication_package.py, which is tracked
+dist/*
+!dist/Replication package.zip
 downloads/
 eggs/
 .eggs/
@@ -140,7 +142,6 @@ venv.bak/
 *.lib
 # NLopt import library, needed to link the C++ code
 !Application/cppfuncs/nlopt-2.4.2-dll64/libnlopt-0.lib
-
 # Executables
 *.exe
 *.out

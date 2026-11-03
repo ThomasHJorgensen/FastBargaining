@@ -7,9 +7,8 @@ Run from the repository root after a complete run of run_all.ipynb:
 The script
   1. renders README.md to README.pdf (requires pandoc and Microsoft Edge; install pandoc with
      `uv sync --group build`),
-  2. copies all files tracked by git, plus the files in EXTRA_FILES and minus EXCLUDE,
-     to dist/Replication package/, and
-  3. zips that folder to dist/Replication package.zip.
+  2. zips all files tracked by git, plus the files in EXTRA_FILES and minus EXCLUDE,
+     to dist/Replication package.zip, with the top folder "Replication package".
 
 It warns if the working tree has uncommitted changes, if an exhibit listed in OUTPUT_FILES
 is missing, or if the zip file exceeds the 100MB upload limit of Editorial Express.
@@ -38,6 +37,7 @@ EXTRA_FILES = [
 # tracked files and folders that are not part of the package
 EXCLUDE = [
     'Archive/',  # earlier implementations, not used
+    'dist/',  # earlier builds of the package
     '.gitignore',
     'make_replication_package.py',
 ]
@@ -159,25 +159,16 @@ def main():
     # b. README.pdf
     build_readme_pdf()
 
-    # c. copy files
-    target = DIST / PACKAGE_NAME
-    if target.exists(): shutil.rmtree(target)
+    # c. zip the files (the zip contains the folder "Replication package")
     files = package_files()
-    for f in files:
-        dst = target / f
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / f, dst)
-
-    # d. zip (the zip contains the folder "Replication package")
     zip_path = DIST / f'{PACKAGE_NAME}.zip'
     if zip_path.exists(): zip_path.unlink()
     with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for f in files:
-            zf.write(target / f, arcname=f'{PACKAGE_NAME}/{f}')
+            zf.write(ROOT / f, arcname=f'{PACKAGE_NAME}/{f}')
 
     size_mb = zip_path.stat().st_size / 1e6
-    print(f'{len(files)} files copied to {target}')
-    print(f'{zip_path} ({size_mb:.1f} MB)')
+    print(f'{len(files)} files zipped to {zip_path} ({size_mb:.1f} MB)')
     if size_mb > MAX_ZIP_MB:
         print(f'WARNING: the zip file exceeds {MAX_ZIP_MB:.0f} MB, the upload limit of Editorial Express')
 
