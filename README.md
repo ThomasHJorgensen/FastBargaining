@@ -10,7 +10,7 @@ The code in this package solves, simulates and calibrates the dynamic household 
 
 A single master notebook, `run_all.ipynb`, runs six notebooks in sequence. Together they generate all figures and tables in the paper and the Supplemental Material that come from computations: Figures 1–4, Tables 2–4 and 6–8, and Figure S1. Tables 1, 5 and S1 list parameter values that are inputs to the code, and Figure S2 is a stylized drawing made directly in LaTeX.
 
-The full run took about 30.5 hours on a 104-core server with 1.5 TB of RAM. Three of the notebooks need between 1.2 and 2 TB of memory (RAM plus page file), so the package cannot be run on a desktop computer. See [Computational requirements](#computational-requirements).
+The full run took about 33 hours on a 104-core server with 1.5 TB of RAM. Three of the notebooks need between 1.2 and 2 TB of memory (RAM plus page file), so the package cannot be run on a desktop computer. See [Computational requirements](#computational-requirements).
 
 ## Data Availability and Provenance Statements
 
@@ -137,13 +137,13 @@ The solution arrays of the application model are large. One baseline model takes
 
 | Notebook (in the order run by `run_all.ipynb`) | Wall-clock time, last run | Approx. peak memory |
 | --- | --- | --- |
-| `Illustration/01. UnitaryHousehold.ipynb` | 2 h 27 min | < 4 GB (single core) |
-| `Application/01. Calibration.ipynb` | 19 h 3 min | 300 GB |
-| `Application/02. Comparisons.ipynb` | 2 h 12 min | 1.4 TB (four models with about 350 GB each are kept in memory) |
-| `Application/03. Timings.ipynb` | 6 h 29 min | 2.0 TB (true model 1.7 TB plus one model of 0.3 TB) |
-| `Application/04. Counterfactuals.ipynb` | 20 min | 1.2–1.5 TB (four models of 0.3 TB) |
+| `Illustration/01. UnitaryHousehold.ipynb` | 2 h 41 min | < 4 GB (single core) |
+| `Application/01. Calibration.ipynb` | 19 h 31 min | 300 GB |
+| `Application/02. Comparisons.ipynb` | 2 h 16 min | 1.4 TB (four models with about 350 GB each are kept in memory) |
+| `Application/03. Timings.ipynb` | 8 h 2 min | 2.0 TB (true model 1.7 TB plus one model of 0.3 TB) |
+| `Application/04. Counterfactuals.ipynb` | 21 min | 1.2–1.5 TB (four models of 0.3 TB) |
 | `Appendix/Illustrate bargaining algo.ipynb` | 1 min | < 1 GB |
-| **Total** | **30.5 h** | |
+| **Total** | **32.9 h** | |
 
 The calibration in `01. Calibration` takes most of the time: each evaluation of the objective function solves and simulates the model, and the Nelder–Mead search stops after 500 evaluations. The other notebooks use the calibrated parameters in `Application/par_files/calibrated_par.pkl`.
 
