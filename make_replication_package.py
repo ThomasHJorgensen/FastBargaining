@@ -5,7 +5,8 @@ Run from the repository root after a complete run of run_all.ipynb:
     .venv\\Scripts\\python make_replication_package.py
 
 The script
-  1. renders README.md to README.pdf (requires pandoc and Microsoft Edge),
+  1. renders README.md to README.pdf (requires pandoc and Microsoft Edge; install pandoc with
+     `uv sync --group build`),
   2. copies all files tracked by git, plus the files in EXTRA_FILES and minus EXCLUDE,
      to dist/Replication package/, and
   3. zips that folder to dist/Replication package.zip.
@@ -88,13 +89,32 @@ def find_edge():
     return shutil.which('msedge')
 
 
+def find_pandoc():
+    # pandoc bundled with pypandoc_binary (uv sync --group build)
+    try:
+        import pypandoc
+        return pypandoc.get_pandoc_path()
+    except (ImportError, OSError):
+        pass
+    path = shutil.which('pandoc')
+    if path: return path
+    # pandoc's own installer and Anaconda's base environment, which may not be on PATH
+    home = Path(os.environ.get('USERPROFILE', Path.home()))
+    local = Path(os.environ.get('LOCALAPPDATA', home / 'AppData' / 'Local'))
+    for path in (local / 'Pandoc' / 'pandoc.exe', Path(r'C:\Program Files\Pandoc\pandoc.exe'),
+                 local / 'anaconda3' / 'Scripts' / 'pandoc.exe', home / 'anaconda3' / 'Scripts' / 'pandoc.exe',
+                 local / 'miniconda3' / 'Scripts' / 'pandoc.exe', home / 'miniconda3' / 'Scripts' / 'pandoc.exe'):
+        if path.is_file(): return str(path)
+    return None
+
+
 def build_readme_pdf():
     """ README.md -> README.html (pandoc) -> README.pdf (Edge, headless) """
 
-    pandoc = shutil.which('pandoc')
+    pandoc = find_pandoc()
     edge = find_edge()
-    if pandoc is None or edge is None:
-        sys.exit('pandoc and Microsoft Edge are needed to build README.pdf')
+    if pandoc is None: sys.exit('pandoc is needed to build README.pdf: run "uv sync --group build"')
+    if edge is None: sys.exit('Microsoft Edge is needed to build README.pdf')
 
     tmp = DIST / 'readme_build'
     tmp.mkdir(parents=True, exist_ok=True)

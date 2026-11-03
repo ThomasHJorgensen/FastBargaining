@@ -1,6 +1,6 @@
 # Setting up the Python environment
 
-This file explains how to install the Python packages for this repository with uv, pip or conda, and how to keep the dependency files up to date. [README.md](README.md) describes the replication itself, including the C++ compiler and the hardware it needs.
+This file explains how to install the Python packages for this repository with uv, pip or conda, how to keep the dependency files up to date, and how to build the replication package. [README.md](README.md) describes the replication itself, including the C++ compiler and the hardware it needs.
 
 ## Dependency files
 
@@ -97,3 +97,49 @@ To use a newer version of EconModel, change the commit hash `rev` under `[tool.u
 To use another Python 3.13 release, run `uv python pin 3.13.<patch>`, which updates `.python-version`. To move to another minor version such as 3.14, also change `requires-python` in `pyproject.toml` and `python=3.13` in `environment.yml`, then run `uv lock` and export `requirements.txt` again. Check first that the locked packages, in particular numba and llvmlite, provide wheels for that version.
 
 `environment.yml` reads `requirements.txt`, so it only needs to be edited when the minor Python version changes.
+
+## Building the replication package
+
+`make_replication_package.py` in the root of the repository builds the zip file that is submitted to the journal. The script is a tool for the authors. It is in the GitHub repository but not in the replication package.
+
+### Requirements
+
+- **Windows with Microsoft Edge.** Edge prints README.pdf. The script looks for it in its default installation folders.
+- **pandoc**, which converts README.md to HTML. It is in the `build` dependency group, which a plain `uv sync` does not install. Install it with
+
+  ```bat
+  uv sync --frozen --group build
+  ```
+
+  Run `uv sync` with `--group build` every time, because a sync without it removes pandoc again. If pandoc is not installed in `.venv`, the script uses a pandoc on the PATH, in pandoc's own installation folder or in Anaconda.
+- **git.** The package consists of the files tracked by git.
+
+### Steps
+
+1. Run `run_all.ipynb` (see [Running the replication](#running-the-replication)), update the run times in README.md and check the rest of README.md.
+2. Commit all changes, including the outputs. The script refuses to run if tracked files have uncommitted changes. Untracked files are not included in the package, so check `git status` for new output files and add them.
+3. Run from the root of the repository:
+
+   ```bat
+   .venv\Scripts\python make_replication_package.py
+   ```
+
+4. Check the printed warnings and look through `dist\Replication package\`, in particular README.pdf.
+5. Submit `dist\Replication package.zip`. Commit README.pdf if it changed.
+
+To build a test version from a working tree with uncommitted changes, add `--allow-dirty`. The script then prints the uncommitted changes as a warning.
+
+### What the script does
+
+1. **Checks.** It stops if tracked files have uncommitted changes (unless `--allow-dirty` is passed). It warns if any exhibit of the paper listed in `OUTPUT_FILES` is missing.
+2. **README.pdf.** pandoc converts README.md to HTML with a small style sheet, and Edge prints the HTML to `README.pdf` in the root of the repository. The PDF is overwritten every time.
+3. **Copy.** It copies all files tracked by git, plus the files in `EXTRA_FILES`, minus the files and folders in `EXCLUDE` (`Archive/`, `.gitignore` and the script itself), to `dist\Replication package\`. It stops if a listed file does not exist.
+4. **Zip.** It zips that folder to `dist\Replication package.zip`, with `Replication package` as the top folder in the zip file, and prints the number of files and the size. It warns if the zip file is larger than 100 MB, the upload limit of Editorial Express.
+
+`dist\` is ignored by git, and each run replaces its contents.
+
+### Changing what goes into the package
+
+- **New output file used in the paper:** add it to `OUTPUT_FILES`, so that the script warns if it is missing, and commit it.
+- **File that should not be in the package:** add it to `EXCLUDE`. A path ending in `/` excludes a folder.
+- **File that must be in the package even if git does not track it:** add it to `EXTRA_FILES`. For example, `README.pdf` is listed there because the script builds it before copying the files.
