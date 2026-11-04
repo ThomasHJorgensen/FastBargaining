@@ -3,21 +3,21 @@ Adam Hallengreen, Thomas H. Jørgensen and Annasofie M. Olesen
 
 This package is licensed under two licenses:
 
-  1. The code (all .py, .ipynb, .cpp and .h files written by the authors) is licensed under
+  1. The code (all .py, .ipynb, .cpp and .h files written by the authors) and the
+     library Application/solve.dll, which is compiled from this code, are licensed under
      the MIT License (below).
-  2. The README and all generated output (tables, figures and other files in the
-     output/ folders) are licensed under the Creative Commons Attribution 4.0
-     International License (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.
+  2. The README, all generated output (tables, figures and other files in the output/
+     folders) and all other files written by the authors, including
+     Application/par_files/calibrated_par.pkl and DEVELOPMENT.md, are licensed under the
+     Creative Commons Attribution 4.0 International License (CC BY 4.0),
+     https://creativecommons.org/licenses/by/4.0/.
 
 The package contains no data files. The calibration targets are published summary
 statistics, cited in the README.
 
-Third-party components are distributed under their own licenses:
-
-  - Application/cppfuncs/nlopt-2.4.2-dll64/ and Application/cppfuncs/nlopt-2.4.2-dll64.zip:
-    NLopt 2.4.2 by Steven G. Johnson and others. See COPYING and COPYRIGHT in that folder.
-  - Application/calibrate/sobol.py: Sobol sequence generator by John Burkardt (MATLAB) and
-    Corrado Chisari (Python), MIT License (see the header of the file).
+The third-party library NLopt 2.4.2 by Steven G. Johnson and others, in
+Application/cppfuncs/nlopt-2.4.2-dll64/ and Application/cppfuncs/nlopt-2.4.2-dll64.zip,
+is distributed under its own license. See COPYING and COPYRIGHT in that folder.
 
 -------------------------------------------------------------------------------
 MIT License
